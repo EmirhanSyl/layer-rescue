@@ -6,6 +6,7 @@ from .core import (
     ResumeError,
     ResumeOptions,
     ResumeReport,
+    ZReferenceMode,
     analyze_gcode,
     build_resume_gcode,
     rewrite_gcode_file,
@@ -17,9 +18,10 @@ __all__ = [
     "ResumeError",
     "ResumeOptions",
     "ResumeReport",
+    "ZReferenceMode",
     "analyze_gcode",
     "build_resume_gcode",
     "rewrite_gcode_file",
 ]
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"

@@ -10,7 +10,9 @@ Please report command injection, unsafe path handling, archive traversal, unexpe
 
 - Keep the printer supervised during startup.
 - Be ready to stop the printer immediately.
-- Never resume after a power cycle, stepper release, plate movement, or part movement.
+- After a power cycle or Z stepper release, use manual-reference mode only after aligning a clean nozzle to the last successful layer surface.
+- Never use retained-Z mode after a power cycle, Z step loss, or Z motor release.
+- Never resume after plate movement or part movement.
 - Confirm the actual last deposited layer; sensor detection time is not sufficient.
 - Clean the nozzle and inspect the generated Preview.
 - Use matching material; filament mapping does not rewrite material temperatures or flow behavior.

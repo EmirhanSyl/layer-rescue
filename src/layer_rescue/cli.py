@@ -6,7 +6,7 @@ import sys
 from pathlib import Path
 
 from . import __version__
-from .core import ResumeError, ResumeOptions, analyze_gcode, rewrite_gcode_file
+from .core import ResumeError, ResumeOptions, ZReferenceMode, analyze_gcode, rewrite_gcode_file
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -20,7 +20,21 @@ def _parser() -> argparse.ArgumentParser:
     selection.add_argument("--last-layer", type=int, help="last successfully printed layer")
     parser.add_argument("--gui", action="store_true", help="open the graphical layer selector")
     parser.add_argument("--analyze", action="store_true", help="print source information without modifying it")
-    parser.add_argument("--assume-z-known", action="store_true", help="confirm that printer Z coordinates were retained")
+    parser.add_argument(
+        "--z-mode",
+        choices=[mode.value for mode in ZReferenceMode],
+        help="Z reference: retained after uninterrupted power, or manual after a restart",
+    )
+    parser.add_argument(
+        "--confirm-manual-z-aligned",
+        action="store_true",
+        help="confirm that the nozzle was aligned to touch the last successful layer",
+    )
+    parser.add_argument(
+        "--assume-z-known",
+        action="store_true",
+        help="deprecated alias for --z-mode retained",
+    )
     parser.add_argument("--no-home-corexy", action="store_true", help="do not emit the P1S G28 X CoreXY home")
     parser.add_argument("--no-backup", action="store_true", help="do not create a sibling .bak file")
     parser.add_argument("--nozzle-temp", type=int, help="override detected nozzle temperature")
@@ -65,9 +79,17 @@ def main(argv: list[str] | None = None) -> int:
 
             return launch(path)
 
-        if not args.assume_z_known:
+        if args.assume_z_known and args.z_mode not in {None, ZReferenceMode.RETAINED.value}:
             raise ResumeError(
-                "Batch conversion requires --assume-z-known. Never resume after printer power loss or lost Z position."
+                "--assume-z-known is an alias for --z-mode retained and cannot be combined with manual mode."
+            )
+        z_mode_value = args.z_mode or (ZReferenceMode.RETAINED.value if args.assume_z_known else None)
+        if z_mode_value is None:
+            raise ResumeError("Batch conversion requires --z-mode retained or --z-mode manual.")
+        z_mode = ZReferenceMode(z_mode_value)
+        if z_mode is ZReferenceMode.MANUAL and not args.confirm_manual_z_aligned:
+            raise ResumeError(
+                "Manual mode requires --confirm-manual-z-aligned after the nozzle touches the last successful layer."
             )
 
         start_layer = args.start_layer if args.start_layer is not None else args.last_layer + 1
@@ -75,6 +97,7 @@ def main(argv: list[str] | None = None) -> int:
             path,
             ResumeOptions(
                 start_layer=start_layer,
+                z_reference_mode=z_mode,
                 home_corexy=not args.no_home_corexy,
                 z_lift_mm=args.z_lift,
                 nozzle_temperature=args.nozzle_temp,
@@ -91,6 +114,8 @@ def main(argv: list[str] | None = None) -> int:
                     "start_z": report.start_z,
                     "nozzle_temperature": report.nozzle_temperature,
                     "bed_temperature": report.bed_temperature,
+                    "z_reference_mode": report.z_reference_mode.value,
+                    "reference_z": report.reference_z,
                     "backup": str(report.backup_path) if report.backup_path else None,
                     "output_sha256": report.output_sha256,
                     "warnings": report.warnings,

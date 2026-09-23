@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from .core import ResumeError, ResumeOptions, analyze_gcode, rewrite_gcode_file
+from .core import ResumeError, ResumeOptions, ZReferenceMode, analyze_gcode, rewrite_gcode_file
 
 
 def launch(path: Path) -> int:
@@ -47,8 +47,11 @@ def launch(path: Path) -> int:
     nozzle_var = tk.StringVar()
     bed_var = tk.StringVar()
     home_var = tk.BooleanVar(value=True)
-    powered_var = tk.BooleanVar(value=False)
+    z_mode_var = tk.StringVar(value=ZReferenceMode.RETAINED.value)
+    retained_confirm_var = tk.BooleanVar(value=False)
+    manual_confirm_var = tk.BooleanVar(value=False)
     attached_var = tk.BooleanVar(value=False)
+    mode_help_var = tk.StringVar()
 
     ttk.Label(frame, text="Last successfully printed layer").grid(row=2, column=0, sticky="w", padx=(0, 12), pady=4)
     last_entry = ttk.Entry(frame, width=12, textvariable=last_layer_var)
@@ -58,27 +61,69 @@ def launch(path: Path) -> int:
     ttk.Label(frame, text="Bed °C (blank = detect)").grid(row=4, column=0, sticky="w", padx=(0, 12), pady=4)
     ttk.Entry(frame, width=12, textvariable=bed_var).grid(row=4, column=1, sticky="ew", pady=4)
 
-    ttk.Checkbutton(frame, text="Re-home CoreXY with G28 X (never Z)", variable=home_var).grid(
-        row=5, column=0, columnspan=2, sticky="w", pady=(10, 2)
+    ttk.Label(frame, text="Z reference mode", font=("TkDefaultFont", 10, "bold")).grid(
+        row=5, column=0, columnspan=2, sticky="w", pady=(12, 2)
     )
-    ttk.Checkbutton(
+    ttk.Radiobutton(
         frame,
-        text="The printer stayed powered on and its Z position is still valid",
-        variable=powered_var,
+        text="Printer stayed powered on (retain Z)",
+        variable=z_mode_var,
+        value=ZReferenceMode.RETAINED.value,
     ).grid(row=6, column=0, columnspan=2, sticky="w", pady=2)
+    ttk.Radiobutton(
+        frame,
+        text="Printer was restarted (manual Z reference)",
+        variable=z_mode_var,
+        value=ZReferenceMode.MANUAL.value,
+    ).grid(row=7, column=0, columnspan=2, sticky="w", pady=2)
+
+    home_check = ttk.Checkbutton(frame, text="Re-home CoreXY with G28 X (never Z)", variable=home_var)
+    home_check.grid(row=8, column=0, columnspan=2, sticky="w", pady=(8, 2))
+    retained_check = ttk.Checkbutton(
+        frame,
+        text="The printer never lost power or its Z motor position",
+        variable=retained_confirm_var,
+    )
+    retained_check.grid(row=9, column=0, columnspan=2, sticky="w", pady=2)
+    manual_check = ttk.Checkbutton(
+        frame,
+        text="Before job start, I will align the clean nozzle to touch the last printed layer",
+        variable=manual_confirm_var,
+    )
+    manual_check.grid(row=10, column=0, columnspan=2, sticky="w", pady=2)
     ttk.Checkbutton(
         frame,
         text="The original part is still firmly attached to the same plate",
         variable=attached_var,
-    ).grid(row=7, column=0, columnspan=2, sticky="w", pady=2)
+    ).grid(row=11, column=0, columnspan=2, sticky="w", pady=2)
 
-    warning = (
-        "The tool starts at the layer after the number above. It does not home Z or level the bed. "
-        "Clean the nozzle and inspect the Preview before sending."
+    ttk.Label(frame, textvariable=mode_help_var, wraplength=500, foreground="#9a4d00", justify="left").grid(
+        row=12, column=0, columnspan=2, sticky="w", pady=(12, 14)
     )
-    ttk.Label(frame, text=warning, wraplength=470, foreground="#9a4d00", justify="left").grid(
-        row=8, column=0, columnspan=2, sticky="w", pady=(12, 14)
-    )
+
+    def update_mode() -> None:
+        manual = z_mode_var.get() == ZReferenceMode.MANUAL.value
+        retained_check.configure(state="disabled" if manual else "normal")
+        manual_check.configure(state="normal" if manual else "disabled")
+        if manual:
+            home_var.set(True)
+            home_check.configure(state="disabled")
+            mode_help_var.set(
+                "Restarted mode emits G92 Z before any Z movement. Put the clean nozzle over a flat area of "
+                "the last successful layer and adjust it until it just touches that surface before sending. "
+                "The job then lifts 2 mm and homes CoreXY only. It never homes Z or levels the bed."
+            )
+        else:
+            home_check.configure(state="normal")
+            mode_help_var.set(
+                "Retained mode uses the printer's existing absolute Z coordinate. Use it only when power and "
+                "the Z motor position were preserved. The job never homes Z or levels the bed."
+            )
+
+    for child in frame.winfo_children():
+        if isinstance(child, ttk.Radiobutton):
+            child.configure(command=update_mode)
+    update_mode()
 
     def leave_unchanged() -> None:
         result["code"] = 0
@@ -86,8 +131,13 @@ def launch(path: Path) -> int:
 
     def convert() -> None:
         try:
-            if not powered_var.get() or not attached_var.get():
-                raise ResumeError("Both safety confirmations are required.")
+            z_mode = ZReferenceMode(z_mode_var.get())
+            if not attached_var.get():
+                raise ResumeError("Confirm that the original part is still firmly attached.")
+            if z_mode is ZReferenceMode.RETAINED and not retained_confirm_var.get():
+                raise ResumeError("Retained mode requires confirmation that the printer never lost its Z position.")
+            if z_mode is ZReferenceMode.MANUAL and not manual_confirm_var.get():
+                raise ResumeError("Restarted mode requires the manual nozzle-alignment confirmation.")
             last_layer = int(last_layer_var.get().strip())
             start_layer = last_layer + 1
             nozzle = int(nozzle_var.get()) if nozzle_var.get().strip() else None
@@ -96,10 +146,22 @@ def launch(path: Path) -> int:
                 path,
                 ResumeOptions(
                     start_layer=start_layer,
+                    z_reference_mode=z_mode,
                     home_corexy=home_var.get(),
                     nozzle_temperature=nozzle,
                     bed_temperature=bed,
                 ),
+            )
+            z_summary = (
+                "Retained printer Z coordinate"
+                if report.z_reference_mode is ZReferenceMode.RETAINED
+                else f"Manual reference: nozzle touching Z={report.reference_z:g} mm surface"
+            )
+            manual_reminder = (
+                "\n\nBefore sending: align the clean nozzle so it just touches the top of the last "
+                "successful layer. Do not start unless this is exact."
+                if report.z_reference_mode is ZReferenceMode.MANUAL
+                else ""
             )
             messagebox.showinfo(
                 "Layer Rescue",
@@ -107,9 +169,11 @@ def launch(path: Path) -> int:
                     f"Recovery G-code created.\n\n"
                     f"Starts at layer {report.start_layer}/{report.total_layers}\n"
                     f"Z: {report.start_z:g} mm\n"
+                    f"Z mode: {z_summary}\n"
                     f"Nozzle: {report.nozzle_temperature}°C\n"
                     f"Bed: {report.bed_temperature}°C\n\n"
                     "Inspect Bambu Studio Preview before sending."
+                    f"{manual_reminder}"
                 ),
                 parent=root,
             )
@@ -119,7 +183,7 @@ def launch(path: Path) -> int:
             messagebox.showerror("Layer Rescue", str(exc), parent=root)
 
     buttons = ttk.Frame(frame)
-    buttons.grid(row=9, column=0, columnspan=2, sticky="e")
+    buttons.grid(row=13, column=0, columnspan=2, sticky="e")
     ttk.Button(buttons, text="Leave unchanged", command=leave_unchanged).grid(row=0, column=0, padx=(0, 8))
     ttk.Button(buttons, text="Create recovery G-code", command=convert).grid(row=0, column=1)
 

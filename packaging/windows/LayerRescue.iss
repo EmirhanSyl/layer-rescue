@@ -1,5 +1,5 @@
 #define MyAppName "Layer Rescue"
-#define MyAppVersion "0.1.0"
+#define MyAppVersion "0.2.0"
 #define MyAppPublisher "Layer Rescue contributors"
 #define MyAppExeName "LayerRescue.exe"
 
@@ -63,27 +63,54 @@ Root: HKCU; \
     Flags: uninsdeletekey
 
 [Code]
-procedure CurStepChanged(CurStep: TSetupStep);
+var
+  BambuCommandLabel: TNewStaticText;
+  BambuCommandEdit: TNewEdit;
+
+procedure InitializeWizard;
+begin
+  BambuCommandLabel := TNewStaticText.Create(WizardForm);
+  BambuCommandLabel.Parent := WizardForm.FinishedPage;
+  BambuCommandLabel.Left := WizardForm.FinishedLabel.Left;
+  BambuCommandLabel.Top :=
+    WizardForm.FinishedLabel.Top +
+    WizardForm.FinishedLabel.Height +
+    ScaleY(16);
+  BambuCommandLabel.Width :=
+    WizardForm.FinishedPage.ClientWidth -
+    BambuCommandLabel.Left -
+    ScaleX(8);
+  BambuCommandLabel.Height := ScaleY(32);
+  BambuCommandLabel.AutoSize := False;
+  BambuCommandLabel.WordWrap := True;
+  BambuCommandLabel.Caption :=
+    'Bambu Studio Post-processing Scripts alanına şu komutu ekleyin:';
+
+  BambuCommandEdit := TNewEdit.Create(WizardForm);
+  BambuCommandEdit.Parent := WizardForm.FinishedPage;
+  BambuCommandEdit.Left := BambuCommandLabel.Left;
+  BambuCommandEdit.Top :=
+    BambuCommandLabel.Top +
+    BambuCommandLabel.Height +
+    ScaleY(4);
+  BambuCommandEdit.Width := BambuCommandLabel.Width;
+  BambuCommandEdit.ReadOnly := True;
+  BambuCommandEdit.AutoSelect := True;
+  BambuCommandEdit.HideSelection := False;
+end;
+
+procedure CurPageChanged(CurPageID: Integer);
 var
   ExePath: String;
-  BambuCommand: String;
-  MessageText: String;
 begin
-  if CurStep = ssPostInstall then
+  if CurPageID = wpFinished then
   begin
-    ExePath := ExpandConstant('{app}\LayerRescue.exe');
-    BambuCommand := Chr(34) + ExePath + Chr(34);
+    ExePath := ExpandConstant('{app}\{#MyAppExeName}');
 
-    MessageText :=
-      'Bambu Studio Post-processing Scripts alanına şu komutu ekleyin:' +
-      Chr(13) + Chr(10) +
-      Chr(13) + Chr(10) +
-      BambuCommand;
+    BambuCommandEdit.Text :=
+      Chr(34) + ExePath + Chr(34);
 
-    MsgBox(
-      MessageText,
-      mbInformation,
-      MB_OK
-    );
+    WizardForm.ActiveControl := BambuCommandEdit;
+    BambuCommandEdit.SelectAll;
   end;
 end;

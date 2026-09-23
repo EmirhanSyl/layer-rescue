@@ -4,7 +4,14 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from layer_rescue.core import ResumeError, ResumeOptions, analyze_gcode, build_resume_gcode, rewrite_gcode_file
+from layer_rescue.core import (
+    ResumeError,
+    ResumeOptions,
+    ZReferenceMode,
+    analyze_gcode,
+    build_resume_gcode,
+    rewrite_gcode_file,
+)
 
 
 def sample_gcode(*, printer: str = "Bambu Lab P1S", second_tool: bool = False, absolute_e: bool = False) -> str:
@@ -97,6 +104,43 @@ class BuildTests(unittest.TestCase):
         self.assertIn("G28 X", active)
         self.assertFalse(any(line == "G28" or line.startswith("G28 Z") for line in active))
         self.assertFalse(any(line.startswith("G29") for line in active))
+
+    def test_retained_mode_does_not_rewrite_z_coordinate(self) -> None:
+        output, report = build_resume_gcode(sample_gcode(), ResumeOptions(start_layer=3))
+        active = [line.split(";", 1)[0].strip() for line in output.splitlines()]
+        self.assertEqual(report.z_reference_mode, ZReferenceMode.RETAINED)
+        self.assertIsNone(report.reference_z)
+        self.assertFalse(any(line.startswith("G92 Z") for line in active))
+
+    def test_manual_mode_assigns_previous_layer_z_before_any_z_move(self) -> None:
+        output, report = build_resume_gcode(
+            sample_gcode(),
+            ResumeOptions(start_layer=3, z_reference_mode=ZReferenceMode.MANUAL),
+        )
+        preamble = output.split("; LAYER_RESCUE_BLOCK_END", 1)[0]
+        active = [line.split(";", 1)[0].strip() for line in preamble.splitlines()]
+        assignment_index = active.index("G92 Z0.4")
+        first_z_move = next(
+            index
+            for index, line in enumerate(active)
+            if line.startswith(("G0 Z", "G1 Z"))
+        )
+        self.assertEqual(report.z_reference_mode, ZReferenceMode.MANUAL)
+        self.assertEqual(report.reference_z, 0.4)
+        self.assertLess(assignment_index, first_z_move)
+        self.assertIn("G28 X", active)
+        self.assertFalse(any(line == "G28" or line.startswith("G28 Z") for line in active))
+
+    def test_manual_mode_requires_corexy_home(self) -> None:
+        with self.assertRaisesRegex(ResumeError, "requires CoreXY homing"):
+            build_resume_gcode(
+                sample_gcode(),
+                ResumeOptions(
+                    start_layer=3,
+                    z_reference_mode=ZReferenceMode.MANUAL,
+                    home_corexy=False,
+                ),
+            )
 
     def test_reasserts_overridden_temperature_after_t1000(self) -> None:
         output, report = build_resume_gcode(

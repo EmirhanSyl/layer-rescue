@@ -3,7 +3,7 @@
 Layer Rescue, yarım kalan Bambu Lab P1S baskılarını seçilen katmandan devam ettirmek için deneysel ve tedbirli bir G-code son işlem aracıdır. Bambu Studio'nun **Post-processing Scripts** özelliğine bağlanır; böylece filament eşlemesi ve `.gcode.3mf` metadatası Studio tarafından korunur, değiştirilmiş takım yolu Preview ekranında yeniden okunur.
 
 > [!CAUTION]
-> Yarım baskıyı devam ettirmek nozzle'ın mevcut parçaya çarpmasına yol açabilir. Yazıcı Z konumunu kaybettiyse aracı kesinlikle kullanmayın.
+> Yarım baskıyı devam ettirmek nozzle'ın mevcut parçaya çarpmasına yol açabilir. Yeniden başlatılmış yazıcı modu hassas manuel Z hizalaması ve başlangıcın sürekli gözetimini gerektirir.
 
 ## İlk sürümün kapsamı
 
@@ -11,10 +11,31 @@ Layer Rescue, yarım kalan Bambu Lab P1S baskılarını seçilen katmandan devam
 - Tek mantıksal filament (`T0`)
 - Katman bazlı baskı
 - Göreli ekstrüzyon (`M83`)
-- Yazıcı açık kalmış ve Z koordinatı korunmuş olmalı
+- Yazıcı açık kaldığında korunan-Z modu
+- Yazıcı yeniden başlatıldığında, ilk Z hareketinden önce `G92 Z` kullanan manuel referans modu
 - Parça aynı plakada sağlam biçimde durmalı
 
-Henüz desteklenmeyenler: çok filamentli/AMS geçişli işler, nesne bazlı sıralı baskı, spiral vase, Z konumunun kaybolduğu durumlar, diğer yazıcı modelleri ve `.gcode.3mf` dosyasını doğrudan düzenleme.
+Henüz desteklenmeyenler: çok filamentli/AMS geçişli işler, nesne bazlı sıralı baskı, spiral vase, gözetimsiz kurtarma, diğer yazıcı modelleri ve `.gcode.3mf` dosyasını doğrudan düzenleme.
+
+## Z referans modları
+
+### Yazıcı açık kaldı (`retained`)
+
+Yalnızca yazıcı hiç kapanmadıysa ve Z motorları konum kaybetmediyse kullanılmalıdır. Araç yazıcının mevcut mantıksal Z koordinatını korur, 2 mm göreli güvenlik boşluğu açar ve isteğe bağlı olarak `G28 X` ile CoreXY referanslaması yapar.
+
+### Yazıcı yeniden başlatıldı (`manual`)
+
+Güç döngüsünden sonra tablanın fiziksel konumu ile firmware'in mantıksal Z koordinatı aynı olmayabilir. Kurtarma işini göndermeden önce:
+
+1. nozulu temizleyin;
+2. nozulu son başarılı katmanın gerçekten basılmış, düz bir bölgesinin üzerine getirin;
+3. Z'yi, nozul yüzeye yalnızca temas edene kadar ayarlayın;
+4. parçayı ve plakayı yerinden oynatmayın;
+5. **Yazıcı yeniden başlatıldı (manuel Z referansı)** modunu seçip hizalamayı onaylayın.
+
+Üretilen iş, bu fiziksel konuma `G92 Z...` ile bir önceki katmanın slicer'daki bilinen yüksekliğini atar. Bu komut bütün Z hareketlerinden önce yazılır. Ardından göreli güvenlik kaldırması yapılır, yalnızca CoreXY home edilir ve sonraki katmanın mutlak Z yüksekliğine gidilir.
+
+Manuel mod hiçbir zaman `G28 Z` çalıştırmaz. Tabla üzerinde yarım parça varken Z home yapmak parçayı gantriye kaldırabilir. Manuel modda `G28 X` zorunludur; `--no-home-corexy` ile birlikte kullanılamaz.
 
 ## Kurulum
 
@@ -38,11 +59,19 @@ Studio, çalıştırılabilir bir komut olduğu için güvenlik uyarısı göste
 
 ## Komut satırı örneği
 
+Yazıcı açık kaldıysa:
+
 ```bash
-layer-rescue --last-layer 461 --assume-z-known --nozzle-temp 220 print.gcode
+layer-rescue --last-layer 461 --z-mode retained --nozzle-temp 220 print.gcode
 ```
 
-`--assume-z-known` seçeneğinin zorunlu olması bilinçli bir güvenlik önlemidir.
+Yazıcı yeniden başlatıldıysa ve nozul 461. katmanın yüzeyine elle hizalandıysa:
+
+```bash
+layer-rescue --last-layer 461 --z-mode manual --confirm-manual-z-aligned --nozzle-temp 220 print.gcode
+```
+
+Eski `--assume-z-known` seçeneği, geriye uyumluluk için `--z-mode retained` takma adı olarak kalır.
 
 ## Kritik ayrım
 

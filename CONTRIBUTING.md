@@ -6,6 +6,7 @@ Safety is more important than convenience. A change that supports more inputs mu
 
 - Add tests for every parser or preamble change.
 - Never introduce Z homing or bed leveling into recovery output.
+- In manual-reference mode, keep the single `G92 Z` assignment before every Z movement and derive it only from the preceding contiguous layer.
 - Preserve the final `M109` after tool/AMS selection.
 - Reject an unknown state instead of guessing.
 - Keep printer-specific templates explicit.
