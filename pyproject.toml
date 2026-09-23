@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "layer-rescue"
+version = "0.1.0"
+description = "Conservative layer-resume G-code post-processor for interrupted Bambu Lab P1S prints"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+authors = [{name = "Layer Rescue contributors"}]
+keywords = ["3d-printing", "gcode", "bambu-studio", "print-recovery"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Topic :: Multimedia :: Graphics :: 3D Modeling",
+]
+dependencies = []
+
+[project.scripts]
+layer-rescue = "layer_rescue.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]

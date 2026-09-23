@@ -1,0 +1,136 @@
+from __future__ import annotations
+
+import tempfile
+import unittest
+from pathlib import Path
+
+from layer_rescue.core import ResumeError, ResumeOptions, analyze_gcode, build_resume_gcode, rewrite_gcode_file
+
+
+def sample_gcode(*, printer: str = "Bambu Lab P1S", second_tool: bool = False, absolute_e: bool = False) -> str:
+    tool_change = "\nM620 S1A\nT1\nM621 S1A" if second_tool else ""
+    e_mode = "M82" if absolute_e else "M83"
+    return f"""; HEADER_BLOCK_START
+; BambuStudio test
+; total layer number: 4
+; HEADER_BLOCK_END
+; CONFIG_BLOCK_START
+; printer_model = {printer}
+; filament_type = PLA
+; print_sequence = By layer
+; spiral_mode = 0
+; nozzle_temperature = 220
+; textured_plate_temp = 55
+; CONFIG_BLOCK_END
+; EXECUTABLE_BLOCK_START
+M201 X20000 Y20000 Z500 E5000
+M203 X500 Y500 Z20 E30
+M205 X9 Y9 Z3 E2.5
+M140 S55
+M104 S220
+G90
+{e_mode}
+M220 S100
+M221 S100
+G28 X
+M620 M
+M620 S0A
+M190 S55
+M109 S220
+T0
+M621 S0A
+M620.1 E F150 T250
+T1000
+M109 S220
+M106 S128
+; CHANGE_LAYER
+; Z_HEIGHT: 0.2
+; LAYER_HEIGHT: 0.2
+G1 X10 Y10 Z0.2 F12000
+; layer num/total_layer_count: 1/4
+G1 X20 E1
+; CHANGE_LAYER
+; Z_HEIGHT: 0.4
+; LAYER_HEIGHT: 0.2
+G1 Z0.4
+; layer num/total_layer_count: 2/4
+G1 X30 E1{tool_change}
+; CHANGE_LAYER
+; Z_HEIGHT: 0.6
+; LAYER_HEIGHT: 0.2
+G1 Z0.6
+; layer num/total_layer_count: 3/4
+G1 X40 E1
+; CHANGE_LAYER
+; Z_HEIGHT: 0.8
+; LAYER_HEIGHT: 0.2
+G1 Z0.8
+; layer num/total_layer_count: 4/4
+G1 X50 E1
+M104 S0
+M140 S0
+; EXECUTABLE_BLOCK_END
+"""
+
+
+class AnalyzeTests(unittest.TestCase):
+    def test_detects_layers_and_z(self) -> None:
+        analysis = analyze_gcode(sample_gcode())
+        self.assertEqual(analysis.printer_model, "Bambu Lab P1S")
+        self.assertEqual(analysis.total_layers, 4)
+        self.assertEqual([layer.number for layer in analysis.layers], [1, 2, 3, 4])
+        self.assertEqual(analysis.layer(3).z, 0.6)
+
+
+class BuildTests(unittest.TestCase):
+    def test_retains_selected_layer_through_end(self) -> None:
+        output, report = build_resume_gcode(sample_gcode(), ResumeOptions(start_layer=3))
+        self.assertEqual(report.start_layer, 3)
+        self.assertEqual(report.retained_layers, 2)
+        self.assertNotIn("layer num/total_layer_count: 2/4", output)
+        self.assertIn("layer num/total_layer_count: 3/4", output)
+        self.assertIn("layer num/total_layer_count: 4/4", output)
+
+    def test_never_emits_z_home_or_bed_leveling(self) -> None:
+        output, _ = build_resume_gcode(sample_gcode(), ResumeOptions(start_layer=3))
+        active = [line.split(";", 1)[0].strip() for line in output.splitlines()]
+        self.assertIn("G28 X", active)
+        self.assertFalse(any(line == "G28" or line.startswith("G28 Z") for line in active))
+        self.assertFalse(any(line.startswith("G29") for line in active))
+
+    def test_reasserts_overridden_temperature_after_t1000(self) -> None:
+        output, report = build_resume_gcode(
+            sample_gcode(),
+            ResumeOptions(start_layer=3, nozzle_temperature=225),
+        )
+        preamble = output.split("; LAYER_RESCUE_BLOCK_END", 1)[0]
+        self.assertEqual(report.nozzle_temperature, 225)
+        self.assertGreater(preamble.rfind("M109 S225"), preamble.rfind("T1000"))
+
+    def test_rejects_absolute_extrusion(self) -> None:
+        with self.assertRaisesRegex(ResumeError, "relative extrusion"):
+            build_resume_gcode(sample_gcode(absolute_e=True), ResumeOptions(start_layer=3))
+
+    def test_rejects_multi_filament(self) -> None:
+        with self.assertRaisesRegex(ResumeError, "multi-filament"):
+            build_resume_gcode(sample_gcode(second_tool=True), ResumeOptions(start_layer=3))
+
+    def test_rejects_other_printer_for_mvp(self) -> None:
+        with self.assertRaisesRegex(ResumeError, "only Bambu Lab P1S"):
+            build_resume_gcode(sample_gcode(printer="Bambu Lab X1C"), ResumeOptions(start_layer=3))
+
+
+class RewriteTests(unittest.TestCase):
+    def test_atomic_rewrite_and_backup(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            path = Path(temp_dir) / "job.gcode"
+            original = sample_gcode()
+            path.write_text(original, encoding="utf-8")
+            report = rewrite_gcode_file(path, ResumeOptions(start_layer=3))
+            self.assertIsNotNone(report.backup_path)
+            self.assertEqual(report.backup_path.read_text(encoding="utf-8"), original)
+            self.assertIn("; LAYER_RESCUE_BLOCK_START", path.read_text(encoding="utf-8"))
+
+
+if __name__ == "__main__":
+    unittest.main()
