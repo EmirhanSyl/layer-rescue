@@ -151,6 +151,48 @@ class BuildTests(unittest.TestCase):
         self.assertEqual(report.nozzle_temperature, 225)
         self.assertGreater(preamble.rfind("M109 S225"), preamble.rfind("T1000"))
 
+    def test_relative_extrusion_is_reselected_after_every_g90(self) -> None:
+        # Bambu firmware switches E to absolute on G90; M83 must follow the last G90.
+        output, _ = build_resume_gcode(sample_gcode(), ResumeOptions(start_layer=3))
+        preamble = output.split("; LAYER_RESCUE_BLOCK_END", 1)[0]
+        active = [line.split(";", 1)[0].strip() for line in preamble.splitlines()]
+        active = [line for line in active if line]
+        last_g90 = max(index for index, line in enumerate(active) if line == "G90")
+        last_m83 = max(index for index, line in enumerate(active) if line == "M83")
+        self.assertGreater(last_m83, last_g90)
+        first_extrusion = next(
+            index for index, line in enumerate(active) if line.startswith("G1") and " E" in f" {line}"
+        )
+        self.assertGreater(first_extrusion, last_g90)
+        self.assertLess(
+            max(index for index, line in enumerate(active[:first_extrusion]) if line == "M83"),
+            first_extrusion,
+        )
+
+    def test_purges_before_returning_to_part(self) -> None:
+        output, _ = build_resume_gcode(sample_gcode(), ResumeOptions(start_layer=3))
+        preamble = output.split("; LAYER_RESCUE_BLOCK_END", 1)[0]
+        self.assertIn("G1 E30 F200", preamble)
+        self.assertLess(preamble.find("G1 E30 F200"), preamble.find("G1 Z0.6"))
+
+    def test_purge_can_be_disabled(self) -> None:
+        output, _ = build_resume_gcode(sample_gcode(), ResumeOptions(start_layer=3, purge_length_mm=0))
+        preamble = output.split("; LAYER_RESCUE_BLOCK_END", 1)[0]
+        self.assertNotIn("F200", preamble)
+
+    def test_travels_to_layer_start_before_descending(self) -> None:
+        source = sample_gcode().replace("G1 Z0.6\n", "G1 X12 Y34 Z0.6\n", 1)
+        output, _ = build_resume_gcode(source, ResumeOptions(start_layer=3))
+        preamble = output.split("; LAYER_RESCUE_BLOCK_END", 1)[0]
+        travel = preamble.find("G1 X12 Y34 F12000")
+        self.assertGreaterEqual(travel, 0)
+        self.assertLess(travel, preamble.rfind("G1 Z0.6"))
+
+    def test_g90_after_m83_in_source_counts_as_absolute(self) -> None:
+        source = sample_gcode().replace("M106 S128\n", "M106 S128\nG90\n", 1)
+        with self.assertRaisesRegex(ResumeError, "relative extrusion"):
+            build_resume_gcode(source, ResumeOptions(start_layer=3))
+
     def test_rejects_absolute_extrusion(self) -> None:
         with self.assertRaisesRegex(ResumeError, "relative extrusion"):
             build_resume_gcode(sample_gcode(absolute_e=True), ResumeOptions(start_layer=3))

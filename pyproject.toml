@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "layer-rescue"
-version = "0.2.0"
+version = "0.2.1"
 description = "Conservative layer-resume G-code post-processor for interrupted Bambu Lab P1S prints"
 readme = "README.md"
 requires-python = ">=3.10"
