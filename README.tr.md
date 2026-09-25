@@ -12,7 +12,7 @@ Layer Rescue, yarım kalan Bambu Lab P1S baskılarını seçilen katmandan devam
 - Katman bazlı baskı
 - Göreli ekstrüzyon (`M83`)
 - Yazıcı açık kaldığında korunan-Z modu
-- Yazıcı yeniden başlatıldığında, ilk Z hareketinden önce `G92 Z` kullanan manuel referans modu
+- Yazıcı yeniden başlatıldığında, hizalanmış nozzle konumundan yalnızca göreli Z hareketleri kullanan manuel referans modu
 - Parça aynı plakada sağlam biçimde durmalı
 
 Henüz desteklenmeyenler: çok filamentli/AMS geçişli işler, nesne bazlı sıralı baskı, spiral vase, gözetimsiz kurtarma, diğer yazıcı modelleri ve `.gcode.3mf` dosyasını doğrudan düzenleme.
@@ -33,7 +33,9 @@ Güç döngüsünden sonra tablanın fiziksel konumu ile firmware'in mantıksal 
 4. parçayı ve plakayı yerinden oynatmayın;
 5. **Yazıcı yeniden başlatıldı (manuel Z referansı)** modunu seçip hizalamayı onaylayın.
 
-Üretilen iş, bu fiziksel konuma `G92 Z...` ile bir önceki katmanın slicer'daki bilinen yüksekliğini atar. Bu komut bütün Z hareketlerinden önce yazılır. Ardından göreli güvenlik kaldırması yapılır, yalnızca CoreXY home edilir ve sonraki katmanın mutlak Z yüksekliğine gidilir.
+Yazıcı kapatılıp açıldıktan sonra P1S Z eksenini home etmemiştir, bu yüzden mutlak Z koordinatına güvenilemez. Bu modda tek referans hizalanmış nozzle konumudur: iş, stok P1S başlangıç G-code'unda olduğu gibi yazılımsal sınırları (soft endstop) kapatır ve başlangıç bloğundaki ve korunan katmanlardaki **bütün** Z hareketlerini göreli harekete çevirir (`G91` / `G1 Z±Δ` / `G90` / `M83`). Layer Rescue slicer'ın mutlak Z değerini takip eder ve yalnızca farkları yazar; böylece firmware kendini hangi Z'de sanırsa sansın nozzle dilimlenen yüksekliklerin aynısını izler. Hem yer değiştiren hem Z değiştiren hareketlerde kalkış yer değiştirmeden önce, iniş ise sonra yapılır. Okunabilirlik için bir önceki katman yüksekliğiyle bir `G92 Z...` yine yazılır, ancak iş artık buna bağlı değildir.
+
+Koşullu firmware blokları (`M620`/`M621`, `M622`/`M623`, `M624`/`M625`) çalışabilir ya da atlanabilir; bu yüzden böyle bir blok Z'yi değiştirip giriş yüksekliğine geri dönmüyorsa kaynak reddedilir. Z'yi değiştiren ekstrüzyon hareketleri de reddedilir.
 
 Manuel mod hiçbir zaman `G28 Z` çalıştırmaz. Tabla üzerinde yarım parça varken Z home yapmak parçayı gantriye kaldırabilir. Manuel modda `G28 X` zorunludur; `--no-home-corexy` ile birlikte kullanılamaz.
 

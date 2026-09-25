@@ -13,7 +13,7 @@ Layer Rescue is an experimental, conservative G-code post-processor for resuming
 - Relative extrusion (`M83`)
 - Bambu Studio G-code with layer and Z markers
 - Retained-Z mode when the printer stayed powered on
-- Manual-reference mode after a restart, using `G92 Z` before any Z movement
+- Manual-reference mode after a restart, using only relative Z moves from the aligned nozzle position
 - Original part is still firmly attached to the unchanged build plate
 
 Not yet supported: multi-filament/AMS tool changes, by-object printing, spiral vase, unattended recovery, other printer models, or direct `.gcode.3mf` editing.
@@ -34,7 +34,9 @@ After a restart, the physical bed position and the firmware's logical Z coordina
 4. keep the part and plate fixed;
 5. choose **Printer was restarted (manual Z reference)** and confirm the alignment.
 
-The generated job assigns that physical position to the preceding layer's known slicer height with `G92 Z...`. This assignment is emitted before every Z move. The job then makes a relative safety lift, homes CoreXY only, and later approaches the next layer's absolute Z.
+After a power cycle the P1S has not homed Z, so its absolute Z coordinate cannot be trusted. In this mode the aligned nozzle position is the only reference: the job turns off the soft endstops (as the stock P1S start G-code does), and **every** Z move in the preamble and in the retained layers is rewritten as a relative move (`G91` / `G1 Z±Δ` / `G90` / `M83`). Layer Rescue tracks the slicer's absolute Z and emits only the differences, so the nozzle follows the sliced heights exactly regardless of what Z the firmware believes it is at. When a move both travels and changes Z, the lift happens before the travel and the descent after it. A nominal `G92 Z...` with the preceding layer height is still emitted first for readability; the job no longer depends on it.
+
+Conditional firmware blocks (`M620`/`M621`, `M622`/`M623`, `M624`/`M625`) may or may not run, so restarted mode refuses sources in which such a block changes Z without returning to its entry height. Extruding moves that also change Z are refused as well.
 
 Manual mode never runs `G28 Z`. Homing Z with an unfinished part on the plate can lift the object into the gantry. Manual mode requires `G28 X` and cannot be combined with `--no-home-corexy`.
 
@@ -105,7 +107,7 @@ The tool validates that:
 - retained layers are contiguous through the original end;
 - no active `G29` command remains;
 - no bare or Z-axis `G28` command remains;
-- manual mode emits exactly one `G92 Z`, with the preceding layer height, before every Z movement;
+- manual mode emits exactly one `G92 Z`, with the preceding layer height, before every Z movement, and every Z move in the output is relative (`G91`);
 - retained mode emits no `G92 Z` assignment;
 - the print temperature is reasserted after `T1000`;
 - the source uses a supported printer, print sequence, tool count, and extrusion mode.

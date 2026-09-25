@@ -1,5 +1,5 @@
 #define MyAppName "Layer Rescue"
-#define MyAppVersion "0.2.0"
+#define MyAppVersion "0.2.2"
 #define MyAppPublisher "Layer Rescue contributors"
 #define MyAppExeName "LayerRescue.exe"
 

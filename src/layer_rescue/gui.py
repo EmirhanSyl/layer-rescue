@@ -109,9 +109,10 @@ def launch(path: Path) -> int:
             home_var.set(True)
             home_check.configure(state="disabled")
             mode_help_var.set(
-                "Restarted mode emits G92 Z before any Z movement. Put the clean nozzle over a flat area of "
-                "the last successful layer and adjust it until it just touches that surface before sending. "
-                "The job then lifts 2 mm and homes CoreXY only. It never homes Z or levels the bed."
+                "Put the clean nozzle over a flat area of the last successful layer and adjust it until it "
+                "just touches that surface before sending. Every Z move in the job is relative to that "
+                "position, so it does not depend on the printer's Z coordinate after a restart. The job "
+                "lifts 2 mm and homes CoreXY only. It never homes Z or levels the bed."
             )
         else:
             home_check.configure(state="normal")

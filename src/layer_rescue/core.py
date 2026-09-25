@@ -431,6 +431,112 @@ def _retraction_length(analysis: Analysis) -> float:
     return min(max(length, 0.0), 5.0)
 
 
+Z_DECIMALS = 4
+_BLOCK_OPENERS = {"M620": "M621", "M622": "M623", "M624": "M625"}
+
+
+def _format_z_delta(value: float) -> str:
+    text = f"{value:.{Z_DECIMALS}f}".rstrip("0").rstrip(".")
+    return "0" if text in {"", "-0"} else text
+
+
+def _relative_z_move(delta: float, feed: str | None, note: str | None = None) -> list[str]:
+    """Emit a Z-only move relative to the current physical position (Bambu: G90 resets E, so M83 follows)."""
+    move = f"G1 Z{_format_z_delta(delta)}"
+    if feed:
+        move += f" {feed}"
+    if note:
+        move += f" ; {note}"
+    return ["G91", move, "G90", "M83"]
+
+
+def _relativize_z(body: list[str], start_z: float) -> list[str]:
+    """Rewrite every absolute Z move in ``body`` as a relative move.
+
+    After a power cycle the P1S has not homed Z, and its absolute Z coordinate cannot be trusted
+    (an unhomed axis, soft limits and ``G92`` handling are firmware-specific). The operator aligns
+    the nozzle physically, so the only reliable reference is that physical position. Tracking the
+    slicer's absolute Z and emitting only differences keeps the nozzle exactly where the slicer
+    intended, whatever the firmware believes its absolute Z to be.
+    """
+    output: list[str] = []
+    positioning = "G90"
+    nominal_z = start_z  # where the slicer believes the nozzle is
+    emitted_z = start_z  # where the emitted relative moves put the nozzle (after rounding)
+    blocks: list[tuple[str, float, int]] = []
+
+    for index, raw_line in enumerate(body):
+        code = _code(raw_line)
+        command = _command(code)
+        if command is None:
+            output.append(raw_line)
+            continue
+
+        if command in _BLOCK_OPENERS and re.search(r"(?:^|\s)[SJ]?\d", code[len(command):]):
+            blocks.append((_BLOCK_OPENERS[command], emitted_z, index))
+        elif blocks and command == blocks[-1][0]:
+            _, entry_z, opened_at = blocks.pop()
+            if abs(entry_z - emitted_z) > 1e-6:
+                raise ResumeError(
+                    "Restarted mode cannot convert a conditional firmware block that changes Z "
+                    f"(source body lines {opened_at + 1}-{index + 1}); the result would depend on whether "
+                    "the printer executes it."
+                )
+
+        if command == "G92" and _parameter(code, "Z") is not None:
+            raise ResumeError("Restarted mode cannot convert a source that reassigns Z with G92.")
+        if command in {"G90", "G91"}:
+            positioning = command
+            output.append(raw_line)
+            continue
+        if command not in {"G0", "G1", "G2", "G3"}:
+            output.append(raw_line)
+            continue
+
+        z_value = _parameter(code, "Z")
+        if z_value is None:
+            output.append(raw_line)
+            continue
+        if positioning == "G91":
+            nominal_z += z_value
+            emitted_z += z_value
+            output.append(raw_line)
+            continue
+
+        e_value = _parameter(code, "E")
+        if e_value is not None and e_value > 0:
+            raise ResumeError(
+                f"Restarted mode cannot convert an extruding move that also changes Z: {code}"
+            )
+
+        nominal_z = z_value
+        delta = round(nominal_z - emitted_z, Z_DECIMALS)
+        emitted_z += delta
+
+        tokens = code.split()
+        rest_tokens = [tokens[0]] + [token for token in tokens[1:] if not token.upper().startswith("Z")]
+        feed = next((token for token in rest_tokens[1:] if token.upper().startswith("F")), None)
+        has_xy = any(token[:1].upper() in {"X", "Y"} for token in rest_tokens[1:])
+        has_e = any(token[:1].upper() == "E" for token in rest_tokens[1:])
+        is_arc = command in {"G2", "G3"}
+        comment = raw_line.split(";", 1)[1].strip() if ";" in raw_line else ""
+
+        planar: list[str] = []
+        if has_xy or (has_e and not is_arc):
+            planar = [" ".join(rest_tokens) + (f" ; {comment}" if comment else "")]
+        elif feed:
+            # Keep the modal feedrate the original move would have set.
+            planar = [f"G1 {feed}"]
+
+        z_lines = _relative_z_move(delta, feed, f"abs Z{_format_number(nominal_z)}") if delta else []
+        # Rising: lift first, then move. Descending: move first, then lower (never drag across the part).
+        output.extend(z_lines + planar if delta > 0 else planar + z_lines)
+
+    if blocks:
+        raise ResumeError("Restarted mode found an unterminated conditional firmware block.")
+    return output
+
+
 def _resume_preamble(
     analysis: Analysis,
     layer: LayerInfo,
@@ -463,12 +569,12 @@ def _resume_preamble(
         if mode is ZReferenceMode.RETAINED
         else (
             "before job start, the nozzle must just touch the top of the last successful layer; "
-            "G92 assigns that position without Z homing."
+            "all Z moves are relative to that position; Z is never homed."
         )
     )
     lines = [
         "; LAYER_RESCUE_BLOCK_START",
-        "; Generated by Layer Rescue 0.2.1",
+        "; Generated by Layer Rescue 0.2.2",
         f"; Resume at layer {layer.number}/{layer.total}, Z={_format_number(layer.z)} mm",
         f"; Z reference mode: {mode.value}",
         f"; SAFETY: {safety_note}",
@@ -490,8 +596,15 @@ def _resume_preamble(
     )
     if mode is ZReferenceMode.MANUAL:
         assert reference_z is not None
-        lines.append(
-            f"G92 Z{_format_number(reference_z)} ; assign manually aligned last-layer surface as absolute Z"
+        lines.extend(
+            [
+                # Same as the stock P1S start G-code: after a power cycle Z is not homed, so the
+                # firmware's soft limits must not clamp or reinterpret Z moves.
+                "M221 X0 Y0 Z0 ; turn off soft endstops (stock P1S start behaviour for an unhomed Z)",
+                f"G92 Z{_format_number(reference_z)} ; nominal Z of the aligned last-layer surface",
+                "; Restarted mode: every Z move below is relative to the aligned nozzle position,",
+                "; so the job does not depend on the firmware's absolute Z after a power cycle.",
+            ]
         )
     lines.extend(
         [
@@ -576,7 +689,12 @@ def _resume_preamble(
         approach_note = "descend onto the recovered layer start"
     else:
         approach_note = "approach the recovered layer at the rear station"
-    lines.append(f"G1 Z{_format_number(layer.z)} F600 ; {approach_note}")
+    if mode is ZReferenceMode.MANUAL:
+        assert reference_z is not None
+        approach = layer.z - (reference_z + options.z_lift_mm)
+        lines.extend(_relative_z_move(approach, "F600", approach_note))
+    else:
+        lines.append(f"G1 Z{_format_number(layer.z)} F600 ; {approach_note}")
     if options.purge_length_mm > 0 and retract > 0:
         lines.append(f"G1 E{_format_number(retract)} F1800 ; undo the post-purge retraction")
     lines.extend(
@@ -640,6 +758,7 @@ def _validate_output(
         raise ResumeError("Internal validation failed: retained-Z mode must not rewrite the Z coordinate.")
 
     extrusion_mode: str | None = None
+    positioning: str | None = None
     executable = False
     for line_number, raw_line in enumerate(text.splitlines(), 1):
         if raw_line.strip().upper() == "; EXECUTABLE_BLOCK_START":
@@ -649,6 +768,18 @@ def _validate_output(
             continue
         command = _command(code)
         extrusion_mode = _next_extrusion_mode(command, extrusion_mode)
+        if command in {"G90", "G91"}:
+            positioning = command
+        if (
+            z_reference_mode is ZReferenceMode.MANUAL
+            and command in {"G0", "G1", "G2", "G3"}
+            and _parameter(code, "Z") is not None
+            and positioning != "G91"
+        ):
+            raise ResumeError(
+                f"Internal validation failed: restarted mode emitted an absolute Z move at output line "
+                f"{line_number}: {code}"
+            )
         if command in {"G0", "G1", "G2", "G3"} and _parameter(code, "E") is not None and extrusion_mode != "M83":
             raise ResumeError(
                 f"Internal validation failed: extrusion at output line {line_number} would run in absolute "
@@ -677,6 +808,8 @@ def build_resume_gcode(text: str, options: ResumeOptions) -> tuple[str, ResumeRe
 
     prefix = list(analysis.lines[: analysis.config_end_line + 1])
     body = list(analysis.lines[layer.change_line :])
+    if mode is ZReferenceMode.MANUAL:
+        body = _relativize_z(body, layer.z)
     output_lines = prefix + ["", "; EXECUTABLE_BLOCK_START"] + preamble + body
     output = analysis.newline.join(output_lines) + analysis.newline
     _validate_output(output, options.start_layer, analysis.total_layers, mode, reference_z)

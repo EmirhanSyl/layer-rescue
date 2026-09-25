@@ -131,6 +131,67 @@ class BuildTests(unittest.TestCase):
         self.assertIn("G28 X", active)
         self.assertFalse(any(line == "G28" or line.startswith("G28 Z") for line in active))
 
+    def test_manual_mode_emits_only_relative_z_moves(self) -> None:
+        output, _ = build_resume_gcode(
+            sample_gcode(),
+            ResumeOptions(start_layer=3, z_reference_mode=ZReferenceMode.MANUAL),
+        )
+        body = output.split("; EXECUTABLE_BLOCK_START", 1)[1]
+        positioning = "G90"
+        for raw in body.splitlines():
+            code = raw.split(";", 1)[0].strip()
+            if code in {"G90", "G91"}:
+                positioning = code
+            elif code.startswith(("G0 ", "G1 ", "G2 ", "G3 ")) and " Z" in f" {code}":
+                self.assertEqual(positioning, "G91", code)
+        self.assertIn("M221 X0 Y0 Z0", output)
+
+    def test_manual_mode_z_path_does_not_depend_on_firmware_z(self) -> None:
+        output, _ = build_resume_gcode(
+            sample_gcode(),
+            ResumeOptions(start_layer=3, z_reference_mode=ZReferenceMode.MANUAL),
+        )
+        body = output.split("; LAYER_RESCUE_BLOCK_START", 1)[1]
+        # Simulate firmware that ignores G92 Z and believes Z=0 at the aligned surface (physical 0.4).
+        physical, relative, extrusion_z = 0.4, False, []
+        for raw in body.splitlines():
+            code = raw.split(";", 1)[0].strip()
+            if code == "G91":
+                relative = True
+            elif code == "G90":
+                relative = False
+            elif code.startswith(("G0", "G1", "G2", "G3")):
+                parts = {token[0]: float(token[1:]) for token in code.split()[1:] if token[1:]}
+                if "Z" in parts:
+                    self.assertTrue(relative, code)
+                    physical += parts["Z"]
+                if parts.get("E", 0) > 0 and "X" in parts:
+                    extrusion_z.append(round(physical, 4))
+        self.assertEqual(extrusion_z, [0.6, 0.8])
+
+    def test_manual_mode_rejects_conditional_block_that_changes_z(self) -> None:
+        source = sample_gcode().replace(
+            "G1 X40 E1\n", "G1 X40 E1\nM622 J1\nG1 Z5\nM623\n", 1
+        )
+        with self.assertRaisesRegex(ResumeError, "conditional firmware block"):
+            build_resume_gcode(source, ResumeOptions(start_layer=3, z_reference_mode=ZReferenceMode.MANUAL))
+
+    def test_manual_mode_accepts_conditional_block_that_restores_z(self) -> None:
+        source = sample_gcode().replace(
+            "G1 X40 E1\n", "G1 X40 E1\nM622 J1\nG1 Z5\nG1 Z0.6\nM623\n", 1
+        )
+        build_resume_gcode(source, ResumeOptions(start_layer=3, z_reference_mode=ZReferenceMode.MANUAL))
+
+    def test_manual_mode_rejects_extruding_z_move(self) -> None:
+        source = sample_gcode().replace("G1 X40 E1\n", "G1 X40 Z0.7 E1\n", 1)
+        with self.assertRaisesRegex(ResumeError, "extruding move that also changes Z"):
+            build_resume_gcode(source, ResumeOptions(start_layer=3, z_reference_mode=ZReferenceMode.MANUAL))
+
+    def test_retained_mode_keeps_absolute_z(self) -> None:
+        output, _ = build_resume_gcode(sample_gcode(), ResumeOptions(start_layer=3))
+        self.assertIn("G1 Z0.8\n", output)
+        self.assertNotIn("M221 X0 Y0 Z0", output)
+
     def test_manual_mode_requires_corexy_home(self) -> None:
         with self.assertRaisesRegex(ResumeError, "requires CoreXY homing"):
             build_resume_gcode(

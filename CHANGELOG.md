@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.2.2 - 2026-09-24
+
+- Fix: after a printer restart, restarted (manual) mode printed in the air. The P1S has not homed Z after
+  a power cycle, so the firmware's absolute Z did not match the manually aligned nozzle and the absolute
+  `G1 Z...` moves drove the bed down (about 11 mm in the reported case). Restarted mode now rewrites every
+  Z move in the preamble and the retained layers as a relative move from the aligned position (`G91` /
+  `G1 Z±Δ` / `G90` / `M83`), tracking the slicer's absolute Z so the heights are exact and do not depend on
+  `G92 Z` or the firmware's Z state.
+- Restarted mode turns off soft endstops (`M221 X0 Y0 Z0`) the same way the stock P1S start G-code does.
+- Travel moves that also change Z are split: lift first then travel, or travel first then lower.
+- Restarted mode refuses conditional firmware blocks that change Z without restoring it, `G92 Z` in the
+  source, and extruding moves that change Z. Validation rejects any absolute Z move in restarted mode.
+- Retained mode is unchanged.
+
 ## 0.2.1 - 2026-09-24
 
 - Fix: resumed jobs extruded no filament. Bambu firmware switches E to absolute mode on `G90`, and the
