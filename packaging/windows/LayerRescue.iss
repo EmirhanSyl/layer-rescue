@@ -1,6 +1,9 @@
 #define MyAppName "Layer Rescue"
-#define MyAppVersion "0.2.2"
-#define MyAppPublisher "Layer Rescue contributors"
+#ifndef MyAppVersion
+  #define MyAppVersion "0.0.0-dev"
+#endif
+#define MyAppPublisher "Emirhan Soylu"
+#define MyAppURL "https://github.com/EmirhanSyl/layer-rescue"
 #define MyAppExeName "LayerRescue.exe"
 
 [Setup]
@@ -8,6 +11,10 @@ AppId={{4D98FC7C-38D4-49E4-98FB-793F8F1EB6A9}
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
 AppPublisher={#MyAppPublisher}
+AppPublisherURL={#MyAppURL}
+AppSupportURL={#MyAppURL}/issues
+AppUpdatesURL={#MyAppURL}/releases
+LicenseFile=..\..\LICENSE
 
 DefaultDirName={localappdata}\Programs\LayerRescue
 DefaultGroupName=Layer Rescue

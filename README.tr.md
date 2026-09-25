@@ -1,90 +1,73 @@
 # Layer Rescue
 
-Layer Rescue, yarım kalan Bambu Lab P1S baskılarını seçilen katmandan devam ettirmek için deneysel ve tedbirli bir G-code son işlem aracıdır. Bambu Studio'nun **Post-processing Scripts** özelliğine bağlanır; böylece filament eşlemesi ve `.gcode.3mf` metadatası Studio tarafından korunur, değiştirilmiş takım yolu Preview ekranında yeniden okunur.
+[English](README.md)
+
+Yarım kalan Bambu Lab P1S baskılarını seçilen katmandan devam ettirir.
+
+Layer Rescue, Bambu Studio'da post-processing script olarak çalışır. Dilimlemeden sonra düzgün basılan son katmanı sorar ve G-code'u, baskı plakada duran parçanın üzerinden bir sonraki katmandan devam edecek şekilde yeniden yazar. Filament eşlemesi ve `.gcode.3mf` bilgileri Bambu Studio'da kalır; sonucu göndermeden önce önizlemede görürsünüz.
 
 > [!CAUTION]
-> Yarım baskıyı devam ettirmek nozzle'ın mevcut parçaya çarpmasına yol açabilir. Yeniden başlatılmış yazıcı modu hassas manuel Z hizalaması ve başlangıcın sürekli gözetimini gerektirir.
+> Baskıyı devam ettirirken nozzle mevcut parçaya çarpabilir. Başlangıç sırasında yazıcının başında durun ve gerekirse hemen durdurun. Ayrıntılar için [SECURITY.md](SECURITY.md).
 
-## İlk sürümün kapsamı
+## Desteklenenler
 
-- Bambu Lab P1S
-- Tek mantıksal filament (`T0`)
-- Katman bazlı baskı
-- Göreli ekstrüzyon (`M83`)
-- Yazıcı açık kaldığında korunan-Z modu
-- Yazıcı yeniden başlatıldığında, hizalanmış nozzle konumundan yalnızca göreli Z hareketleri kullanan manuel referans modu
-- Parça aynı plakada sağlam biçimde durmalı
+- Bambu Lab P1S, tek filament
+- Bambu Studio G-code'u, katman bazlı baskı, göreli ekstrüzyon
+- Parça aynı plakada sağlam duruyor olmalı
 
-Henüz desteklenmeyenler: çok filamentli/AMS geçişli işler, nesne bazlı sıralı baskı, spiral vase, gözetimsiz kurtarma, diğer yazıcı modelleri ve `.gcode.3mf` dosyasını doğrudan düzenleme.
-
-## Z referans modları
-
-### Yazıcı açık kaldı (`retained`)
-
-Yalnızca yazıcı hiç kapanmadıysa ve Z motorları konum kaybetmediyse kullanılmalıdır. Araç yazıcının mevcut mantıksal Z koordinatını korur, 2 mm göreli güvenlik boşluğu açar ve isteğe bağlı olarak `G28 X` ile CoreXY referanslaması yapar.
-
-### Yazıcı yeniden başlatıldı (`manual`)
-
-Güç döngüsünden sonra tablanın fiziksel konumu ile firmware'in mantıksal Z koordinatı aynı olmayabilir. Kurtarma işini göndermeden önce:
-
-1. nozulu temizleyin;
-2. nozulu son başarılı katmanın gerçekten basılmış, düz bir bölgesinin üzerine getirin;
-3. Z'yi, nozul yüzeye yalnızca temas edene kadar ayarlayın;
-4. parçayı ve plakayı yerinden oynatmayın;
-5. **Yazıcı yeniden başlatıldı (manuel Z referansı)** modunu seçip hizalamayı onaylayın.
-
-Yazıcı kapatılıp açıldıktan sonra P1S Z eksenini home etmemiştir, bu yüzden mutlak Z koordinatına güvenilemez. Bu modda tek referans hizalanmış nozzle konumudur: iş, stok P1S başlangıç G-code'unda olduğu gibi yazılımsal sınırları (soft endstop) kapatır ve başlangıç bloğundaki ve korunan katmanlardaki **bütün** Z hareketlerini göreli harekete çevirir (`G91` / `G1 Z±Δ` / `G90` / `M83`). Layer Rescue slicer'ın mutlak Z değerini takip eder ve yalnızca farkları yazar; böylece firmware kendini hangi Z'de sanırsa sansın nozzle dilimlenen yüksekliklerin aynısını izler. Hem yer değiştiren hem Z değiştiren hareketlerde kalkış yer değiştirmeden önce, iniş ise sonra yapılır. Okunabilirlik için bir önceki katman yüksekliğiyle bir `G92 Z...` yine yazılır, ancak iş artık buna bağlı değildir.
-
-Koşullu firmware blokları (`M620`/`M621`, `M622`/`M623`, `M624`/`M625`) çalışabilir ya da atlanabilir; bu yüzden böyle bir blok Z'yi değiştirip giriş yüksekliğine geri dönmüyorsa kaynak reddedilir. Z'yi değiştiren ekstrüzyon hareketleri de reddedilir.
-
-Manuel mod hiçbir zaman `G28 Z` çalıştırmaz. Tabla üzerinde yarım parça varken Z home yapmak parçayı gantriye kaldırabilir. Manuel modda `G28 X` zorunludur; `--no-home-corexy` ile birlikte kullanılamaz.
+Henüz desteklenmeyenler: AMS/çok filamentli işler, nesne bazlı baskı, spiral vazo, diğer yazıcı modelleri.
 
 ## Kurulum
 
-```bash
-python3 -m pip install .
-```
+**Windows:** [Releases](https://github.com/EmirhanSyl/layer-rescue/releases) sayfasından `LayerRescue-Setup-<sürüm>-win-x64.exe` dosyasını indirip çalıştırın. Kurulumun son sayfasında Bambu Studio'ya yapıştırılacak komut yazar.
 
-İzole kurulum için `pipx install .` önerilir.
-
-## Bambu Studio'ya bağlama
-
-1. Bambu Studio'yu Advanced/Expert moda alın.
-2. Process ayarlarında **Post-processing Scripts** alanını arayın.
-3. Kurulu `layer-rescue` komutunun mutlak yolunu girin.
-4. Dilimleme yapın.
-5. Normal baskıda **Leave unchanged** düğmesine basın.
-6. Kurtarma işleminde gerçekten filament basılmış son katmanı yazın. Araç bir sonraki katmandan başlar.
-7. Göndermeden önce Preview ekranını mutlaka inceleyin.
-
-Studio, çalıştırılabilir bir komut olduğu için güvenlik uyarısı gösterebilir. Yalnızca güvendiğiniz kaynaktan kurduğunuz aracı onaylayın.
-
-## Komut satırı örneği
-
-Yazıcı açık kaldıysa:
+**Kaynaktan** (her işletim sistemi, Python 3.10+; pencere için Tkinter gerekir):
 
 ```bash
-layer-rescue --last-layer 461 --z-mode retained --nozzle-temp 220 print.gcode
+pipx install git+https://github.com/EmirhanSyl/layer-rescue.git
 ```
 
-Yazıcı yeniden başlatıldıysa ve nozul 461. katmanın yüzeyine elle hizalandıysa:
+## Bambu Studio ayarı
+
+1. Bambu Studio'yu Advanced moda alın.
+2. Process ayarlarında **Post-processing Scripts** alanını bulun.
+3. `LayerRescue.exe` dosyasının (ya da `layer-rescue` komutunun) tam yolunu tırnak içinde yazın.
+
+Post-processing script'ler çalıştırılabilir dosya olduğu için Studio uyarı gösterebilir. Yalnızca güvendiğiniz kaynaktan kurduğunuz araçları onaylayın.
+
+## Baskıyı devam ettirme
+
+1. Gerçekten filament basılmış son katmanı bulun. Filament 462. katmanda bittiyse ama yazıcı 490'da durduysa 461 girin.
+2. Orijinal projeyi dilimleyin. Layer Rescue penceresi açılır.
+3. Son düzgün katmanı yazın ve Z modunu seçin:
+   - **Printer stayed powered on (`retained`)**: yazıcı hiç kapanmadı, Z konumu korundu. Başka bir şey yapmanız gerekmez.
+   - **Printer was restarted (`manual`)**: yazıcı kapatılıp açıldıysa Z home edilmemiştir. Nozzle'ı temizleyin, son katmanın düz bir bölgesinin üstüne getirin ve yüzeye hafifçe değene kadar indirin. Parçayı ve plakayı oynatmayın.
+4. Önizlemeyi kontrol edip işi gönderin.
+
+Normal baskılarda **Leave unchanged** düğmesine basın.
+
+### Oluşturulan iş ne yapar
+
+Orijinal başlık ve ayarları korur, başlangıç rutinini ve basılmış katmanları çıkarır, sıcaklıkları, fanları ve hareket limitlerini geri yükler. Nozzle'ı kaldırır, yalnızca X/Y eksenlerini home eder (`G28 X`), arkadaki atık kanalında purge yapar, katmanın ilk noktasının üstüne gider, aşağı iner ve orijinal G-code ile sona kadar devam eder.
+
+Z eksenini hiçbir zaman home etmez ve tabla seviyelemesi yapmaz. Manuel modda bütün Z hareketleri sizin hizaladığınız konuma göre görelidir; yazıcı yeniden başlatıldıktan sonra kendini hangi Z'de sanırsa sansın sonuç değişmez.
+
+Dosya yerinde değiştirilir, orijinalin bir kopyası `.layer-rescue.bak` uzantısıyla yanında kalır.
+
+## Komut satırı
 
 ```bash
-layer-rescue --last-layer 461 --z-mode manual --confirm-manual-z-aligned --nozzle-temp 220 print.gcode
+layer-rescue --analyze print.gcode
+layer-rescue --last-layer 461 --z-mode retained print.gcode
+layer-rescue --last-layer 461 --z-mode manual --confirm-manual-z-aligned print.gcode
 ```
 
-Eski `--assume-z-known` seçeneği, geriye uyumluluk için `--z-mode retained` takma adı olarak kalır.
+`--nozzle-temp` ve `--bed-temp` algılanan sıcaklıkları değiştirir. Bütün seçenekler için `layer-rescue --help`.
 
-## Kritik ayrım
+## Katkı
 
-Girilecek katman, yazıcının hatayı fark ettiği katman değil, fiziksel olarak filament basılmış son katmandır. Örneğin filament 462'de bittiyse fakat sensör 490'da fark ettiyse son başarılı katman 461 olarak girilmelidir.
+En faydalı katkı; yazıcı modeli, firmware sürümü ve G-code dosyasıyla birlikte açılan hata kayıtlarıdır. Ayrıntılar için [CONTRIBUTING.md](CONTRIBUTING.md).
 
-Bu proje Bambu Lab ile bağlantılı veya Bambu Lab tarafından onaylanmış değildir.
+## Lisans
 
-## Test
-
-```bash
-PYTHONPATH=src python3 -m unittest discover -s tests -v
-```
-
-Lisans: MIT.
+[MIT](LICENSE). Bambu Lab ile bağlantılı değildir ve Bambu Lab tarafından onaylanmamıştır.

@@ -1,34 +1,69 @@
 # Changelog
 
-## 0.2.2 - 2026-09-24
+All notable changes to this project are documented here. The format is based on
+[Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses
+[Semantic Versioning](https://semver.org/).
 
-- Fix: after a printer restart, restarted (manual) mode printed in the air. The P1S has not homed Z after
-  a power cycle, so the firmware's absolute Z did not match the manually aligned nozzle and the absolute
-  `G1 Z...` moves drove the bed down (about 11 mm in the reported case). Restarted mode now rewrites every
-  Z move in the preamble and the retained layers as a relative move from the aligned position (`G91` /
-  `G1 Z±Δ` / `G90` / `M83`), tracking the slicer's absolute Z so the heights are exact and do not depend on
-  `G92 Z` or the firmware's Z state.
-- Restarted mode turns off soft endstops (`M221 X0 Y0 Z0`) the same way the stock P1S start G-code does.
-- Travel moves that also change Z are split: lift first then travel, or travel first then lower.
-- Restarted mode refuses conditional firmware blocks that change Z without restoring it, `G92 Z` in the
-  source, and extruding moves that change Z. Validation rejects any absolute Z move in restarted mode.
-- Retained mode is unchanged.
+## [Unreleased]
 
-## 0.2.1 - 2026-09-24
+### Added
 
-- Fix: resumed jobs extruded no filament. Bambu firmware switches E to absolute mode on `G90`, and the
-  resume block issued `G90` after its `M83` (for the Z safety lift), so every relative E value ran as an
-  absolute position and the extruder only moved back and forth around zero. `M83` is now re-issued after
-  the last `G90`, and output validation rejects any extrusion that would run in absolute E mode.
-- The source scanner now applies the same `G90`/`G91` extrusion-mode rules.
-- Purge 30 mm (`purge_length_mm`) over the rear chute, then shake/wipe, before returning to the part.
-- Travel to the first XY point of the resumed layer at the lifted Z before descending.
+- CI on Windows and Linux (Python 3.10–3.13).
+- Release workflow: pushing a `v*` tag builds the Windows installer, wheel and sdist and publishes them on GitHub Releases with SHA-256 checksums. Optional PyPI upload.
+- `packaging/windows/build.ps1` to build the installer locally.
+- Issue and pull request templates, code of conduct, release guide.
 
-## 0.1.0 - 2026-09-22
+### Changed
 
-- Initial P1S single-filament MVP.
-- Bambu Studio post-processing integration with a Tkinter layer selector.
-- Conservative layer/Z parsing and machine-state reconstruction.
-- Guards against Z homing, bed leveling, multi-filament jobs, by-object printing, spiral vase, and absolute extrusion.
-- Atomic in-place rewrite with automatic backup.
-- CLI analysis and batch conversion modes.
+- The version is defined once in `src/layer_rescue/_version.py`.
+- Installers are no longer committed to the repository; they are attached to GitHub Releases.
+
+## [0.2.2] - 2026-09-24
+
+### Fixed
+
+- Restarted (manual) mode printed in the air after a power cycle. Z is not homed at that point, so absolute `G1 Z` moves did not match the aligned nozzle and the bed dropped (about 11 mm in the reported case). Every Z move is now written as a relative move from the aligned position, so the result no longer depends on `G92 Z` or on the Z the firmware believes it is at.
+
+### Changed
+
+- Restarted mode turns off soft endstops (`M221 X0 Y0 Z0`), as the stock P1S start G-code does.
+- Travel moves that also change Z are split: lift before travelling, lower after travelling.
+- Restarted mode rejects sources it cannot convert safely: conditional firmware blocks that change Z, `G92 Z`, and extruding moves that change Z.
+
+## [0.2.1] - 2026-09-24
+
+### Fixed
+
+- Resumed jobs extruded no filament. On Bambu firmware `G90` also switches the extruder to absolute mode, and the resume block sent `G90` after `M83`. `M83` is now sent after the last `G90`, and the output is rejected if any extrusion would run in absolute mode.
+
+### Added
+
+- 30 mm purge and nozzle wipe at the rear chute before returning to the part (`purge_length_mm`).
+- The nozzle moves above the first point of the resumed layer before lowering onto it.
+
+## [0.2.0] - 2026-09-23
+
+### Added
+
+- Z reference modes: `retained` (printer stayed on) and `manual` (printer was restarted, nozzle aligned by hand). CLI options `--z-mode` and `--confirm-manual-z-aligned`.
+
+### Deprecated
+
+- `--assume-z-known`; use `--z-mode retained`.
+
+## [0.1.0] - 2026-09-22
+
+### Added
+
+- First release for the Bambu Lab P1S, single filament.
+- Bambu Studio post-processing integration with a layer selection window.
+- Layer/Z parsing and machine state reconstruction.
+- Guards against Z homing, bed leveling, multi-filament jobs, by-object printing, spiral vase and absolute extrusion.
+- Atomic in-place rewrite with a backup file.
+- CLI analysis and batch conversion.
+
+[Unreleased]: https://github.com/EmirhanSyl/layer-rescue/compare/v0.2.2...HEAD
+[0.2.2]: https://github.com/EmirhanSyl/layer-rescue/releases/tag/v0.2.2
+[0.2.1]: https://github.com/EmirhanSyl/layer-rescue/releases/tag/v0.2.1
+[0.2.0]: https://github.com/EmirhanSyl/layer-rescue/releases/tag/v0.2.0
+[0.1.0]: https://github.com/EmirhanSyl/layer-rescue/releases/tag/v0.1.0

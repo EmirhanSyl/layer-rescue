@@ -1,127 +1,77 @@
 # Layer Rescue
 
-Layer Rescue is an experimental, conservative G-code post-processor for resuming an interrupted Bambu Lab P1S print at a chosen layer. It integrates with Bambu Studio's **Post-processing Scripts** feature, so Bambu Studio keeps its own filament mapping and `.gcode.3mf` metadata and refreshes Preview after the tool edits the G-code.
+[![CI](https://github.com/EmirhanSyl/layer-rescue/actions/workflows/ci.yml/badge.svg)](https://github.com/EmirhanSyl/layer-rescue/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/EmirhanSyl/layer-rescue?include_prereleases)](https://github.com/EmirhanSyl/layer-rescue/releases)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
+[Türkçe](README.tr.md)
+
+Resume an interrupted Bambu Lab P1S print from a chosen layer.
+
+Layer Rescue runs as a Bambu Studio post-processing script. After slicing, it asks for the last layer that printed correctly and rewrites the G-code so the job starts from the next layer, on top of the part that is still on the plate. Bambu Studio keeps its own filament mapping and `.gcode.3mf` metadata, and the preview shows the result before you send it.
 
 > [!CAUTION]
-> Resuming an interrupted print can crash the toolhead into the existing part. The tool is intentionally limited and refuses inputs it cannot handle conservatively. Restarted-printer recovery requires exact manual Z alignment and continuous supervision.
+> Resuming a print can drive the nozzle into the existing part. Stay at the printer during startup and be ready to stop it. See [SECURITY.md](SECURITY.md).
 
-## MVP support
+## Supported
 
-- Bambu Lab P1S
-- Single logical filament (`T0`)
-- By-layer printing
-- Relative extrusion (`M83`)
-- Bambu Studio G-code with layer and Z markers
-- Retained-Z mode when the printer stayed powered on
-- Manual-reference mode after a restart, using only relative Z moves from the aligned nozzle position
-- Original part is still firmly attached to the unchanged build plate
+- Bambu Lab P1S, single filament
+- Bambu Studio G-code, by-layer printing, relative extrusion
+- The part is still firmly attached to the same plate
 
-Not yet supported: multi-filament/AMS tool changes, by-object printing, spiral vase, unattended recovery, other printer models, or direct `.gcode.3mf` editing.
+Not supported yet: AMS/multi-filament jobs, by-object printing, spiral vase, other printer models.
 
-## Z reference modes
+## Install
 
-### Printer stayed powered on (`retained`)
+**Windows:** download `LayerRescue-Setup-<version>-win-x64.exe` from [Releases](https://github.com/EmirhanSyl/layer-rescue/releases) and run it. The last page of the installer shows the command to paste into Bambu Studio.
 
-Use this only when the printer never lost power and the Z motors did not release or skip. Layer Rescue preserves the printer's existing logical Z coordinate, lifts the bed/nozzle gap by 2 mm, and optionally re-homes CoreXY with `G28 X`.
-
-### Printer was restarted (`manual`)
-
-After a restart, the physical bed position and the firmware's logical Z coordinate no longer necessarily agree. Before sending the recovery job:
-
-1. clean the nozzle;
-2. place it over a flat, actually printed area of the last successful layer;
-3. adjust Z until the nozzle just touches that surface;
-4. keep the part and plate fixed;
-5. choose **Printer was restarted (manual Z reference)** and confirm the alignment.
-
-After a power cycle the P1S has not homed Z, so its absolute Z coordinate cannot be trusted. In this mode the aligned nozzle position is the only reference: the job turns off the soft endstops (as the stock P1S start G-code does), and **every** Z move in the preamble and in the retained layers is rewritten as a relative move (`G91` / `G1 Z±Δ` / `G90` / `M83`). Layer Rescue tracks the slicer's absolute Z and emits only the differences, so the nozzle follows the sliced heights exactly regardless of what Z the firmware believes it is at. When a move both travels and changes Z, the lift happens before the travel and the descent after it. A nominal `G92 Z...` with the preceding layer height is still emitted first for readability; the job no longer depends on it.
-
-Conditional firmware blocks (`M620`/`M621`, `M622`/`M623`, `M624`/`M625`) may or may not run, so restarted mode refuses sources in which such a block changes Z without returning to its entry height. Extruding moves that also change Z are refused as well.
-
-Manual mode never runs `G28 Z`. Homing Z with an unfinished part on the plate can lift the object into the gantry. Manual mode requires `G28 X` and cannot be combined with `--no-home-corexy`.
-
-## What it changes
-
-Given “last successfully printed layer 461,” Layer Rescue:
-
-1. retains the Bambu header and configuration comments;
-2. removes executable startup and layers before 462;
-3. reconstructs temperatures, motion limits, speed/flow factors, and fan state;
-4. preserves Z or assigns a manually aligned Z reference, depending on the selected mode;
-5. emits a relative Z safety lift and `G28 X` CoreXY home;
-6. never emits Z homing or bed leveling;
-7. restores filament/tool selection and reasserts `M109` after `T1000`;
-8. approaches the selected Z at the rear filament-change station;
-9. retains all layers from 462 through the original end G-code;
-10. writes atomically and keeps a sibling backup.
-
-## Install from source
+**From source** (any OS, Python 3.10+; the window needs Tkinter):
 
 ```bash
-python3 -m pip install .
+pipx install git+https://github.com/EmirhanSyl/layer-rescue.git
 ```
 
-For an isolated command, `pipx install .` is recommended.
+## Set up Bambu Studio
 
-## Bambu Studio integration
+1. Switch Bambu Studio to Advanced mode.
+2. In the process settings, find **Post-processing Scripts**.
+3. Enter the full path to `LayerRescue.exe` (or to the `layer-rescue` command), in quotes.
 
-1. Switch Bambu Studio to Advanced/Expert mode.
-2. Search the Process settings for **Post-processing Scripts**.
-3. Enter the absolute path to the installed `layer-rescue` command.
-4. Slice normally.
-5. Bambu Studio launches Layer Rescue and appends the temporary G-code path automatically.
-6. Choose **Leave unchanged** for ordinary prints, or enter the last successfully printed layer for a recovery job.
-7. Inspect Preview before sending the job.
+Studio may show a warning because post-processing scripts are executables. Only approve tools you installed from a source you trust.
 
-Bambu Studio may display a security warning because post-processing scripts are executable commands. Only approve a tool you installed from a source you trust.
+## Resume a print
 
-## CLI
+1. Find the last layer that actually got filament. If filament ran out at layer 462 but the printer stopped at 490, enter 461.
+2. Slice the original project. The Layer Rescue window opens.
+3. Enter the last good layer and choose a Z mode:
+   - **Printer stayed powered on (`retained`)**: the printer kept its Z position. Nothing else to do.
+   - **Printer was restarted (`manual`)**: after a power cycle Z is not homed. Clean the nozzle, move it over a flat printed area of the last good layer, and lower it until it just touches the surface. Do not move the part or the plate.
+4. Check the preview and send the job.
 
-Analyze without modifying:
+For normal prints, click **Leave unchanged**.
+
+### What the generated job does
+
+It keeps the original header and settings, drops the start sequence and the finished layers, restores temperatures, fans and motion limits, lifts the nozzle, homes X/Y only (`G28 X`), purges at the rear chute, moves above the first point of the layer, lowers onto it and continues with the original G-code to the end.
+
+It never homes Z and never runs bed leveling. In manual mode every Z move is relative to the position you aligned, so the job does not depend on the Z the printer thinks it is at after a restart.
+
+The file is rewritten in place and a `.layer-rescue.bak` copy of the original is kept next to it.
+
+## Command line
 
 ```bash
 layer-rescue --analyze print.gcode
-```
-
-Resume after layer 461 while printer Z was retained:
-
-```bash
 layer-rescue --last-layer 461 --z-mode retained print.gcode
-```
-
-Resume after a restart, after manually touching the nozzle to layer 461:
-
-```bash
 layer-rescue --last-layer 461 --z-mode manual --confirm-manual-z-aligned print.gcode
 ```
 
-Override temperatures by adding `--nozzle-temp 220 --bed-temp 55`. The old `--assume-z-known` flag remains as a deprecated alias for `--z-mode retained`.
+`--nozzle-temp` and `--bed-temp` override the detected temperatures. Run `layer-rescue --help` for all options.
 
-## Safety model
+## Contributing
 
-Layer Rescue cannot determine the physical top of a failed print. The layer entered by the operator must be the last layer that actually received filament—not the layer where the printer finally detected the fault.
-
-The tool validates that:
-
-- the first retained marker is the requested next layer;
-- retained layers are contiguous through the original end;
-- no active `G29` command remains;
-- no bare or Z-axis `G28` command remains;
-- manual mode emits exactly one `G92 Z`, with the preceding layer height, before every Z movement, and every Z move in the output is relative (`G91`);
-- retained mode emits no `G92 Z` assignment;
-- the print temperature is reasserted after `T1000`;
-- the source uses a supported printer, print sequence, tool count, and extrusion mode.
-
-This software is not affiliated with or endorsed by Bambu Lab.
-
-## Development
-
-```bash
-PYTHONPATH=src python3 -m unittest discover -s tests -v
-```
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) and [SECURITY.md](SECURITY.md) before proposing printer support or changing safety checks.
+Bug reports with the printer model, firmware version and G-code are the most useful contribution. See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
 
-MIT
+[MIT](LICENSE). Not affiliated with or endorsed by Bambu Lab.

@@ -1,20 +1,30 @@
 # Security and physical safety
 
-Layer Rescue processes untrusted text files and emits machine-control commands. Treat both software security and physical motion as security boundaries.
+Layer Rescue reads untrusted files and writes commands that move a machine. A bug that makes the printer home Z over a part, crash the nozzle or run unexpected commands is treated as a security issue.
 
-## Supported reports
+## Reporting
 
-Please report command injection, unsafe path handling, archive traversal, unexpected executable startup commands, accidental Z homing/bed leveling, incorrect layer selection, and unsafe temperature/tool sequencing privately before public disclosure.
+Report privately through [GitHub security advisories](https://github.com/EmirhanSyl/layer-rescue/security/advisories/new). Please do not open a public issue first.
 
-## Operator requirements
+Useful details: Layer Rescue version, printer and firmware version, Z mode, the source and generated G-code, and what the printer did.
 
-- Keep the printer supervised during startup.
-- Be ready to stop the printer immediately.
-- After a power cycle or Z stepper release, use manual-reference mode only after aligning a clean nozzle to the last successful layer surface.
-- Never use retained-Z mode after a power cycle, Z step loss, or Z motor release.
-- Never resume after plate movement or part movement.
-- Confirm the actual last deposited layer; sensor detection time is not sufficient.
-- Clean the nozzle and inspect the generated Preview.
-- Use matching material; filament mapping does not rewrite material temperatures or flow behavior.
+Examples of what to report:
 
-The project provides no guarantee that a physically failed print is recoverable.
+- Z homing or bed leveling in the output
+- wrong start layer or Z height
+- unsafe temperature, tool change or extrusion sequence
+- command injection or unsafe path handling in the post-processing integration
+
+## Supported versions
+
+Only the latest release gets fixes.
+
+## Before running a recovery job
+
+- Stay at the printer during startup and be ready to stop it.
+- Use the restarted (manual) mode after any power cycle or Z motor release, and only after touching the clean nozzle to the last good layer. Never use the retained mode in that case.
+- Do not resume if the part or the plate has moved.
+- Enter the last layer that actually got filament, not the layer where the printer noticed the problem.
+- Check the Bambu Studio preview and use the same material.
+
+Layer Rescue cannot guarantee that a failed print is recoverable.

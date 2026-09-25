@@ -1,0 +1,57 @@
+name: Bug report
+description: The generated G-code is wrong, or the tool fails or crashes.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        If the printer moved in a way that could damage it or the part, describe exactly what it did.
+        Do not attach files that contain serial numbers, access codes or cloud tokens.
+  - type: input
+    id: version
+    attributes:
+      label: Layer Rescue version
+      placeholder: "0.2.2"
+    validations:
+      required: true
+  - type: input
+    id: printer
+    attributes:
+      label: Printer and firmware version
+      placeholder: "P1S, 01.08.00.00"
+    validations:
+      required: true
+  - type: input
+    id: studio
+    attributes:
+      label: Bambu Studio version
+      placeholder: "02.08.02.61"
+    validations:
+      required: true
+  - type: dropdown
+    id: z-mode
+    attributes:
+      label: Z mode
+      options:
+        - Printer stayed powered on (retained)
+        - Printer was restarted (manual)
+        - Not relevant
+    validations:
+      required: true
+  - type: input
+    id: layers
+    attributes:
+      label: Last successful layer / total layers
+      placeholder: "54 / 113"
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What you did, what you expected and what the printer or tool did instead.
+    validations:
+      required: true
+  - type: textarea
+    id: files
+    attributes:
+      label: G-code or .gcode.3mf
+      description: Attach the source and the generated file if you can (zip them if GitHub rejects the extension).

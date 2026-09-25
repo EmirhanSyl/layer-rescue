@@ -1,26 +1,42 @@
 [build-system]
-requires = ["setuptools>=68"]
+requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "layer-rescue"
-version = "0.2.2"
-description = "Conservative layer-resume G-code post-processor for interrupted Bambu Lab P1S prints"
+dynamic = ["version"]
+description = "Resume interrupted Bambu Lab P1S prints from a chosen layer (Bambu Studio post-processing script)"
 readme = "README.md"
 requires-python = ">=3.10"
-license = {text = "MIT"}
-authors = [{name = "Layer Rescue contributors"}]
-keywords = ["3d-printing", "gcode", "bambu-studio", "print-recovery"]
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Emirhan Soylu" }]
+keywords = ["3d-printing", "gcode", "bambu-lab", "bambu-studio", "p1s", "print-recovery"]
 classifiers = [
   "Development Status :: 3 - Alpha",
-  "License :: OSI Approved :: MIT License",
+  "Environment :: Console",
+  "Intended Audience :: End Users/Desktop",
+  "Operating System :: OS Independent",
   "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
   "Topic :: Multimedia :: Graphics :: 3D Modeling",
 ]
 dependencies = []
 
+[project.urls]
+Homepage = "https://github.com/EmirhanSyl/layer-rescue"
+Issues = "https://github.com/EmirhanSyl/layer-rescue/issues"
+Changelog = "https://github.com/EmirhanSyl/layer-rescue/blob/main/CHANGELOG.md"
+
 [project.scripts]
 layer-rescue = "layer_rescue.cli:main"
+
+[tool.setuptools.dynamic]
+version = { attr = "layer_rescue._version.__version__" }
 
 [tool.setuptools.packages.find]
 where = ["src"]

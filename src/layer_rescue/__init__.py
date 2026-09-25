@@ -1,5 +1,6 @@
 """Layer Rescue: conservative G-code recovery for interrupted FDM prints."""
 
+from ._version import __version__
 from .core import (
     Analysis,
     LayerInfo,
@@ -13,6 +14,7 @@ from .core import (
 )
 
 __all__ = [
+    "__version__",
     "Analysis",
     "LayerInfo",
     "ResumeError",
@@ -23,5 +25,3 @@ __all__ = [
     "build_resume_gcode",
     "rewrite_gcode_file",
 ]
-
-__version__ = "0.2.2"

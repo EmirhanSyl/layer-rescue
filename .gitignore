@@ -179,3 +179,13 @@ cython_debug/
 #  refer to https://docs.cursor.com/context/ignore-files
 .cursorignore
 .cursorindexingignore
+
+# Layer Rescue build output (installers are published as GitHub Release assets)
+release/
+packaging/installer-output/
+
+# User print files
+*.gcode
+*.gcode.3mf
+*.3mf
+*.layer-rescue*.bak

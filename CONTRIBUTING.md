@@ -1,25 +1,38 @@
 # Contributing
 
-Safety is more important than convenience. A change that supports more inputs must not silently weaken an existing guard.
+Bug reports, test results from real printers and pull requests are welcome. Please read the [Code of Conduct](CODE_OF_CONDUCT.md) first.
 
-## Ground rules
-
-- Add tests for every parser or preamble change.
-- Never introduce Z homing or bed leveling into recovery output.
-- In manual-reference mode, keep the single `G92 Z` assignment before every Z movement and derive it only from the preceding contiguous layer.
-- Preserve the final `M109` after tool/AMS selection.
-- Reject an unknown state instead of guessing.
-- Keep printer-specific templates explicit.
-- Do not add a printer model without testing representative G-code from that model.
-- Do not commit user G-code, serial numbers, printer names, access tokens, or cloud metadata.
-
-## Local checks
+## Setup
 
 ```bash
-PYTHONPATH=src python3 -m unittest discover -s tests -v
-python3 -m compileall -q src tests
+git clone https://github.com/EmirhanSyl/layer-rescue.git
+cd layer-rescue
+python -m venv .venv
+. .venv/bin/activate          # Windows: .venv\Scripts\activate
+python -m pip install -e .
+python -m unittest discover -s tests -v
 ```
+
+No third-party runtime dependencies are used. Keep it that way unless there is a strong reason.
+
+## Rules for G-code changes
+
+This tool moves a real machine, so safety comes before supporting more inputs.
+
+- Add a test for every parser or preamble change.
+- Never add Z homing or bed leveling to the output.
+- In restarted (manual) mode every Z move must stay relative (`G91`). The validator enforces this; do not weaken it.
+- On Bambu firmware `G90` also resets extrusion to absolute. Put `M83` after every `G90` you emit.
+- Keep the final `M109` after tool/AMS selection.
+- When the state is unknown, reject the file instead of guessing.
+- Do not add a printer model without testing G-code from that model.
+- Do not commit user G-code with serial numbers, printer names, access codes or cloud metadata.
 
 ## Pull requests
 
-Describe the physical printer scenario, the source G-code characteristics, the expected first retained layer/Z, and how collision risk was tested. Hardware testing must be supervised and should begin without an existing part on the bed.
+- Keep each PR focused on one change.
+- Describe the printer scenario, the expected first layer and Z, and how you tested it (printer, simulation or unit tests only).
+- Add a line to `CHANGELOG.md` under **Unreleased**.
+- First hardware tests should be supervised, ideally without a part on the bed.
+
+Releases are made by the maintainer; see [docs/releasing.md](docs/releasing.md).
