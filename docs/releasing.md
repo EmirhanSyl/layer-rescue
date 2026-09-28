@@ -1,31 +1,41 @@
 # Releasing
 
-Releases are built by GitHub Actions from a version tag.
+Releases are built by GitHub Actions from a version tag. `main` is protected, so the version bump goes through a pull request.
 
-1. Update `src/layer_rescue/_version.py`.
+1. On a branch, update `src/layer_rescue/_version.py`.
 2. In `CHANGELOG.md`, rename **Unreleased** to `## [X.Y.Z] - YYYY-MM-DD`, add a new empty **Unreleased** section and update the links at the bottom.
-3. Commit, then tag and push:
+3. Open a pull request, wait for CI and merge it.
+4. Tag the merged commit and push the tag:
 
    ```bash
-   git commit -am "Release X.Y.Z"
+   git checkout main && git pull
    git tag vX.Y.Z
-   git push origin main vX.Y.Z
+   git push origin vX.Y.Z
    ```
 
-4. The [Release workflow](../.github/workflows/release.yml) checks that the tag matches the version, runs the tests, builds the wheel, sdist and Windows installer, and publishes a GitHub Release with those files, `SHA256SUMS.txt` and the changelog section as notes.
+5. The [Release workflow](../.github/workflows/release.yml) checks that the tag matches the version, runs the tests on Windows and macOS, builds the Windows installer, the macOS app, the wheel and the sdist, and publishes a GitHub Release with those files, `SHA256SUMS.txt` and the changelog section as notes.
 
 If the workflow fails, fix the problem, delete the tag (`git push --delete origin vX.Y.Z` and `git tag -d vX.Y.Z`) and tag again.
 
-## Building the installer locally
+## Building locally
 
-Requires Windows, Python 3.10+, PyInstaller and [Inno Setup 6](https://jrsoftware.org/isinfo.php).
+Build output goes to `dist/` and `release/`, both ignored by git.
+
+**Windows** (Python 3.10+, [Inno Setup 6](https://jrsoftware.org/isinfo.php)):
 
 ```powershell
 python -m pip install pyinstaller
 powershell -ExecutionPolicy Bypass -File packaging\windows\build.ps1
 ```
 
-The installer is written to `release\`, which is ignored by git.
+**macOS** (Python 3.10+ with Tkinter, Xcode command line tools):
+
+```bash
+python3 -m pip install pyinstaller
+bash packaging/macos/build.sh
+```
+
+The macOS app is ad-hoc signed only. Developer ID signing and notarization are not set up yet; they need a `Developer ID Application` certificate and an app-specific password or API key stored as repository secrets.
 
 ## PyPI (optional)
 

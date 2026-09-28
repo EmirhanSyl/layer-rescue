@@ -38,6 +38,17 @@ class CliTests(unittest.TestCase):
         self.assertIn("; Z reference mode: manual", output)
         self.assertIn("G92 Z0.4", output)
 
+    def test_missing_path_is_an_error_outside_the_packaged_app(self) -> None:
+        stream = io.StringIO()
+        with redirect_stderr(stream), self.assertRaises(SystemExit) as raised:
+            main([])
+        self.assertEqual(raised.exception.code, 2)
+
+    def test_post_processing_command_for_source_install(self) -> None:
+        from layer_rescue.cli import post_processing_command
+
+        self.assertTrue(post_processing_command().endswith(" -m layer_rescue"))
+
     def test_manual_mode_requires_explicit_alignment_confirmation(self) -> None:
         result, output = self._run_on_copy("--last-layer", "2", "--z-mode", "manual")
         self.assertEqual(result, 2)

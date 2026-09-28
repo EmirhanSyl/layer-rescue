@@ -12,6 +12,7 @@ Layer Rescue, Bambu Studio'da post-processing script olarak çalışır. Dilimle
 ## Desteklenenler
 
 - Bambu Lab P1S, tek filament
+- Windows ve macOS (Linux kaynaktan kurulumla)
 - Bambu Studio G-code'u, katman bazlı baskı, göreli ekstrüzyon
 - Parça aynı plakada sağlam duruyor olmalı
 
@@ -19,9 +20,19 @@ Henüz desteklenmeyenler: AMS/çok filamentli işler, nesne bazlı baskı, spira
 
 ## Kurulum
 
-**Windows:** [Releases](https://github.com/EmirhanSyl/layer-rescue/releases) sayfasından `LayerRescue-Setup-<sürüm>-win-x64.exe` dosyasını indirip çalıştırın. Kurulumun son sayfasında Bambu Studio'ya yapıştırılacak komut yazar.
+İndirmeler [Releases](https://github.com/EmirhanSyl/layer-rescue/releases) sayfasında.
 
-**Kaynaktan** (her işletim sistemi, Python 3.10+; pencere için Tkinter gerekir):
+**Windows:** `LayerRescue-Setup-<sürüm>-win-x64.exe` dosyasını çalıştırın. Kurulumun son sayfasında Bambu Studio'ya yapıştırılacak komut yazar.
+
+**macOS (Apple Silicon):** `LayerRescue-<sürüm>-macos-arm64.zip` dosyasını açıp `LayerRescue.app` uygulamasını Uygulamalar klasörüne taşıyın. Uygulama henüz Apple Developer ID ile imzalı olmadığı için macOS ilk açılışta engeller:
+
+1. `LayerRescue.app` uygulamasına çift tıklayın. macOS açılamayacağını söyler; **Bitti**'ye basın.
+2. **Sistem Ayarları → Gizlilik ve Güvenlik** bölümünde aşağı inip Layer Rescue'nun yanındaki **Yine de Aç** düğmesine basın.
+3. Uygulama açılır ve Bambu Studio'ya yapıştırılacak komutu gösterir.
+
+Bunu Bambu Studio'dan kullanmadan önce bir kez yapın, yoksa Studio uygulamayı başlatamaz. Alternatif olarak `xattr -dr com.apple.quarantine /Applications/LayerRescue.app` komutunu çalıştırabilirsiniz.
+
+**Intel Mac, Linux ve diğerleri:** Python 3.10+ ile kaynaktan kurun (pencere için Tkinter gerekir; Homebrew Python kullanıyorsanız `brew install python-tk` de çalıştırın):
 
 ```bash
 pipx install git+https://github.com/EmirhanSyl/layer-rescue.git
@@ -31,7 +42,15 @@ pipx install git+https://github.com/EmirhanSyl/layer-rescue.git
 
 1. Bambu Studio'yu Advanced moda alın.
 2. Process ayarlarında **Post-processing Scripts** alanını bulun.
-3. `LayerRescue.exe` dosyasının (ya da `layer-rescue` komutunun) tam yolunu tırnak içinde yazın.
+3. Layer Rescue'nun tam yolunu tırnak içinde yazın:
+
+   | Kurulum | Komut |
+   | --- | --- |
+   | Windows kurulumu | `"C:\Users\<kullanıcı>\AppData\Local\Programs\LayerRescue\LayerRescue.exe"` |
+   | macOS uygulaması | `"/Applications/LayerRescue.app/Contents/MacOS/LayerRescue"` |
+   | pipx | `which layer-rescue` çıktısı, örn. `"/Users/<kullanıcı>/.local/bin/layer-rescue"` |
+
+   Uygulamayı Bambu Studio olmadan doğrudan açarsanız kendi kurulumunuza ait komutu gösterir.
 
 Post-processing script'ler çalıştırılabilir dosya olduğu için Studio uyarı gösterebilir. Yalnızca güvendiğiniz kaynaktan kurduğunuz araçları onaylayın.
 

@@ -8,8 +8,10 @@ All notable changes to this project are documented here. The format is based on
 
 ### Added
 
-- CI on Windows and Linux (Python 3.10–3.13).
-- Release workflow: pushing a `v*` tag builds the Windows installer, wheel and sdist and publishes them on GitHub Releases with SHA-256 checksums. Optional PyPI upload.
+- macOS support: `LayerRescue.app` for Apple Silicon, built by the release workflow (not yet signed with a Developer ID). Intel Macs can install from source.
+- Opening the app directly, without Bambu Studio, shows the command to paste into Post-processing Scripts.
+- CI on Windows, macOS and Linux (Python 3.10–3.13).
+- Release workflow: pushing a `v*` tag builds the Windows installer, macOS app, wheel and sdist and publishes them on GitHub Releases with SHA-256 checksums. Optional PyPI upload.
 - `packaging/windows/build.ps1` to build the installer locally.
 - Issue and pull request templates, code of conduct, release guide.
 

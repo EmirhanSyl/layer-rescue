@@ -16,6 +16,7 @@ Layer Rescue runs as a Bambu Studio post-processing script. After slicing, it as
 ## Supported
 
 - Bambu Lab P1S, single filament
+- Windows and macOS (Linux from source)
 - Bambu Studio G-code, by-layer printing, relative extrusion
 - The part is still firmly attached to the same plate
 
@@ -23,9 +24,19 @@ Not supported yet: AMS/multi-filament jobs, by-object printing, spiral vase, oth
 
 ## Install
 
-**Windows:** download `LayerRescue-Setup-<version>-win-x64.exe` from [Releases](https://github.com/EmirhanSyl/layer-rescue/releases) and run it. The last page of the installer shows the command to paste into Bambu Studio.
+Downloads are on the [Releases](https://github.com/EmirhanSyl/layer-rescue/releases) page.
 
-**From source** (any OS, Python 3.10+; the window needs Tkinter):
+**Windows:** run `LayerRescue-Setup-<version>-win-x64.exe`. The last page of the installer shows the command to paste into Bambu Studio.
+
+**macOS (Apple Silicon):** unzip `LayerRescue-<version>-macos-arm64.zip` and move `LayerRescue.app` to Applications. The app is not signed with an Apple Developer ID yet, so macOS blocks it the first time:
+
+1. Double-click `LayerRescue.app`. macOS says it cannot be opened; click **Done**.
+2. Open **System Settings → Privacy & Security**, scroll down and click **Open Anyway** next to Layer Rescue.
+3. The app opens and shows the command to paste into Bambu Studio.
+
+Do this once before using it from Bambu Studio, otherwise Studio cannot start it. Alternatively run `xattr -dr com.apple.quarantine /Applications/LayerRescue.app`.
+
+**Intel Macs, Linux and everything else:** install from source with Python 3.10+ (the window needs Tkinter; with Homebrew Python also run `brew install python-tk`):
 
 ```bash
 pipx install git+https://github.com/EmirhanSyl/layer-rescue.git
@@ -35,7 +46,15 @@ pipx install git+https://github.com/EmirhanSyl/layer-rescue.git
 
 1. Switch Bambu Studio to Advanced mode.
 2. In the process settings, find **Post-processing Scripts**.
-3. Enter the full path to `LayerRescue.exe` (or to the `layer-rescue` command), in quotes.
+3. Enter the full path to Layer Rescue, in quotes:
+
+   | Install | Command |
+   | --- | --- |
+   | Windows installer | `"C:\Users\<you>\AppData\Local\Programs\LayerRescue\LayerRescue.exe"` |
+   | macOS app | `"/Applications/LayerRescue.app/Contents/MacOS/LayerRescue"` |
+   | pipx | the output of `which layer-rescue`, e.g. `"/Users/<you>/.local/bin/layer-rescue"` |
+
+   Opening the app directly (without Bambu Studio) shows the exact command for your install.
 
 Studio may show a warning because post-processing scripts are executables. Only approve tools you installed from a source you trust.
 

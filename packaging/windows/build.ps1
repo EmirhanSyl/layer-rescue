@@ -16,7 +16,7 @@ if (-not $Version) {
 }
 Write-Host "Building Layer Rescue $Version"
 
-$launcher = Join-Path $root "packaging\windows\launcher.py"
+$launcher = Join-Path $root "packaging\launcher.py"
 $src = Join-Path $root "src"
 $common = @("--noconfirm", "--clean", "--paths", $src, "--specpath", "build", "--workpath", "build\pyinstaller")
 

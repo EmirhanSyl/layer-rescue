@@ -189,8 +189,56 @@ def launch(path: Path) -> int:
     ttk.Button(buttons, text="Create recovery G-code", command=convert).grid(row=0, column=1)
 
     root.protocol("WM_DELETE_WINDOW", leave_unchanged)
-    root.after(100, lambda: (root.lift(), root.attributes("-topmost", True)))
+    root.after(100, lambda: (root.lift(), root.attributes("-topmost", True), root.focus_force()))
     root.after(700, lambda: root.attributes("-topmost", False))
     last_entry.focus_set()
     root.mainloop()
     return result["code"]
+
+
+def show_setup_info(command: str) -> int:
+    """Shown when the app is opened directly instead of by Bambu Studio."""
+    try:
+        import tkinter as tk
+        from tkinter import ttk
+    except ImportError:
+        print(f"Add this to Bambu Studio > Post-processing Scripts:\n{command}")
+        return 0
+
+    try:
+        root = tk.Tk()
+    except tk.TclError:
+        print(f"Add this to Bambu Studio > Post-processing Scripts:\n{command}")
+        return 0
+
+    root.title("Layer Rescue")
+    root.resizable(False, False)
+    frame = ttk.Frame(root, padding=18)
+    frame.grid(row=0, column=0, sticky="nsew")
+    ttk.Label(
+        frame,
+        text=(
+            "Layer Rescue runs from Bambu Studio after slicing.\n\n"
+            "In Bambu Studio, switch to Advanced mode, open the process settings and paste\n"
+            "this command into Post-processing Scripts:"
+        ),
+        justify="left",
+    ).grid(row=0, column=0, columnspan=2, sticky="w", pady=(0, 10))
+
+    command_var = tk.StringVar(value=command)
+    entry = ttk.Entry(frame, textvariable=command_var, width=70, state="readonly")
+    entry.grid(row=1, column=0, columnspan=2, sticky="ew", pady=(0, 12))
+
+    def copy() -> None:
+        root.clipboard_clear()
+        root.clipboard_append(command)
+        copy_button.configure(text="Copied")
+
+    copy_button = ttk.Button(frame, text="Copy", command=copy)
+    copy_button.grid(row=2, column=0, sticky="e", padx=(0, 8))
+    ttk.Button(frame, text="Close", command=root.destroy).grid(row=2, column=1, sticky="e")
+    frame.columnconfigure(0, weight=1)
+
+    root.after(100, lambda: (root.lift(), root.focus_force()))
+    root.mainloop()
+    return 0

@@ -63,9 +63,21 @@ def _analysis_json(path: Path) -> str:
     )
 
 
+def post_processing_command() -> str:
+    """The command to paste into Bambu Studio's Post-processing Scripts field."""
+    if getattr(sys, "frozen", False):
+        return f'"{sys.executable}"'
+    return f'"{sys.executable}" -m layer_rescue'
+
+
 def main(argv: list[str] | None = None) -> int:
     args = _parser().parse_args(argv)
     if not args.gcode:
+        if getattr(sys, "frozen", False):
+            # Opened directly (double-click) instead of from Bambu Studio: explain the setup.
+            from .gui import show_setup_info
+
+            return show_setup_info(post_processing_command())
         _parser().error("a G-code path is required")
     path = Path(args.gcode).expanduser().resolve()
 
