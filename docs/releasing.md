@@ -13,7 +13,7 @@ Releases are built by GitHub Actions from a version tag. `main` is protected, so
    git push origin vX.Y.Z
    ```
 
-5. The [Release workflow](../.github/workflows/release.yml) checks that the tag matches the version, runs the tests on Windows and macOS, builds the Windows installer, the macOS app, the wheel and the sdist, and publishes a GitHub Release with those files, `SHA256SUMS.txt` and the changelog section as notes.
+5. The [Release workflow](../.github/workflows/release.yml) checks that the tag matches the version, runs the tests on Windows, builds the Windows installer, the wheel and the sdist, and publishes a GitHub Release with those files, `SHA256SUMS.txt` and the changelog section as notes. When that is done, a second job runs the tests on an Apple Silicon Mac, builds `LayerRescue.app` and adds `LayerRescue-X.Y.Z-macos-arm64.zip` to the same release. (`SHA256SUMS.txt` is written before the macOS job, so it doesn't list the zip.)
 
 If the workflow fails, fix the problem, delete the tag (`git push --delete origin vX.Y.Z` and `git tag -d vX.Y.Z`) and tag again.
 

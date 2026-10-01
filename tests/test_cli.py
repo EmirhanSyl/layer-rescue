@@ -11,10 +11,10 @@ from test_core import sample_gcode
 
 
 class CliTests(unittest.TestCase):
-    def _run_on_copy(self, *arguments: str) -> tuple[int, str]:
+    def _run_on_copy(self, *arguments: str, source: str | None = None) -> tuple[int, str]:
         with tempfile.TemporaryDirectory() as temp_dir:
             path = Path(temp_dir) / "job.gcode"
-            path.write_text(sample_gcode(), encoding="utf-8")
+            path.write_text(source if source is not None else sample_gcode(), encoding="utf-8")
             stream = io.StringIO()
             with redirect_stdout(stream), redirect_stderr(stream):
                 result = main([*arguments, str(path)])
@@ -53,6 +53,52 @@ class CliTests(unittest.TestCase):
         result, output = self._run_on_copy("--last-layer", "2", "--z-mode", "manual")
         self.assertEqual(result, 2)
         self.assertNotIn("; LAYER_RESCUE_BLOCK_START", output)
+
+    def test_insert_mode_batch_conversion(self) -> None:
+        from fake_slicer import bambu_like_gcode
+
+        result, output = self._run_on_copy(
+            "--part-height", "10.05", "--wall-height", "4", "--confirm-attended", source=bambu_like_gcode()
+        )
+        self.assertEqual(result, 0)
+        self.assertIn("; LAYER_RESCUE_INSERT_MODE", output)
+        self.assertIn("M400 U1", output)
+
+    def test_insert_mode_by_layer_number(self) -> None:
+        from fake_slicer import bambu_like_gcode
+
+        result, output = self._run_on_copy("--part-layer", "50", "--confirm-attended", source=bambu_like_gcode())
+        self.assertEqual(result, 0)
+        self.assertIn("then print from layer 51 on a 10 mm part", output)
+
+    def test_insert_mode_without_reprinting_supports(self) -> None:
+        from fake_slicer import bambu_like_gcode
+
+        result, output = self._run_on_copy(
+            "--part-height", "10", "--confirm-attended", "--no-reprint-supports",
+            source=bambu_like_gcode(support_at=(150.0, 128.0)),
+        )
+        self.assertEqual(result, 0)
+        self.assertNotIn("; LAYER_RESCUE_SUPPORT", output)
+
+    def test_insert_mode_requires_attended_confirmation(self) -> None:
+        from fake_slicer import bambu_like_gcode
+
+        result, output = self._run_on_copy("--part-height", "10", source=bambu_like_gcode())
+        self.assertEqual(result, 2)
+        self.assertNotIn("; LAYER_RESCUE_INSERT_MODE", output)
+
+
+    def test_allow_untested_flag(self) -> None:
+        source = sample_gcode(printer="Bambu Lab X1C")
+        result, output = self._run_on_copy("--last-layer", "2", "--z-mode", "retained", source=source)
+        self.assertEqual(result, 2)
+        self.assertNotIn("LAYER_RESCUE", output)
+        result, output = self._run_on_copy(
+            "--last-layer", "2", "--z-mode", "retained", "--allow-untested", source=source
+        )
+        self.assertEqual(result, 0)
+        self.assertIn("; LAYER_RESCUE_BLOCK_START", output)
 
 
 if __name__ == "__main__":

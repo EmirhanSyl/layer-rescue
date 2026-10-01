@@ -9,9 +9,14 @@ version="${1:-$(python3 -c 'import sys; sys.path.insert(0, "src"); from layer_re
 arch="$(uname -m)"
 echo "Building Layer Rescue $version for macOS $arch"
 
+# Runtime dependencies (pyclipper) must be importable for PyInstaller to bundle them.
+python3 -m pip install .
+
 python3 -m PyInstaller --noconfirm --clean --windowed \
   --name LayerRescue \
   --osx-bundle-identifier io.github.emirhansyl.layerrescue \
+  --icon "$root/packaging/macos/LayerRescue.icns" \
+  --add-data "$root/src/layer_rescue/assets:layer_rescue/assets" \
   --paths "$root/src" \
   --specpath build --workpath build/pyinstaller --distpath dist \
   "$root/packaging/launcher.py"

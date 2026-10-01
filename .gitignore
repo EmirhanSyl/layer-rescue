@@ -189,3 +189,6 @@ packaging/installer-output/
 *.gcode.3mf
 *.3mf
 *.layer-rescue*.bak
+
+# Local scratch output, not part of the project
+Claude outputs/

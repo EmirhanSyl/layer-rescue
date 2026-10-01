@@ -30,6 +30,7 @@ Compression=lzma2
 SolidCompression=yes
 WizardStyle=modern
 
+SetupIconFile=..\..\src\layer_rescue\assets\icon.ico
 UninstallDisplayIcon={app}\{#MyAppExeName}
 SetupLogging=yes
 

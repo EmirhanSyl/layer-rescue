@@ -1,5 +1,5 @@
 # Builds the Windows installer: PyInstaller (GUI + CLI) and then Inno Setup.
-# Usage: powershell -ExecutionPolicy Bypass -File packaging\windows\build.ps1 [-Version 0.2.2]
+# Usage: powershell -ExecutionPolicy Bypass -File packaging\windows\build.ps1 [-Version 1.0.0]
 param([string]$Version)
 
 $ErrorActionPreference = "Stop"
@@ -16,9 +16,18 @@ if (-not $Version) {
 }
 Write-Host "Building Layer Rescue $Version"
 
+# Runtime dependencies (pyclipper) must be importable for PyInstaller to bundle them.
+python -m pip install .
+Assert-LastExitCode "Installing Layer Rescue and its dependencies"
+
 $launcher = Join-Path $root "packaging\launcher.py"
 $src = Join-Path $root "src"
-$common = @("--noconfirm", "--clean", "--paths", $src, "--specpath", "build", "--workpath", "build\pyinstaller")
+$assets = Join-Path $src "layer_rescue\assets"
+$icon = Join-Path $assets "icon.ico"
+$common = @(
+    "--noconfirm", "--clean", "--paths", $src, "--specpath", "build", "--workpath", "build\pyinstaller",
+    "--icon", $icon, "--add-data", "$assets;layer_rescue\assets"
+)
 
 python -m PyInstaller @common --windowed --name LayerRescue $launcher
 Assert-LastExitCode "PyInstaller (GUI)"
