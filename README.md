@@ -1,31 +1,31 @@
-<img src="src/layer_rescue/assets/icon.png" alt="" width="88" align="right">
+<img src="https://raw.githubusercontent.com/EmirhanSyl/layer-rescue/main/src/layer_rescue/assets/icon.png" alt="" width="88" align="right">
 
 # Layer Rescue
 
 [![CI](https://github.com/EmirhanSyl/layer-rescue/actions/workflows/ci.yml/badge.svg)](https://github.com/EmirhanSyl/layer-rescue/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/github/v/release/EmirhanSyl/layer-rescue?include_prereleases)](https://github.com/EmirhanSyl/layer-rescue/releases)
-[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/EmirhanSyl/layer-rescue/blob/main/LICENSE)
 
-[Türkçe](README.tr.md)
+[Türkçe](https://github.com/EmirhanSyl/layer-rescue/blob/main/README.tr.md)
 
 A failed print doesn't always have to go in the bin. Layer Rescue lets your printer pick up a print where it stopped, even after a power cut, and it can put a broken or loose part back on the plate and print the missing part on top of it.
 
 It runs inside Bambu Studio as a post-processing script. You slice as usual, answer a few questions in a small window, and Layer Rescue rewrites the G-code. Before anything reaches the printer, you see the result in Bambu Studio's preview.
 
-![A broken rocket drone part repaired with Layer Rescue](images/readme/rocket.gif)
+![A broken rocket drone part repaired with Layer Rescue](https://raw.githubusercontent.com/EmirhanSyl/layer-rescue/main/images/readme/rocket.gif)
 
-_A rocket drone body, broken on purpose, put back on the plate and reprinted with its supports. [Full test](docs/tests/04-broken-rocket-drone.md)_
+_A rocket drone body, broken on purpose, put back on the plate and reprinted with its supports. [Full test](https://github.com/EmirhanSyl/layer-rescue/blob/main/docs/tests/04-broken-rocket-drone.md)_
 
 > [!CAUTION]
-> Resuming a print can drive the nozzle into the existing part. Stay at the printer during startup and be ready to stop it. See [SECURITY.md](SECURITY.md).
+> Resuming a print can drive the nozzle into the existing part. Stay at the printer during startup and be ready to stop it. See [SECURITY.md](https://github.com/EmirhanSyl/layer-rescue/blob/main/SECURITY.md).
 
 ## What it can do
 
-- **Continue a print that stopped.** Filament ran out, the nozzle clogged, you hit stop: tell Layer Rescue the last layer that printed properly, and the job continues from the next one, right on top of the part that is still on the plate. ([Test 1](docs/tests/01-lw-pla-plane-part.md))
-- **Even after a power cut.** After a restart the printer no longer knows where Z is, and homing Z would drive the part into the nozzle. Instead, you lower the nozzle onto the part by hand and Layer Rescue makes every Z move relative to that point. Z is never homed. ([Test 2](docs/tests/02-power-loss-dragon.md))
-- **Put a loose or broken part back and print the rest on it.** For a part that came off the plate, broke later or needs an addition. The printer prints a low wall shaped from the part's own outline, pauses so you can put the part in, then prints the missing top onto it. ([Test 3](docs/tests/03-detached-benchy.md), [Test 4](docs/tests/04-broken-rocket-drone.md))
-- **Rebuild the supports the new part needs.** If the missing top was printed on supports, Layer Rescue prints them again from the bed, even inside a hollow part, and leaves out everything that would get in the part's way. ([Test 4](docs/tests/04-broken-rocket-drone.md))
-- **Save what's left of a full plate.** If a few parts on a crowded plate came loose, delete them in Bambu Studio and finish the rest. ([Test 5](docs/tests/05-multi-object-spiders.md))
+- **Continue a print that stopped.** Filament ran out, the nozzle clogged, you hit stop: tell Layer Rescue the last layer that printed properly, and the job continues from the next one, right on top of the part that is still on the plate. ([Test 1](https://github.com/EmirhanSyl/layer-rescue/blob/main/docs/tests/01-lw-pla-plane-part.md))
+- **Even after a power cut.** After a restart the printer no longer knows where Z is, and homing Z would drive the part into the nozzle. Instead, you lower the nozzle onto the part by hand and Layer Rescue makes every Z move relative to that point. Z is never homed. ([Test 2](https://github.com/EmirhanSyl/layer-rescue/blob/main/docs/tests/02-power-loss-dragon.md))
+- **Put a loose or broken part back and print the rest on it.** For a part that came off the plate, broke later or needs an addition. The printer prints a low wall shaped from the part's own outline, pauses so you can put the part in, then prints the missing top onto it. ([Test 3](https://github.com/EmirhanSyl/layer-rescue/blob/main/docs/tests/03-detached-benchy.md), [Test 4](https://github.com/EmirhanSyl/layer-rescue/blob/main/docs/tests/04-broken-rocket-drone.md))
+- **Rebuild the supports the new part needs.** If the missing top was printed on supports, Layer Rescue prints them again from the bed, even inside a hollow part, and leaves out everything that would get in the part's way. ([Test 4](https://github.com/EmirhanSyl/layer-rescue/blob/main/docs/tests/04-broken-rocket-drone.md))
+- **Save what's left of a full plate.** If a few parts on a crowded plate came loose, delete them in Bambu Studio and finish the rest. ([Test 5](https://github.com/EmirhanSyl/layer-rescue/blob/main/docs/tests/05-multi-object-spiders.md))
 - **No G-code editing by hand.** Bambu Studio keeps its filament mapping and `.gcode.3mf` data, and the preview shows exactly what will be printed.
 - **Careful by default.** It never homes Z or levels the bed over a part, checks its own output before saving it, refuses files it can't handle safely instead of guessing, and keeps a backup of the original G-code. The window asks you to confirm what it can't see for itself.
 - **English and Turkish**, switchable in the window at any time.
@@ -34,17 +34,17 @@ _A rocket drone body, broken on purpose, put back on the plate and reprinted wit
 
 I tested every feature on my own P1S with real prints and wrote down each one step by step, with videos, settings and what I learned. All five worked; two of them taught me something worth knowing before you try it yourself.
 
-<p align="center"><img src="images/readme/tested-parts.jpg" alt="The five rescued test prints: rocket drone body, Benchy, spiders, dragon and plane nose cover" width="720"></p>
+<p align="center"><img src="https://raw.githubusercontent.com/EmirhanSyl/layer-rescue/main/images/readme/tested-parts.jpg" alt="The five rescued test prints: rocket drone body, Benchy, spiders, dragon and plane nose cover" width="720"></p>
 
 <p align="center"><em>All five rescued prints. From left: the rocket drone body, the Benchy, the three spiders, the dragon and the plane's nose cover.</em></p>
 
 | Test                                                       | Situation                       | What it shows                                                                    |
 | ---------------------------------------------------------- | ------------------------------- | -------------------------------------------------------------------------------- |
-| [1. LW-PLA plane part](docs/tests/01-lw-pla-plane-part.md) | filament jam, printer stayed on | the basic resume                                                                 |
-| [2. Dragon](docs/tests/02-power-loss-dragon.md)            | power cut                       | resuming after a restart, and what happens when you pick the wrong layer         |
-| [3. Benchy](docs/tests/03-detached-benchy.md)              | print came off the plate        | insert mode, and why parts that get wider towards the top need a bit of hot glue |
-| [4. Rocket drone](docs/tests/04-broken-rocket-drone.md)    | finished part broke             | insert mode with supports rebuilt from the bed inside a hollow part              |
-| [5. Spiders](docs/tests/05-multi-object-spiders.md)        | 2 of 5 parts came off           | finishing only the parts that are left, with a seam you can't see                |
+| [1. LW-PLA plane part](https://github.com/EmirhanSyl/layer-rescue/blob/main/docs/tests/01-lw-pla-plane-part.md) | filament jam, printer stayed on | the basic resume                                                                 |
+| [2. Dragon](https://github.com/EmirhanSyl/layer-rescue/blob/main/docs/tests/02-power-loss-dragon.md)            | power cut                       | resuming after a restart, and what happens when you pick the wrong layer         |
+| [3. Benchy](https://github.com/EmirhanSyl/layer-rescue/blob/main/docs/tests/03-detached-benchy.md)              | print came off the plate        | insert mode, and why parts that get wider towards the top need a bit of hot glue |
+| [4. Rocket drone](https://github.com/EmirhanSyl/layer-rescue/blob/main/docs/tests/04-broken-rocket-drone.md)    | finished part broke             | insert mode with supports rebuilt from the bed inside a hollow part              |
+| [5. Spiders](https://github.com/EmirhanSyl/layer-rescue/blob/main/docs/tests/05-multi-object-spiders.md)        | 2 of 5 parts came off           | finishing only the parts that are left, with a seam you can't see                |
 
 ## Tested on
 
@@ -71,10 +71,10 @@ Downloads are on the [Releases](https://github.com/EmirhanSyl/layer-rescue/relea
 
 Do this once before using it from Bambu Studio, otherwise Studio cannot start it. Alternatively run `xattr -dr com.apple.quarantine /Applications/LayerRescue.app`.
 
-**Intel Macs, Linux and everything else:** install from source with Python 3.10+ (the window needs Tkinter; with Homebrew Python also run `brew install python-tk`):
+**Intel Macs, Linux and everything else:** install the [PyPI package](https://pypi.org/project/layer-rescue/) with Python 3.10+ (the window needs Tkinter; with Homebrew Python also run `brew install python-tk`):
 
 ```bash
-pipx install git+https://github.com/EmirhanSyl/layer-rescue.git
+pipx install layer-rescue
 ```
 
 ## Set up Bambu Studio
@@ -102,7 +102,7 @@ After slicing, Layer Rescue opens a small window. At the top it shows the file i
 - **Part is still on the plate**: resume an interrupted print (below).
 - **Part came off / print on a finished part**: insert mode (further below).
 
-<p align="center"><img src="images/readme/ui-resume.png" alt="The Layer Rescue window on the resume tab" width="400"></p>
+<p align="center"><img src="https://raw.githubusercontent.com/EmirhanSyl/layer-rescue/main/images/readme/ui-resume.png" alt="The Layer Rescue window on the resume tab" width="400"></p>
 
 Each tab is a short list of numbered steps. On the resume tab you enter where the print stopped, say whether the printer was turned off, and confirm a few things Layer Rescue can't see for itself under **Safety checks**. **Create G-code** stays disabled until everything required is filled in, and the line at the bottom left says what is still missing. **Leave G-code unchanged** closes the window without touching the file; use it for normal prints.
 
@@ -112,14 +112,14 @@ If the job is for a printer or filament setup that hasn't been tested yet, an ex
 
 ## Resume a print
 
-![Resuming a plane part after a filament jam](images/readme/plane.gif)
+![Resuming a plane part after a filament jam](https://raw.githubusercontent.com/EmirhanSyl/layer-rescue/main/images/readme/plane.gif)
 
 1. Find the last layer that actually got filament (see [Picking the layer](#picking-the-layer) below).
 2. Slice the original project again, without changing anything. The Layer Rescue window opens on **Part is still on the plate**.
 3. **Step 1 – Where did the print stop?** Enter the last good layer. The window shows the layer and Z height that printing restarts at.
 4. **Step 2 – Was the printer turned off or restarted?**
    - **No, it stayed on the whole time** (`retained`): the printer kept its Z position. Nothing else to do.
-   - **Yes, it was turned off or restarted** (`manual`): after a power cycle Z is not homed. Heat the bed back up, clean the nozzle, move it over a flat printed area of the last good layer and lower it until it just touches the surface. If the printer offers to home Z, don't accept. Do not move the part or the plate. ([Test 2](docs/tests/02-power-loss-dragon.md) shows this step by step.)
+   - **Yes, it was turned off or restarted** (`manual`): after a power cycle Z is not homed. Heat the bed back up, clean the nozzle, move it over a flat printed area of the last good layer and lower it until it just touches the surface. If the printer offers to home Z, don't accept. Do not move the part or the plate. ([Test 2](https://github.com/EmirhanSyl/layer-rescue/blob/main/docs/tests/02-power-loss-dragon.md) shows this step by step.)
 5. **Step 3 – Safety checks.** Layer Rescue cannot see the printer, so you confirm what it has to assume. Tick each box only if it is true:
    - the part is still firmly stuck to the same plate and the plate was not moved;
    - with _No, it stayed on_: the printer never lost power and the Z axis was not moved;
@@ -136,18 +136,18 @@ This is the one decision Layer Rescue can't make for you, and it matters more th
 
 Being off by only 2–3 layers already shows:
 
-- **Printer stayed on:** too high leaves a gap, so the seam is weak and very visible; too low drives the nozzle into the part and can knock it off the plate. ([Test 1](docs/tests/01-lw-pla-plane-part.md))
-- **After a restart:** Z comes from where you put the nozzle, so nothing crashes, but the wrong layers get printed there. Too low prints a few layers twice, too high skips them, and the details stop lining up at the seam. ([Test 2](docs/tests/02-power-loss-dragon.md) is exactly this mistake.)
+- **Printer stayed on:** too high leaves a gap, so the seam is weak and very visible; too low drives the nozzle into the part and can knock it off the plate. ([Test 1](https://github.com/EmirhanSyl/layer-rescue/blob/main/docs/tests/01-lw-pla-plane-part.md))
+- **After a restart:** Z comes from where you put the nozzle, so nothing crashes, but the wrong layers get printed there. Too low prints a few layers twice, too high skips them, and the details stop lining up at the seam. ([Test 2](https://github.com/EmirhanSyl/layer-rescue/blob/main/docs/tests/02-power-loss-dragon.md) is exactly this mistake.)
 
-If you can choose when to stop the print, stop it right after a layer has finished. In [Test 5](docs/tests/05-multi-object-spiders.md) that gave a seam you can't see at all.
+If you can choose when to stop the print, stop it right after a layer has finished. In [Test 5](https://github.com/EmirhanSyl/layer-rescue/blob/main/docs/tests/05-multi-object-spiders.md) that gave a seam you can't see at all.
 
 ### Several objects on the plate
 
-If some parts on a crowded plate came loose, take them off, delete them in Bambu Studio and slice again. Layer Rescue continues everything that is in the G-code, so anything you leave in the project gets printed, in the air if it's no longer on the plate. Don't move, rotate or **Arrange** the remaining parts; they have to stay exactly where they were printed. ([Test 5](docs/tests/05-multi-object-spiders.md))
+If some parts on a crowded plate came loose, take them off, delete them in Bambu Studio and slice again. Layer Rescue continues everything that is in the G-code, so anything you leave in the project gets printed, in the air if it's no longer on the plate. Don't move, rotate or **Arrange** the remaining parts; they have to stay exactly where they were printed. ([Test 5](https://github.com/EmirhanSyl/layer-rescue/blob/main/docs/tests/05-multi-object-spiders.md))
 
 ## Seat a loose part and print on top (insert mode, beta)
 
-![Reseating a Benchy that came off the plate](images/readme/benchy.gif)
+![Reseating a Benchy that came off the plate](https://raw.githubusercontent.com/EmirhanSyl/layer-rescue/main/images/readme/benchy.gif)
 
 For a part that came off the plate halfway, a finished part that broke, or a finished part that gets an addition. You slice the complete model (the old part plus what goes on top, one object). Layer Rescue replaces the layers below the part's top with a holding wall that follows the part's outline, pauses, and prints the rest on top of the part you put into the wall.
 
@@ -158,18 +158,18 @@ For a part that came off the plate halfway, a finished part that broke, or a fin
 5. Without removing or shifting the plate, press the part into the wall the same way round as in Bambu Studio (front of the model to the front of the plate), then press **Resume**.
 6. The printer reheats, purges, travels above the part and prints the rest. The first 2 layers on the part are 10 °C hotter, half speed and without part cooling for adhesion.
 
-<p align="center"><img src="images/readme/ui-insert.png" alt="The insert tab after pressing Preview" width="400"></p>
+<p align="center"><img src="https://raw.githubusercontent.com/EmirhanSyl/layer-rescue/main/images/readme/ui-insert.png" alt="The insert tab after pressing Preview" width="400"></p>
 
 After **Preview**, the right side shows the plate from above: the part (beige), the bottom and the rim of the wall (grey and red), the first layer that will be printed on the part (blue) and the supports that will be reprinted (green). **Result** on the left says which layers become the wall, where printing continues after the pause and how thick the first layer on the part will be, followed by any warnings. The advanced settings open under the preview.
 
 How the wall is made: the part's own outline is read from the sliced layers below the wall height. The opening at every height lets all sections below it pass (the part is lowered from above), with 0.25 mm clearance, a 4-line wall, a 5 mm brim and a small lead-in chamfer at the rim. All of these can be changed after ticking **Show advanced settings** (next to the preview).
 
-**Supports.** If the model has supports that reach above the part height (for example tree supports inside a hollow part, or next to it), their lower part is printed again before the pause, wherever the part will not hit them when it is lowered in. Remove the old supports from the part before seating it. Supports that only held the part's own overhangs are left out. Turn this off with **Reprint the supports below the part height** in the advanced settings (CLI `--no-reprint-supports`). [Test 4](docs/tests/04-broken-rocket-drone.md) shows this on a hollow rocket body.
+**Supports.** If the model has supports that reach above the part height (for example tree supports inside a hollow part, or next to it), their lower part is printed again before the pause, wherever the part will not hit them when it is lowered in. Remove the old supports from the part before seating it. Supports that only held the part's own overhangs are left out. Turn this off with **Reprint the supports below the part height** in the advanced settings (CLI `--no-reprint-supports`). [Test 4](https://github.com/EmirhanSyl/layer-rescue/blob/main/docs/tests/04-broken-rocket-drone.md) shows this on a hollow rocket body.
 
 **Getting a good fit:**
 
 - If the part sits loose in the wall, lower the clearance. On a round part, the default 0.25 mm was clearly too loose and 0.12 mm gave a much tighter fit.
-- **Parts that widen upwards** (like a boat hull) touch the wall only on sloped surfaces, so the nozzle can drag them up and out. Fix such a part with a few dots of hot glue over the seam, squeezed onto the wall rather than the part: it comes off the part cleanly afterwards. ([Test 3](docs/tests/03-detached-benchy.md))
+- **Parts that widen upwards** (like a boat hull) touch the wall only on sloped surfaces, so the nozzle can drag them up and out. Fix such a part with a few dots of hot glue over the seam, squeezed onto the wall rather than the part: it comes off the part cleanly afterwards. ([Test 3](https://github.com/EmirhanSyl/layer-rescue/blob/main/docs/tests/03-detached-benchy.md))
 - Seat the part level all around. Even 0.2 mm higher on one side shows up as layer lines on the other.
 
 Limits: one object on the plate, no prime tower, part at least 3 mm tall and 5 mm wide. The Z of everything printed on top is shifted by the difference between the measured height and the nearest model layer, so the first layer sits on the real part. If the top surface is a cut (infill exposed), add a height range modifier in Bambu Studio from the part height to about 0.6 mm above it with 100 % sparse infill density, so the first layers are solid.
@@ -231,8 +231,8 @@ Thanks also to the designers of the models I used in the tests:
 
 ## Contributing
 
-Bug reports with the printer model, firmware version and G-code are the most useful contribution. See [CONTRIBUTING.md](CONTRIBUTING.md).
+Bug reports with the printer model, firmware version and G-code are the most useful contribution. See [CONTRIBUTING.md](https://github.com/EmirhanSyl/layer-rescue/blob/main/CONTRIBUTING.md).
 
 ## License
 
-[MIT](LICENSE). Not affiliated with or endorsed by Bambu Lab.
+[MIT](https://github.com/EmirhanSyl/layer-rescue/blob/main/LICENSE). Not affiliated with or endorsed by Bambu Lab.

@@ -71,10 +71,10 @@ Nesne bazlı baskı ve spiral vazo, Layer Rescue'nun çalışma şekline henüz 
 
 Bunu Bambu Studio'dan kullanmadan önce bir kez yapın, yoksa Studio uygulamayı başlatamaz. Alternatif olarak `xattr -dr com.apple.quarantine /Applications/LayerRescue.app` komutunu çalıştırabilirsiniz.
 
-**Intel Mac, Linux ve diğerleri:** Python 3.10+ ile kaynaktan kurun (pencere için Tkinter gerekir; Homebrew Python kullanıyorsanız `brew install python-tk` de çalıştırın):
+**Intel Mac, Linux ve diğerleri:** Python 3.10+ ile [PyPI paketini](https://pypi.org/project/layer-rescue/) kurun (pencere için Tkinter gerekir; Homebrew Python kullanıyorsanız `brew install python-tk` de çalıştırın):
 
 ```bash
-pipx install git+https://github.com/EmirhanSyl/layer-rescue.git
+pipx install layer-rescue
 ```
 
 ## Bambu Studio ayarı

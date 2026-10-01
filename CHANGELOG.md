@@ -6,6 +6,20 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-10-01
+
+First release on PyPI: `pipx install layer-rescue`.
+
+### Changed
+
+- README links and images use full GitHub URLs, so the project page on PyPI shows them correctly.
+- The README installs Intel Macs, Linux and other systems from PyPI instead of from source.
+- Test write-ups play their videos from GitHub; the `.mp4` files are no longer in the repository. The README shows a photo of the rescued test prints.
+
+### Fixed
+
+- The release workflow and build scripts read the version without importing the package (the 1.0.0 release run failed before `pyclipper` was installed).
+
 ## [1.0.0] - 2026-10-01
 
 First stable release. Every mode has been tested on a real P1S; the write-ups are in [docs/tests](docs/tests/).
@@ -89,7 +103,8 @@ First stable release. Every mode has been tested on a real P1S; the write-ups ar
 - Atomic in-place rewrite with a backup file.
 - CLI analysis and batch conversion.
 
-[Unreleased]: https://github.com/EmirhanSyl/layer-rescue/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/EmirhanSyl/layer-rescue/compare/v1.0.1...HEAD
+[1.0.1]: https://github.com/EmirhanSyl/layer-rescue/releases/tag/v1.0.1
 [1.0.0]: https://github.com/EmirhanSyl/layer-rescue/releases/tag/v1.0.0
 [0.2.2]: https://github.com/EmirhanSyl/layer-rescue/releases/tag/v0.2.2
 [0.2.1]: https://github.com/EmirhanSyl/layer-rescue/releases/tag/v0.2.1
