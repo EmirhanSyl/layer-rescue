@@ -12,6 +12,7 @@ Examples of what to report:
 
 - Z homing or bed leveling in the output
 - wrong start layer or Z height
+- in insert mode: a move below the part top after the pause, or a wall line that overlaps the part
 - unsafe temperature, tool change or extrusion sequence
 - command injection or unsafe path handling in the post-processing integration
 
@@ -26,5 +27,13 @@ Only the latest release gets fixes.
 - Do not resume if the part or the plate has moved.
 - Enter the last layer that actually got filament, not the layer where the printer noticed the problem.
 - Check the Bambu Studio preview and use the same material.
+- If you accept the risks of an untested printer or multi-filament job, watch the whole start sequence: the parking, purging and homing moves were written for the P1S.
+
+## Before running an insert-mode job
+
+- Measure the part height at its highest point with calipers. A part taller than entered is hit by the nozzle.
+- Stay at the printer until the first layers on the part are down.
+- Do not remove or shift the plate when seating the part. Press the part in gently so the wall stays on the bed.
+- Seat the part the same way round as in Bambu Studio.
 
 Layer Rescue cannot guarantee that a failed print is recoverable.

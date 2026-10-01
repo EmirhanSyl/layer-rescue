@@ -12,6 +12,8 @@ from .core import (
     build_resume_gcode,
     rewrite_gcode_file,
 )
+from .fileio import rewrite_with
+from .insert import InsertOptions, InsertReport, build_insert_gcode, plan_insert
 
 __all__ = [
     "__version__",
@@ -24,4 +26,9 @@ __all__ = [
     "analyze_gcode",
     "build_resume_gcode",
     "rewrite_gcode_file",
+    "rewrite_with",
+    "InsertOptions",
+    "InsertReport",
+    "build_insert_gcode",
+    "plan_insert",
 ]

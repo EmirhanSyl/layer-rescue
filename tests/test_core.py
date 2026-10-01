@@ -258,13 +258,38 @@ class BuildTests(unittest.TestCase):
         with self.assertRaisesRegex(ResumeError, "relative extrusion"):
             build_resume_gcode(sample_gcode(absolute_e=True), ResumeOptions(start_layer=3))
 
-    def test_rejects_multi_filament(self) -> None:
-        with self.assertRaisesRegex(ResumeError, "multi-filament"):
+    def test_rejects_multi_filament_unless_risks_accepted(self) -> None:
+        with self.assertRaisesRegex(ResumeError, "uses 2 filaments.*--allow-untested"):
             build_resume_gcode(sample_gcode(second_tool=True), ResumeOptions(start_layer=3))
 
-    def test_rejects_other_printer_for_mvp(self) -> None:
-        with self.assertRaisesRegex(ResumeError, "only Bambu Lab P1S"):
+    def test_rejects_other_printer_unless_risks_accepted(self) -> None:
+        with self.assertRaisesRegex(ResumeError, "Untested printer.*Bambu Lab X1C.*--allow-untested"):
             build_resume_gcode(sample_gcode(printer="Bambu Lab X1C"), ResumeOptions(start_layer=3))
+
+    def test_other_printer_with_accepted_risks(self) -> None:
+        output, report = build_resume_gcode(
+            sample_gcode(printer="Bambu Lab X1C"), ResumeOptions(start_layer=3, allow_untested=True)
+        )
+        self.assertIn("; layer num/total_layer_count: 3/4", output)
+        self.assertTrue(any(warning.startswith("Untested printer") for warning in report.warnings))
+
+    def test_multi_filament_resumes_with_the_active_filament(self) -> None:
+        output, report = build_resume_gcode(
+            sample_gcode(second_tool=True), ResumeOptions(start_layer=3, allow_untested=True)
+        )
+        preamble = output.split("; LAYER_RESCUE_BLOCK_END")[0].split("; LAYER_RESCUE_BLOCK_START")[1]
+        self.assertIn("M620 S1A", preamble)
+        self.assertIn("\nT1\n", preamble)
+        self.assertIn("M621 S1A", preamble)
+        self.assertNotIn("\nT0\n", preamble)
+        self.assertTrue(any(warning.startswith("Untested setup") for warning in report.warnings))
+
+    def test_single_filament_still_loads_slot_zero(self) -> None:
+        output, report = build_resume_gcode(sample_gcode(), ResumeOptions(start_layer=3))
+        preamble = output.split("; LAYER_RESCUE_BLOCK_END")[0]
+        self.assertIn("M620 S0A", preamble)
+        self.assertIn("\nT0\n", preamble)
+        self.assertFalse(any("Untested" in warning for warning in report.warnings))
 
 
 class RewriteTests(unittest.TestCase):
