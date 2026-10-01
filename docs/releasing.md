@@ -39,7 +39,11 @@ The macOS app is ad-hoc signed only. Developer ID signing and notarization are n
 
 ## PyPI (optional)
 
-1. On PyPI, add a trusted publisher: owner `EmirhanSyl`, repository `layer-rescue`, workflow `release.yml`, environment `pypi`.
-2. In the GitHub repository settings, create an environment named `pypi` and a repository variable `PUBLISH_TO_PYPI` with the value `true`.
+Publishing uses PyPI's trusted publishing, so no API token is stored anywhere. One-time setup:
 
-The next tag will also upload the wheel and sdist to PyPI.
+1. On PyPI, open **Your account → Publishing** (<https://pypi.org/manage/account/publishing/>) and add a publisher for the project `layer-rescue`: owner `EmirhanSyl`, repository `layer-rescue`, workflow `release.yml`, environment `pypi`. Before the first upload this is a "pending" publisher; PyPI creates the project on the first successful upload.
+2. In the GitHub repository, open **Settings → Environments**, create an environment named `pypi`, then under **Settings → Secrets and variables → Actions → Variables** add a repository variable `PUBLISH_TO_PYPI` with the value `true`.
+
+From then on, every tag also uploads the wheel and sdist to PyPI (job `pypi` in the release workflow). A version can only be uploaded to PyPI once, so a mistake needs a new version number.
+
+`pyproject.toml` uses `README.md` as the PyPI page, so links and images in it must be full URLs (`https://github.com/...` or `https://raw.githubusercontent.com/...`), not relative paths.
