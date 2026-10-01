@@ -22,7 +22,7 @@ jobs:
       - name: Check that the tag matches the package version
         shell: pwsh
         run: |
-          $version = python -c "import sys; sys.path.insert(0, 'src'); from layer_rescue._version import __version__; print(__version__)"
+          $version = python -c "exec(open('src/layer_rescue/_version.py').read()); print(__version__)"
           if ("v$version" -ne "${{ github.ref_name }}") {
             throw "Tag ${{ github.ref_name }} does not match src/layer_rescue/_version.py ($version)"
           }

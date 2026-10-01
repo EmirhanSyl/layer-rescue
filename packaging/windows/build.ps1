@@ -11,7 +11,7 @@ function Assert-LastExitCode([string]$step) {
 }
 
 if (-not $Version) {
-    $Version = python -c "import sys; sys.path.insert(0, 'src'); from layer_rescue._version import __version__; print(__version__)"
+    $Version = python -c "exec(open('src/layer_rescue/_version.py').read()); print(__version__)"
     Assert-LastExitCode "Reading the version"
 }
 Write-Host "Building Layer Rescue $Version"

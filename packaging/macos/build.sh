@@ -5,7 +5,7 @@ set -euo pipefail
 
 cd "$(dirname "$0")/../.."
 root="$PWD"
-version="${1:-$(python3 -c 'import sys; sys.path.insert(0, "src"); from layer_rescue._version import __version__; print(__version__)')}"
+version="${1:-$(python3 -c 'exec(open("src/layer_rescue/_version.py").read()); print(__version__)')}"
 arch="$(uname -m)"
 echo "Building Layer Rescue $version for macOS $arch"
 
