@@ -34,6 +34,10 @@ _A rocket drone body, broken on purpose, put back on the plate and reprinted wit
 
 I tested every feature on my own P1S with real prints and wrote down each one step by step, with videos, settings and what I learned. All five worked; two of them taught me something worth knowing before you try it yourself.
 
+<p align="center"><img src="images/readme/tested-parts.jpg" alt="The five rescued test prints: rocket drone body, Benchy, spiders, dragon and plane nose cover" width="720"></p>
+
+<p align="center"><em>All five rescued prints. From left: the rocket drone body, the Benchy, the three spiders, the dragon and the plane's nose cover.</em></p>
+
 | Test                                                       | Situation                       | What it shows                                                                    |
 | ---------------------------------------------------------- | ------------------------------- | -------------------------------------------------------------------------------- |
 | [1. LW-PLA plane part](docs/tests/01-lw-pla-plane-part.md) | filament jam, printer stayed on | the basic resume                                                                 |
@@ -98,7 +102,7 @@ After slicing, Layer Rescue opens a small window. At the top it shows the file i
 - **Part is still on the plate**: resume an interrupted print (below).
 - **Part came off / print on a finished part**: insert mode (further below).
 
-<p align="center"><img src="images/readme/ui-resume.png" alt="The Layer Rescue window on the resume tab" width="560"></p>
+<p align="center"><img src="images/readme/ui-resume.png" alt="The Layer Rescue window on the resume tab" width="400"></p>
 
 Each tab is a short list of numbered steps. On the resume tab you enter where the print stopped, say whether the printer was turned off, and confirm a few things Layer Rescue can't see for itself under **Safety checks**. **Create G-code** stays disabled until everything required is filled in, and the line at the bottom left says what is still missing. **Leave G-code unchanged** closes the window without touching the file; use it for normal prints.
 
@@ -154,7 +158,7 @@ For a part that came off the plate halfway, a finished part that broke, or a fin
 5. Without removing or shifting the plate, press the part into the wall the same way round as in Bambu Studio (front of the model to the front of the plate), then press **Resume**.
 6. The printer reheats, purges, travels above the part and prints the rest. The first 2 layers on the part are 10 °C hotter, half speed and without part cooling for adhesion.
 
-<p align="center"><img src="images/readme/ui-insert.png" alt="The insert tab after pressing Preview" width="560"></p>
+<p align="center"><img src="images/readme/ui-insert.png" alt="The insert tab after pressing Preview" width="400"></p>
 
 After **Preview**, the right side shows the plate from above: the part (beige), the bottom and the rim of the wall (grey and red), the first layer that will be printed on the part (blue) and the supports that will be reprinted (green). **Result** on the left says which layers become the wall, where printing continues after the pause and how thick the first layer on the part will be, followed by any warnings. The advanced settings open under the preview.
 

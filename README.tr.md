@@ -34,6 +34,10 @@ _Bilerek kırılan bir roket drone gövdesi, plakaya geri oturtuluyor ve destekl
 
 Her özelliği kendi P1S'imde gerçek baskılarla denedim ve hepsini videoları, ayarları ve çıkardığım derslerle adım adım yazdım. Beşi de başarılı oldu; ikisi ise kendiniz denemeden önce bilmeye değer şeyler öğretti.
 
+<p align="center"><img src="images/readme/tested-parts.jpg" alt="Kurtarılan beş test baskısı: roket drone gövdesi, Benchy, örümcekler, ejderha ve uçak burun kapağı" width="720"></p>
+
+<p align="center"><em>Kurtarılan beş baskının hepsi. Soldan: roket drone gövdesi, Benchy, üç örümcek, ejderha ve uçağın burun kapağı.</em></p>
+
 | Test | Durum | Ne gösteriyor |
 | --- | --- | --- |
 | [1. LW-PLA uçak parçası](docs/tests/01-lw-pla-plane-part.tr.md) | filament sıkıştı, yazıcı açık kaldı | temel devam ettirme |
