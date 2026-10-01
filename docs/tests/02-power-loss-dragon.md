@@ -24,23 +24,23 @@ This test covers the case people fear most: the power goes off in the middle of 
 
 ### 1. The first part prints, then the power goes off
 
-![Printing the base](../../images/DragonTest/base_print.mp4)
+https://github.com/user-attachments/assets/e9440fcf-7a82-4344-b5a7-e8cd98d5a446
 
 The print ran normally up to around two thirds of the height. Then I turned the printer off at the switch on the back and waited a bit before turning it back on.
 
-![Power cycle](../../images/DragonTest/power_cycle.mp4)
+https://github.com/user-attachments/assets/f6343c49-2493-4312-bed7-0b3e2657b8eb
 
 From this point on, don't touch the part or the plate. The part has to stay exactly where it was printed.
 
 ### 2. Heat the bed back up
 
-![Heating the bed](../../images/DragonTest/heat_bed.mp4)
+https://github.com/user-attachments/assets/ac19b8f3-ae5d-44ca-8377-af8a1c3ca9ae
 
 After the restart, nothing is heated. On the printer's screen I set the bed back to its printing temperature (55 °C), so the part keeps sticking to the plate and stays the same size it was printed at. I also set the nozzle to 140 °C, but there's no special reason for that and it isn't required.
 
 ### 3. Bring the nozzle down onto the part by hand
 
-![Adjusting Z manually](../../images/DragonTest/adjust_z.mp4)
+https://github.com/user-attachments/assets/8f918724-6462-474f-b3f4-d2d6adb6ccf3
 
 This is the most important step of this test. On the printer's screen, open the axis controls and move Z until the clean nozzle **just touches** the top of the last good layer.
 
@@ -54,7 +54,7 @@ Once the nozzle is in place, don't move Z again. From here on, Layer Rescue make
 
 ### 4. Slice and choose the options in Layer Rescue
 
-![Layer Rescue options](../../images/DragonTest/layerrescue_options_dragon.mp4)
+https://github.com/user-attachments/assets/199ced9a-5a05-4514-81a5-f988cc77827a
 
 I sliced the same project again (the post-processing script was already set up, see step 2 of the [plane test](01-lw-pla-plane-part.md)). In the Layer Rescue window:
 
@@ -69,17 +69,17 @@ The file shows `Layers: 1–396 / 400`. That's normal when the supports use thei
 
 ### 5. Check the preview and send
 
-![Slice results](../../images/DragonTest/slice_results.mp4)
+https://github.com/user-attachments/assets/98190da3-f06d-4a18-a94c-6f221534b44c
 
 In the preview, only the part above layer 265 is left: the rest of the body, the wings and the head. Nothing starts from the bed.
 
-![Printing the rest](../../images/DragonTest/printing_rest_dragon.mp4)
+https://github.com/user-attachments/assets/235606a0-eecc-4e89-a785-0b0489d10e19
 
 After sending, the printer heats up, lifts the nozzle 2 mm from where I left it, homes only X and Y, purges, comes back above the part and continues from layer 266. Because the nozzle was placed on the part by hand, I watched the first layers closely.
 
 ### 6. The result
 
-![Final result](../../images/DragonTest/final_result_dragon.mp4)
+https://github.com/user-attachments/assets/685ae02d-1f09-4bd6-936d-02aaa284354c
 
 The dragon finished with its wings and head, but around the seam on the head and the wings there were more marks and gaps than I expected. One wing broke off at the seam and I had to glue it back.
 

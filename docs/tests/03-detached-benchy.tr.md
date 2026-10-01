@@ -25,7 +25,7 @@ Ayrıca iyi bir zorlama testi, çünkü Benchy bu iş için zorlu bir şekil: g�
 
 ### 1. Parçayı temizleyin ve zımparalayın
 
-![Temizleme ve zımparalama](../../images/BenchyTest/cleaning_sanding.mp4)
+https://github.com/user-attachments/assets/f8d8648f-2244-4761-8a10-8c3faa842cd4
 
 Bozulan parçanın tepesi gevşek iplerle ("spagetti") kaplıydı. Onları çekip aldım, sonra temiz ve sağlam bir katmana inene kadar tepeyi zımparayla düzledim. Parçanın düz oturması için altını da temizledim.
 
@@ -39,13 +39,13 @@ Benchy'nin tamamını dilimledim (sadece eksik üst kısmı değil, bütün mode
 
 ### 3. Yazıcı tutucu duvarı basıyor
 
-![Duvarın basılması](../../images/BenchyTest/printing_wall.mp4)
+https://github.com/user-attachments/assets/99555761-4c84-49d8-b92c-a49dcd886a8d
 
 Yazıcı boş bir plakada başlıyor ve yalnızca duvarı basıyor: Benchy'nin taban şeklinde, etrafında küçük bir boşluk bırakan alçak bir halka. Sonra yükseliyor, arkaya park ediyor ve duraklıyor.
 
 ### 4. Parçayı oturtun (ve yapıştırın)
 
-![Parçanın oturtulması](../../images/BenchyTest/seating_part.mp4)
+https://github.com/user-attachments/assets/f17985aa-a730-4c0d-9e2f-60b42b21a8ec
 
 Plakayı çıkarmadan ve oynatmadan Benchy'yi duvara, Bambu Studio'daki yönüyle koydum.
 
@@ -53,7 +53,7 @@ Burada Benchy'nin şekli işi zorlaştırdı. Gövdenin önü oval ve dışa do�
 
 #### İlk deneme: yapıştırmadan
 
-![Yapıştırmadan yapılan başarısız deneme](../../images/BenchyTest/failed_benchy.mp4)
+https://github.com/user-attachments/assets/e017844e-bf03-4f2c-b133-4895173e88c9
 
 Silikona başvurmadan önce normal yoldan denedim: parçayı duvara koydum ve Resume'a bastım. Nozzle üstüne basmaya başlar başlamaz parçayı sürükledi ve duvardan dışarı kaldırdı. Birkaç kez geri koydum, her seferinde aynısı oldu. Duvara yalnızca eğimli yüzeyler değdiği için gövdeyi aşağıda tutan hiçbir şey yoktu.
 
@@ -69,13 +69,13 @@ Ardından yazıcıda **Resume**'a bastım.
 
 ### 5. Yazıcı kalanını üstüne basıyor
 
-![Kalan kısmın basılması](../../images/BenchyTest/printing_rest_benchy.mp4)
+https://github.com/user-attachments/assets/9013010e-0bf7-4e50-b81a-cc8eebb75a62
 
 Yazıcı yeniden ısınıyor, purge yapıyor, parçanın üstüne geliyor ve kabini ve teknenin geri kalanını yerine oturtulmuş gövdenin üstüne basıyor. Parçaya değen ilk katmanlar, eski parçaya daha iyi yapışsın diye biraz daha sıcak, daha yavaş ve parça fanı kapalı basılıyor.
 
 ### 6. Sonuç
 
-![Sonuç](../../images/BenchyTest/final_result_benchy.mp4)
+https://github.com/user-attachments/assets/1cdd1488-0212-4645-80c6-047898974835
 
 4 nokta silikona rağmen Benchy'yi çıkarmak beklediğimden kolay oldu: maket bıçağıyla hafif bir dokunuş ve parça duvardan ayrıldı, üstünde hiç silikon kalmadı.
 

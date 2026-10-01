@@ -24,23 +24,23 @@ Bu test, en çok korkulan durumu ele alıyor: baskının ortasında elektrik kes
 
 ### 1. İlk kısım basılıyor, sonra elektrik kesiliyor
 
-![Alt kısmın basılması](../../images/DragonTest/base_print.mp4)
+https://github.com/user-attachments/assets/e9440fcf-7a82-4344-b5a7-e8cd98d5a446
 
 Baskı, yüksekliğin yaklaşık üçte ikisine kadar normal ilerledi. Sonra yazıcıyı arkasındaki düğmeden kapattım ve tekrar açmadan önce biraz bekledim.
 
-![Kapatıp açma](../../images/DragonTest/power_cycle.mp4)
+https://github.com/user-attachments/assets/f6343c49-2493-4312-bed7-0b3e2657b8eb
 
 Bu noktadan sonra parçaya ve plakaya dokunmayın. Parça, basıldığı yerde aynen durmalı.
 
 ### 2. Tablayı yeniden ısıtın
 
-![Tablanın ısıtılması](../../images/DragonTest/heat_bed.mp4)
+https://github.com/user-attachments/assets/ac19b8f3-ae5d-44ca-8377-af8a1c3ca9ae
 
 Yeniden başlatmadan sonra hiçbir şey ısınmıyor. Yazıcının ekranından tablayı baskı sıcaklığına (55 °C) geri getirdim; böylece parça plakaya yapışık kalıyor ve basıldığı boyutta duruyor. Nozzle'ı da 140 °C'ye ayarladım, ama bunun özel bir sebebi yok ve gerekli değil.
 
 ### 3. Nozzle'ı parçanın üstüne elle indirin
 
-![Z'nin elle ayarlanması](../../images/DragonTest/adjust_z.mp4)
+https://github.com/user-attachments/assets/8f918724-6462-474f-b3f4-d2d6adb6ccf3
 
 Bu testin en önemli adımı bu. Yazıcının ekranında eksen kontrollerini açın ve Z'yi, temiz nozzle son düzgün katmanın tepesine **hafifçe değene** kadar hareket ettirin.
 
@@ -54,7 +54,7 @@ Nozzle yerine oturduktan sonra Z'yi bir daha oynatmayın. Bundan sonra Layer Res
 
 ### 4. Dilimleyin ve Layer Rescue'da seçenekleri belirleyin
 
-![Layer Rescue seçenekleri](../../images/DragonTest/layerrescue_options_dragon.mp4)
+https://github.com/user-attachments/assets/199ced9a-5a05-4514-81a5-f988cc77827a
 
 Aynı projeyi yeniden dilimledim (post-processing script'i zaten ayarlıydı, [uçak testinin](01-lw-pla-plane-part.tr.md) 2. adımına bakın). Layer Rescue penceresinde:
 
@@ -69,17 +69,17 @@ Dosyada `Layers: 1–396 / 400` yazıyor. Destekler kendi katman yüksekliklerin
 
 ### 5. Önizlemeyi kontrol edin ve gönderin
 
-![Dilimleme sonucu](../../images/DragonTest/slice_results.mp4)
+https://github.com/user-attachments/assets/98190da3-f06d-4a18-a94c-6f221534b44c
 
 Önizlemede yalnızca 265. katmanın üstü kalıyor: gövdenin geri kalanı, kanatlar ve kafa. Hiçbir şey tabladan başlamıyor.
 
-![Kalan kısmın basılması](../../images/DragonTest/printing_rest_dragon.mp4)
+https://github.com/user-attachments/assets/235606a0-eecc-4e89-a785-0b0489d10e19
 
 Gönderdikten sonra yazıcı ısınıyor, nozzle'ı bıraktığım yerden 2 mm kaldırıyor, yalnızca X ve Y'yi home ediyor, purge yapıyor, parçanın üstüne geri geliyor ve 266. katmandan devam ediyor. Nozzle parçanın üstüne elle yerleştirildiği için ilk katmanları yakından izledim.
 
 ### 6. Sonuç
 
-![Sonuç](../../images/DragonTest/final_result_dragon.mp4)
+https://github.com/user-attachments/assets/685ae02d-1f09-4bd6-936d-02aaa284354c
 
 Ejderha kanatları ve kafasıyla birlikte tamamlandı, ama kafada ve kanatlarda birleşim yerinin çevresinde beklediğimden fazla iz ve boşluk vardı. Kanatlardan biri birleşim yerinden kırıldı ve geri yapıştırmak zorunda kaldım.
 

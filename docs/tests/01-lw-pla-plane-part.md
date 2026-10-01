@@ -24,11 +24,11 @@ I was printing the nose cover of an RC plane (the `Flightory's Talon1400` nose p
 
 ### 1. The print stops
 
-![Printing the base part](../../images/PlaneTest/base_print_plane.mp4)
+https://github.com/user-attachments/assets/9abcfa52-c15b-434a-9f66-43f7820bfa03
 
 The first half printed normally. After the jam I stopped the job from the **Device** tab in Bambu Studio. (You can just as well stop it on the printer itself.) The progress bar shows `Layer: 64/180`.
 
-![Stopping the print](../../images/PlaneTest/stop_printing.mp4)
+https://github.com/user-attachments/assets/dc31e187-5fee-4954-a754-bdd08f2a9a74
 
 The important part here is what I _didn't_ do: I didn't take the plate off, didn't touch the part and didn't turn the printer off. The printer stayed on, so it still knows exactly where Z is, and that makes the resume as simple as it gets.
 
@@ -36,7 +36,7 @@ Before slicing, look closely at the part and find the last layer that really pri
 
 ### 2. Add Layer Rescue to Bambu Studio Project (one time only)
 
-![Adding the post-processing script](../../images/PlaneTest/add_layerrescue.mp4)
+https://github.com/user-attachments/assets/afd866f4-b8e9-4a08-a2bd-e3ff7f6534d0
 
 You only do this once:
 
@@ -56,7 +56,7 @@ I sliced the same, unchanged project again. Don't change the model, its position
 
 ### 4. Choose the options in Layer Rescue
 
-![Layer Rescue options](../../images/PlaneTest/layerrescue_options.mp4)
+https://github.com/user-attachments/assets/cd7a8bde-be78-4190-8d8e-6049863353f4
 
 In the window:
 
@@ -74,7 +74,7 @@ Then I clicked **Create G-code**.
 
 In Bambu Studio's preview, the job now starts at the layer after the one I entered; nothing below it gets printed. If the preview starts from the bed, something went wrong. Don't send it.
 
-![Printing the rest](../../images/PlaneTest/printing_rest.mp4)
+https://github.com/user-attachments/assets/eced06e0-4ffb-4d24-8251-f8f28cc53782
 
 After sending, the printer:
 
@@ -87,7 +87,7 @@ Stay next to the printer for the first few moves anyway. If anything looks off, 
 
 ### 6. The result
 
-![Final result](../../images/PlaneTest/final_result.mp4)
+https://github.com/user-attachments/assets/40e47099-4b37-4c3c-8883-4bedbce0dc43
 
 The part came off the plate in one piece, and the top half carried on right where the bottom half stopped.
 

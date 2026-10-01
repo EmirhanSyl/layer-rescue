@@ -192,3 +192,6 @@ packaging/installer-output/
 
 # Local scratch output, not part of the project
 Claude outputs/
+
+# Test videos are hosted on GitHub (user-attachments); keep the originals local only
+images/**/*.mp4
