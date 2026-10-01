@@ -25,7 +25,7 @@ It's also a good stress test, because the Benchy is a tricky shape for this: its
 
 ### 1. Clean up and sand the part
 
-![Cleaning and sanding](../../images/BenchyTest/cleaning_sanding.mp4)
+https://github.com/user-attachments/assets/f8d8648f-2244-4761-8a10-8c3faa842cd4
 
 The top of the failed part was covered in loose strings ("spaghetti"). I pulled those off, then sanded the top flat with sandpaper until I was down to a clean, solid layer. I also cleaned the bottom so the part sits flat.
 
@@ -39,13 +39,13 @@ I sliced the complete Benchy (the whole model, not just the missing top). In the
 
 ### 3. The printer prints the holding wall
 
-![Printing the support wall](../../images/BenchyTest/printing_wall.mp4)
+https://github.com/user-attachments/assets/99555761-4c84-49d8-b92c-a49dcd886a8d
 
 The printer starts on an empty plate and prints only the wall: a low ring shaped like the bottom of the Benchy with a small gap around it. Then it lifts, parks at the back and pauses.
 
 ### 4. Seat the part (and glue it)
 
-![Seating the part](../../images/BenchyTest/seating_part.mp4)
+https://github.com/user-attachments/assets/f17985aa-a730-4c0d-9e2f-60b42b21a8ec
 
 Without taking the plate off or moving it, I put the Benchy into the wall facing the same way as in Bambu Studio.
 
@@ -53,7 +53,7 @@ Here the Benchy's shape got in the way. The front of the hull is oval and slopes
 
 #### First try: without glue
 
-![Failed attempt without glue](../../images/BenchyTest/failed_benchy.mp4)
+https://github.com/user-attachments/assets/e017844e-bf03-4f2c-b133-4895173e88c9
 
 Before using glue, I tried it the normal way: I put the part into the wall and pressed Resume. As soon as the nozzle started printing on top, it dragged the part along and lifted it out of the wall. I put it back a couple of times, and each time it happened again. With only sloped surfaces touching the wall, there was simply nothing holding the hull down.
 
@@ -69,13 +69,13 @@ Then I pressed **Resume** on the printer.
 
 ### 5. The printer prints the rest on top
 
-![Printing the rest](../../images/BenchyTest/printing_rest_benchy.mp4)
+https://github.com/user-attachments/assets/9013010e-0bf7-4e50-b81a-cc8eebb75a62
 
 The printer heats up again, purges, moves above the part and prints the cabin and the rest of the boat on top of the seated hull. The first layers on the part are printed a bit hotter, slower and without part cooling, so they stick to the old part better.
 
 ### 6. The result
 
-![Final result](../../images/BenchyTest/final_result_benchy.mp4)
+https://github.com/user-attachments/assets/1cdd1488-0212-4645-80c6-047898974835
 
 Getting the Benchy out was easier than I expected, even with 4 dots of glue: one light touch with a utility knife and the part came off the wall, with no glue left on it.
 

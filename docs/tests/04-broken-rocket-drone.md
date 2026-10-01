@@ -26,7 +26,7 @@ The body is a hollow tube, and its nose was printed with tree supports growing u
 
 ### 1. Break it, then sand it flat
 
-![Breaking and sanding](../../images/RocketTest/breaking_sanding.mp4)
+https://github.com/user-attachments/assets/2d788f59-f855-473a-a2a8-3c874ba2b3db
 
 I took the printed body off the drone and broke the top off with a hard knock from above. The break was rough and uneven, so I sanded it flat on sandpaper until the whole edge was at one height, then measured it with calipers: 52 mm.
 
@@ -34,7 +34,7 @@ A flat edge is important here. The first new layer is printed straight onto it, 
 
 ### 2. Slice the complete model and set up insert mode
 
-![Layer Rescue options](../../images/RocketTest/layerrescue_options_rocket.mp4)
+https://github.com/user-attachments/assets/d242502d-5245-491f-ac00-79203ee29457
 
 In Bambu Studio I sliced the complete body plate, nose and supports included. In the Layer Rescue window I opened **Part came off / print on a finished part**:
 
@@ -54,7 +54,7 @@ Then I ticked the safety check and created the G-code.
 
 ### 3. The printer prints the wall and the supports
 
-![Printing the wall and supports](../../images/RocketTest/printing_supports.mp4)
+https://github.com/user-attachments/assets/b1da270d-c917-480f-a487-faff2306115f
 
 This is the part I'm most happy with. Before the pause, the printer prints the round holding wall and, inside it, the lower part of the tree supports, all the way up to the part height.
 
@@ -62,19 +62,19 @@ Layer Rescue rebuilds **every support that reaches above the chosen height**, st
 
 ### 4. Seat the broken part
 
-![Placing the broken part](../../images/RocketTest/placing_part.mp4)
+https://github.com/user-attachments/assets/de2a44d3-cef5-49f6-87ec-ce2f1da1d73f
 
 I cleaned the remains of the old supports out of the tube, then slid the part down over the new supports into the wall, facing the same way as in Bambu Studio. With 0.20 mm clearance it went in without forcing, and this time no glue was needed. Then I pressed **Resume**.
 
 ### 5. The printer prints the rest
 
-![Printing the rest](../../images/RocketTest/printing_rest_rocket.mp4)
+https://github.com/user-attachments/assets/c6ae5a06-dff6-4512-bec8-efc1bd677067
 
 The printer heats up, purges and prints the nose on top of the body, carried by the reprinted supports on the inside.
 
 ### 6. The result
 
-![Cleaning and final result](../../images/RocketTest/final_result_rocket.mp4)
+https://github.com/user-attachments/assets/f2aca47e-e9da-4bbe-b7ba-7a37eceb84f8
 
 After the print, I took the part out of the wall, cleaned the supports out of the inside and put the body back on the drone.
 

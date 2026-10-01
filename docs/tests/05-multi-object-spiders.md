@@ -23,13 +23,13 @@ So I printed five small spiders with supports at the same time. Halfway through,
 
 ### 1. Print the plate and lose two spiders
 
-![Printing and removing two spiders](../../images/SpiderTest/remove_objects.mp4)
+https://github.com/user-attachments/assets/92b0d53f-ab6a-4d06-9af6-b55bd06e5d24
 
 The first half printed normally. Then I pushed two of the spiders off with a scraper while the printer kept going. I let it run for a while, so it kept printing those two in the air, just like it would if nobody noticed.
 
 ### 2. Stop the print and clean up
 
-![Stopping and cleaning](../../images/SpiderTest/stop_and_clean.mp4)
+https://github.com/user-attachments/assets/e60b3fb8-a746-496c-bbaf-7d701ea37f77
 
 I stopped the print at a lucky moment: the three remaining spiders had just finished layer 44, and the printer was printing layer 44 of the two spiders that were already gone. So the real parts ended on a complete layer.
 
@@ -37,7 +37,7 @@ Then I cleared away the loose spiders and the strings left where they had been. 
 
 ### 3. Delete the lost spiders in Bambu Studio
 
-![Editing the project](../../images/SpiderTest/edit_project.mp4)
+https://github.com/user-attachments/assets/9a47acf3-27bc-4e04-961b-f78b08442f6a
 
 This is the step that makes the multi-object case work. Layer Rescue continues whatever is in the G-code, so if all five spiders were still in the project, the printer would try to print the two missing ones again, from layer 45, in the air.
 
@@ -45,7 +45,7 @@ So in Bambu Studio I deleted the two spiders that were no longer on the plate, a
 
 ### 4. Slice and choose the options in Layer Rescue
 
-![Layer Rescue and slicing](../../images/SpiderTest/layerrescue_slicing.mp4)
+https://github.com/user-attachments/assets/b78bde26-abee-437b-a84b-0cbfb7c96782
 
 Then I sliced the edited project. In the Layer Rescue window:
 
@@ -58,13 +58,13 @@ The preview showed only the three remaining spiders, continuing from layer 45.
 
 ### 5. Print the rest
 
-![Printing the rest](../../images/SpiderTest/print_rest.mp4)
+https://github.com/user-attachments/assets/ecd8bcdf-a435-4bbf-84e4-81fa062b4a40
 
 The printer homes X and Y, purges and carries on with all three spiders at once, supports included, from layer 45 to the end.
 
 ### 6. The result
 
-![Final result](../../images/SpiderTest/final_result_spiders.mp4)
+https://github.com/user-attachments/assets/32290bc5-ad5a-4b27-9729-b00bc73d565b
 
 All three spiders finished properly, with their supports, and came off the plate like any normal print. Two parts lost, three saved, instead of five in the bin.
 

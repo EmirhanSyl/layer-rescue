@@ -24,11 +24,11 @@ Bir RC uçağın burun kapağını (`Flightory's Talon1400` modelinin burun par�
 
 ### 1. Baskı duruyor
 
-![İlk kısmın basılması](../../images/PlaneTest/base_print_plane.mp4)
+https://github.com/user-attachments/assets/9abcfa52-c15b-434a-9f66-43f7820bfa03
 
 İlk yarı normal şekilde basıldı. Sıkışmadan sonra işi Bambu Studio'nun **Device** sekmesinden durdurdum. (Yazıcının kendi ekranından durdurmak da aynı işi görür.) İlerleme çubuğunda `Layer: 64/180` yazıyor.
 
-![Baskının durdurulması](../../images/PlaneTest/stop_printing.mp4)
+https://github.com/user-attachments/assets/dc31e187-5fee-4954-a754-bdd08f2a9a74
 
 Burada asıl önemli olan, yapmadığım şeyler: plakayı çıkarmadım, parçaya dokunmadım ve yazıcıyı kapatmadım. Yazıcı açık kaldığı için Z'nin nerede olduğunu hâlâ tam olarak biliyor ve bu da devam ettirmeyi olabilecek en kolay hale getiriyor.
 
@@ -36,7 +36,7 @@ Dilimlemeden önce parçaya iyice bakın ve gerçekten düzgün basılmış son 
 
 ### 2. Layer Rescue'yu Bambu Studio projesine ekleyin (yalnızca bir kez)
 
-![Post-processing script'inin eklenmesi](../../images/PlaneTest/add_layerrescue.mp4)
+https://github.com/user-attachments/assets/afd866f4-b8e9-4a08-a2bd-e3ff7f6534d0
 
 Bunu sadece bir kez yaparsınız:
 
@@ -56,7 +56,7 @@ Aynı projeyi hiçbir şeyini değiştirmeden yeniden dilimledim. Modeli, konumu
 
 ### 4. Layer Rescue'da seçenekleri belirleyin
 
-![Layer Rescue seçenekleri](../../images/PlaneTest/layerrescue_options.mp4)
+https://github.com/user-attachments/assets/cd7a8bde-be78-4190-8d8e-6049863353f4
 
 Pencerede:
 
@@ -74,7 +74,7 @@ Ardından **Create G-code**'a bastım.
 
 Bambu Studio önizlemesinde iş artık girdiğim katmandan bir sonrakiyle başlıyor; altındaki hiçbir şey basılmıyor. Önizleme tabladan başlıyorsa bir şeyler yanlış gitmiştir, göndermeyin.
 
-![Kalan kısmın basılması](../../images/PlaneTest/printing_rest.mp4)
+https://github.com/user-attachments/assets/eced06e0-4ffb-4d24-8251-f8f28cc53782
 
 Gönderdikten sonra yazıcı:
 
@@ -87,7 +87,7 @@ Yine de ilk birkaç hareket boyunca yazıcının yanında durun. Bir şey ters g
 
 ### 6. Sonuç
 
-![Sonuç](../../images/PlaneTest/final_result.mp4)
+https://github.com/user-attachments/assets/40e47099-4b37-4c3c-8883-4bedbce0dc43
 
 Parça plakadan tek parça halinde çıktı ve üst yarı, alt yarının durduğu yerden tam olarak devam etti.
 

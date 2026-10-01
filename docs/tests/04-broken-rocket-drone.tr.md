@@ -26,7 +26,7 @@ Gövde içi boş bir tüp ve burnu, tabladan başlayıp tüpün içinden yüksel
 
 ### 1. Kırın, sonra düz zımparalayın
 
-![Kırma ve zımparalama](../../images/RocketTest/breaking_sanding.mp4)
+https://github.com/user-attachments/assets/2d788f59-f855-473a-a2a8-3c874ba2b3db
 
 Basılmış gövdeyi drone'dan söktüm ve üstten sert bir darbeyle tepesini kırdım. Kırık yer pürüzlü ve düzensizdi, bu yüzden bütün kenar aynı yüksekliğe gelene kadar zımpara üstünde düzledim, sonra kumpasla ölçtüm: 52 mm.
 
@@ -34,7 +34,7 @@ Burada düz bir kenar önemli. İlk yeni katman doğrudan onun üstüne basılı
 
 ### 2. Tam modeli dilimleyin ve yerleştirme modunu ayarlayın
 
-![Layer Rescue seçenekleri](../../images/RocketTest/layerrescue_options_rocket.mp4)
+https://github.com/user-attachments/assets/d242502d-5245-491f-ac00-79203ee29457
 
 Bambu Studio'da gövdenin plakasını, burun ve destekler dahil, eksiksiz dilimledim. Layer Rescue penceresinde **Parça ayrıldı / bitmiş parçanın üstüne bas** sekmesini açtım:
 
@@ -54,7 +54,7 @@ Sonra güvenlik kontrolünü işaretleyip G-code'u oluşturdum.
 
 ### 3. Yazıcı duvarı ve destekleri basıyor
 
-![Duvarın ve desteklerin basılması](../../images/RocketTest/printing_supports.mp4)
+https://github.com/user-attachments/assets/b1da270d-c917-480f-a487-faff2306115f
 
 En çok hoşuma giden kısım bu. Yazıcı duraklamadan önce yuvarlak tutucu duvarı ve onun içinde ağaç desteklerin alt kısmını, parça yüksekliğine kadar basıyor.
 
@@ -62,19 +62,19 @@ Layer Rescue, parçanın yoluna çıkmadığı sürece **seçilen yüksekliğin 
 
 ### 4. Kırık parçayı oturtun
 
-![Kırık parçanın yerleştirilmesi](../../images/RocketTest/placing_part.mp4)
+https://github.com/user-attachments/assets/de2a44d3-cef5-49f6-87ec-ce2f1da1d73f
 
 Eski desteklerin kalıntılarını tüpün içinden temizledim, sonra parçayı yeni desteklerin üzerinden kaydırarak duvara, Bambu Studio'daki yönüyle oturttum. 0,20 mm boşlukla zorlamadan girdi ve bu sefer yapıştırmaya gerek kalmadı. Ardından **Resume**'a bastım.
 
 ### 5. Yazıcı kalanını basıyor
 
-![Kalan kısmın basılması](../../images/RocketTest/printing_rest_rocket.mp4)
+https://github.com/user-attachments/assets/c6ae5a06-dff6-4512-bec8-efc1bd677067
 
 Yazıcı ısınıyor, purge yapıyor ve burnu, içerideki yeniden basılmış desteklerin taşıdığı şekilde gövdenin üstüne basıyor.
 
 ### 6. Sonuç
 
-![Temizlik ve sonuç](../../images/RocketTest/final_result_rocket.mp4)
+https://github.com/user-attachments/assets/f2aca47e-e9da-4bbe-b7ba-7a37eceb84f8
 
 Baskıdan sonra parçayı duvardan çıkardım, içindeki destekleri temizledim ve gövdeyi drone'a geri taktım.
 
