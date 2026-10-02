@@ -192,7 +192,30 @@ Layer Rescue saves prints, but it can't make the repair invisible or do everythi
 - **Insert mode is still beta.** How well a part fits the wall depends a lot on its shape: some drop in and sit snugly, some can shift, some need glue, and some may not fit at all. Round parts can't be oriented by the wall, so you have to seat them facing the right way. It handles one object on the plate and no prime tower.
 - **Tested on one printer so far.** Everything above was tested on a Bambu Lab P1S with a single filament. You can try other printers and multi-filament jobs by accepting the risks in the window, but the parking, purging and homing moves were made for the P1S, so watch the start closely.
 
-I'm working on these, with insert mode fitting first in line.
+### Roadmap
+
+**Short term: make what's there reliable**
+
+- Fixed test files from the real prints, so a new feature can't quietly break an old case.
+- A "copy report" button that puts the version, printer, settings and warnings into one text for bug reports.
+- Help with finding the last good layer, for example turning a caliper height into a layer number.
+- Dropping failed objects from a crowded plate without re-slicing.
+- A short guide in the window that asks what happened and picks the right mode.
+- Reports from people testing on other printers (X1C, A1, H2D and more), plus an FAQ.
+
+**Mid term: insert mode for more shapes**
+
+- Parts that widen towards the top, and other shapes that don't sit well in the wall today.
+- Clearance presets based on the part's shape.
+- Taking insert mode out of beta once it works on a wider range of parts.
+- Research: setting Z after a power loss automatically, by touching the nozzle to the part or by using the camera or other printer data instead of doing it by eye. Idea from [u/robiebab](https://www.reddit.com/r/BambuLab/comments/1wvchb4/comment/pdcqgs8/).
+
+**Long term: supports that don't start from the bed**
+
+- Research: holding up a tall overhang without printing the whole support underneath. A few small ledges on the model carry a metal bar or another rigid part placed mid-print, and the overhang is printed on top of it. Idea from [u/Thing1_Tokyo](https://www.reddit.com/r/3Dprinting/comments/1wvcdxq/comment/pdayrw4/).
+- OrcaSlicer support and other printer families.
+
+Got an idea or a use case that doesn't fit here? [Open an issue](https://github.com/EmirhanSyl/layer-rescue/issues/new/choose).
 
 ## Share your results
 
@@ -228,6 +251,8 @@ Thanks also to the designers of the models I used in the tests:
 - Boat: the classic [3DBenchy](https://www.3dbenchy.com/)
 - Rocket drone: [Sub-250g SpeedDrone](https://makerworld.com/tr/models/2637662-sub-250g-speeddrone-320km-h-fast#profileId-2913683) by luisengineering on MakerWorld
 - Spiders: [The World's Smallest Spider](https://makerworld.com/tr/models/2864339-the-world-s-smallest-spider-nozzle-0-4#profileId-3196930) by formastampa on MakerWorld
+
+The roadmap also has ideas from the community: thanks to [u/robiebab](https://www.reddit.com/r/BambuLab/comments/1wvchb4/comment/pdcqgs8/) for automatic Z after a power loss, and to [u/Thing1_Tokyo](https://www.reddit.com/r/3Dprinting/comments/1wvcdxq/comment/pdayrw4/) for placed-object supports.
 
 ## Contributing
 

@@ -194,7 +194,30 @@ Layer Rescue baskıları kurtarıyor ama tamiri görünmez yapamıyor ve henüz 
 - **Yerleştirme modu hâlâ beta.** Parçanın duvara ne kadar iyi oturduğu büyük ölçüde şekline bağlı: bazıları içine girip sıkıca oturuyor, bazıları kayabiliyor, bazıları yapıştırma istiyor, bazıları hiç oturmayabiliyor. Yuvarlak parçaların yönünü duvar sabitleyemiyor, doğru yönde oturtmak size kalıyor. Plakada tek obje ve prime tower olmadan çalışıyor.
 - **Şimdilik tek yazıcıda test edildi.** Yukarıdaki her şey tek filamentli bir Bambu Lab P1S'te test edildi. Diğer yazıcıları ve çok filamentli işleri pencerede riskleri kabul ederek deneyebilirsiniz; ama park, purge ve home hareketleri P1S için hazırlandı, bu yüzden başlangıcı yakından izleyin.
 
-Bunların üzerinde çalışmaya devam ediyorum; sırada ilk olarak yerleştirme modunda parçanın oturması var.
+### Yol haritası
+
+**Kısa vade: olanı güvenilir hale getirmek**
+
+- Gerçek baskılardan alınmış sabit test dosyaları. Böylece yeni bir özellik eski bir senaryoyu sessizce bozamaz.
+- Hata bildirimleri için sürümü, yazıcıyı, ayarları ve uyarıları tek metne koyan bir "Raporu kopyala" butonu.
+- Son düzgün katmanı bulmaya yardım, örneğin kumpasla ölçülen yüksekliği katman numarasına çevirmek.
+- Kalabalık bir plakada başarısız objeleri yeniden dilimlemeden çıkarmak.
+- Pencerede ne olduğunu sorup doğru modu seçen kısa bir yönlendirme.
+- Başka yazıcılarda (X1C, A1, H2D ve diğerleri) test edenlerden gelen raporlar ve bir SSS.
+
+**Orta vade: yerleştirme modunda daha çok şekil**
+
+- Yukarı doğru genişleyen parçalar ve bugün duvara iyi oturmayan diğer şekiller.
+- Parçanın şekline göre boşluk ön ayarları.
+- Daha geniş bir parça yelpazesinde çalıştığında yerleştirme modunun beta'dan çıkması.
+- Araştırma: elektrik kesintisinden sonra Z'yi gözle ayarlamak yerine otomatik ayarlamak; nozzle'ı parçaya dokundurarak ya da kamera veya yazıcının diğer verileriyle. Fikir [u/robiebab](https://www.reddit.com/r/BambuLab/comments/1wvchb4/comment/pdcqgs8/)'den.
+
+**Uzun vade: tabladan başlamayan destekler**
+
+- Araştırma: uzun bir çıkıntıyı altındaki desteğin tamamını basmadan taşımak. Modele eklenen birkaç küçük çıkıntının üstüne baskı sırasında metal bir çubuk ya da sert bir parça konuyor, çıkıntılı kısım onun üzerine basılıyor. Fikir [u/Thing1_Tokyo](https://www.reddit.com/r/3Dprinting/comments/1wvcdxq/comment/pdayrw4/)'dan.
+- OrcaSlicer desteği ve başka yazıcı aileleri.
+
+Buraya uymayan bir fikriniz ya da kullanım senaryonuz mu var? [Bir issue açın](https://github.com/EmirhanSyl/layer-rescue/issues/new/choose).
 
 ## Sonuçlarınızı paylaşın
 
@@ -230,6 +253,8 @@ Testlerde kullandığım modellerin tasarımcılarına da teşekkürler:
 - Tekne: klasik [3DBenchy](https://www.3dbenchy.com/)
 - Roket drone: MakerWorld'de luisengineering'in [Sub-250g SpeedDrone](https://makerworld.com/tr/models/2637662-sub-250g-speeddrone-320km-h-fast#profileId-2913683) modeli
 - Örümcekler: MakerWorld'de formastampa'nın [The World's Smallest Spider](https://makerworld.com/tr/models/2864339-the-world-s-smallest-spider-nozzle-0-4#profileId-3196930) modeli
+
+Yol haritasında topluluktan gelen fikirler de var: elektrik kesintisinden sonra otomatik Z fikri için [u/robiebab](https://www.reddit.com/r/BambuLab/comments/1wvchb4/comment/pdcqgs8/)'e, yerleştirilen nesneyi destek olarak kullanma fikri için [u/Thing1_Tokyo](https://www.reddit.com/r/3Dprinting/comments/1wvcdxq/comment/pdayrw4/)'ya teşekkürler.
 
 ## Katkı
 
