@@ -16,6 +16,10 @@ It runs inside Bambu Studio as a post-processing script. You slice as usual, ans
 
 _A rocket drone body, broken on purpose, put back on the plate and reprinted with its supports. [Full test](https://github.com/EmirhanSyl/layer-rescue/blob/main/docs/tests/04-broken-rocket-drone.md)_
 
+<p align="center"><a href="https://www.youtube.com/watch?v=efotZIYpkzM"><img src="https://img.youtube.com/vi/efotZIYpkzM/maxresdefault.jpg" alt="Watch the Layer Rescue video on YouTube" width="640"></a></p>
+
+<p align="center"><em>▶ Watch the full video: how it works, all three modes and every test print, in one go.</em></p>
+
 > [!CAUTION]
 > Resuming a print can drive the nozzle into the existing part. Stay at the printer during startup and be ready to stop it. See [SECURITY.md](https://github.com/EmirhanSyl/layer-rescue/blob/main/SECURITY.md).
 

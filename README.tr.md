@@ -16,6 +16,10 @@ Bambu Studio'nun içinde, post-processing script olarak çalışır. Her zamanki
 
 _Bilerek kırılan bir roket drone gövdesi, plakaya geri oturtuluyor ve destekleriyle birlikte yeniden basılıyor. [Testin tamamı](docs/tests/04-broken-rocket-drone.tr.md)_
 
+<p align="center"><a href="https://www.youtube.com/watch?v=efotZIYpkzM"><img src="https://img.youtube.com/vi/efotZIYpkzM/maxresdefault.jpg" alt="Layer Rescue videosunu YouTube'da izleyin" width="640"></a></p>
+
+<p align="center"><em>▶ Videonun tamamı (İngilizce): nasıl çalıştığı, üç mod ve bütün test baskıları bir arada.</em></p>
+
 > [!CAUTION]
 > Baskıyı devam ettirirken nozzle mevcut parçaya çarpabilir. Başlangıç sırasında yazıcının başında durun ve gerekirse hemen durdurun. Ayrıntılar için [SECURITY.md](SECURITY.md).
 
