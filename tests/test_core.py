@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 import tempfile
 import unittest
 from pathlib import Path
@@ -233,8 +234,38 @@ class BuildTests(unittest.TestCase):
     def test_purges_before_returning_to_part(self) -> None:
         output, _ = build_resume_gcode(sample_gcode(), ResumeOptions(start_layer=3))
         preamble = output.split("; LAYER_RESCUE_BLOCK_END", 1)[0]
-        self.assertIn("G1 E30 F200", preamble)
-        self.assertLess(preamble.find("G1 E30 F200"), preamble.find("G1 Z0.6"))
+        self.assertIn("G1 E30 F200 ", preamble)
+        self.assertLess(preamble.find("G1 E30 F200 "), preamble.find("G1 Z0.6"))
+
+    def test_purge_respects_max_volumetric_speed(self) -> None:
+        # 0.2 mm nozzle PLA profile: 2 mm³/s. The old fixed F200 was ~8 mm³/s and made the extruder skip.
+        source = sample_gcode().replace(
+            "; nozzle_temperature = 220\n",
+            "; nozzle_temperature = 220\n; filament_max_volumetric_speed = 2\n; filament_diameter = 1.75\n",
+        )
+        output, _ = build_resume_gcode(source, ResumeOptions(start_layer=3))
+        preamble = output.split("; LAYER_RESCUE_BLOCK_END", 1)[0]
+        purge = next(line for line in preamble.splitlines() if line.startswith("G1 E30 "))
+        feed = float(purge.split(" F", 1)[1].split()[0])
+        volumetric = feed / 60 * math.pi * (1.75 / 2) ** 2
+        self.assertLessEqual(volumetric, 2.0)
+        self.assertGreater(volumetric, 1.0)
+
+    def test_purge_uses_the_active_filament_limit(self) -> None:
+        source = sample_gcode(second_tool=True).replace(
+            "; nozzle_temperature = 220\n",
+            "; nozzle_temperature = 220\n; filament_max_volumetric_speed = 21,3\n",
+        )
+        output, _ = build_resume_gcode(source, ResumeOptions(start_layer=3, allow_untested=True))
+        preamble = output.split("; LAYER_RESCUE_BLOCK_END", 1)[0]
+        self.assertIn("G1 E30 F59 ", preamble)  # 3 mm³/s * 0.8 for slot 1, not slot 0's 21 mm³/s
+
+    def test_purge_feed_never_exceeds_the_old_rate(self) -> None:
+        source = sample_gcode().replace(
+            "; nozzle_temperature = 220\n", "; nozzle_temperature = 220\n; filament_max_volumetric_speed = 40\n"
+        )
+        output, _ = build_resume_gcode(source, ResumeOptions(start_layer=3))
+        self.assertIn("G1 E30 F200 ", output)
 
     def test_purge_can_be_disabled(self) -> None:
         output, _ = build_resume_gcode(sample_gcode(), ResumeOptions(start_layer=3, purge_length_mm=0))

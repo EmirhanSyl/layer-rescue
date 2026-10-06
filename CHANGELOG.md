@@ -6,6 +6,10 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+### Fixed
+
+- The purge before resuming ran at a fixed `F200` (about 8 mm³/s), several times what a 0.2 mm nozzle profile allows (2 mm³/s for PLA), so the extruder could skip or grind. The purge feed now follows the active filament's `filament_max_volumetric_speed` (80 %, never faster than before). Applies to resume and insert mode.
+
 ## [1.0.1] - 2026-10-01
 
 First release on PyPI: `pipx install layer-rescue`.

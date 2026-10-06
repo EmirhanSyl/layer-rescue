@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import math
 import re
 from dataclasses import dataclass, field
 from enum import Enum
@@ -97,6 +98,38 @@ def _first_layer_xy(analysis: Analysis, layer: LayerInfo) -> tuple[float, float]
         if e_value is not None and e_value > 0:
             return None
     return None
+
+
+FILAMENT_AREA_175 = math.pi * (1.75 / 2) ** 2
+MAX_PURGE_FEED = 200.0  # mm/min of filament: the original fixed rate, about 8 mm³/s with 1.75 mm filament
+MIN_PURGE_FEED = 10.0
+PURGE_VOLUMETRIC_FACTOR = 0.8  # stay below the filament's max volumetric speed, like the stock start G-code
+
+
+def _config_at(analysis: Analysis, key: str, index: int) -> float | None:
+    """Per-filament config value (comma separated) for ``index``, falling back to the first entry."""
+    value = analysis.config.get(key)
+    if not value:
+        return None
+    entries = [entry for entry in value.split(",") if entry.strip()]
+    if not entries:
+        return None
+    match = NUMBER_RE.search(entries[index] if 0 <= index < len(entries) else entries[0])
+    return float(match.group(0)) if match else None
+
+
+def _purge_feed(analysis: Analysis, tool: int) -> int:
+    """Filament feed (mm/min) for the purge that respects the filament's max volumetric speed.
+
+    A fixed F200 is ~8 mm³/s; a 0.2 mm nozzle profile allows ~2 mm³/s, so the extruder would skip.
+    """
+    max_volumetric = _config_at(analysis, "filament_max_volumetric_speed", tool)
+    if max_volumetric is None or max_volumetric <= 0:
+        return int(MAX_PURGE_FEED)
+    diameter = _config_at(analysis, "filament_diameter", tool) or 1.75
+    area = math.pi * (diameter / 2) ** 2 if diameter > 0 else FILAMENT_AREA_175
+    feed = max_volumetric * PURGE_VOLUMETRIC_FACTOR / area * 60
+    return int(max(MIN_PURGE_FEED, min(MAX_PURGE_FEED, math.floor(feed))))
 
 
 def _retraction_length(analysis: Analysis) -> float:
@@ -329,7 +362,8 @@ def _resume_preamble(
                 "; Refill the melt zone over the rear purge chute (nozzle may have oozed or been retracted).",
                 "M400",
                 "G92 E0",
-                f"G1 E{_format_number(options.purge_length_mm)} F200",
+                f"G1 E{_format_number(options.purge_length_mm)} F{_purge_feed(analysis, tool)}"
+                " ; purge within the filament's max volumetric speed",
                 "M400",
             ]
         )
