@@ -24,6 +24,14 @@ from .gcode import (
     analyze_gcode,
 )
 from .machine_state import MachineState, _scan_machine_state, _validate_supported_source
+from .printers import (
+    StationContext,
+    extruder_for_filament,
+    heat_commands,
+    home_command,
+    printer_profile,
+    station_block,
+)
 
 
 class ZReferenceMode(str, Enum):
@@ -265,12 +273,30 @@ def _resume_preamble(
         raise ResumeError("The purge length must be between 0 and 100 mm of filament.")
 
     tool = state.active_tool or 0  # the filament slot that was printing when the selected layer starts
+    profile = printer_profile(analysis)
+    station = StationContext(
+        tool=tool,
+        nozzle=nozzle,
+        bed=bed,
+        purge_length=options.purge_length_mm,
+        purge_feed=_purge_feed(analysis, tool),
+        retract=_retraction_length(analysis),
+        hotend=state.active_hotend,
+        extruder=state.active_extruder if state.active_extruder is not None else extruder_for_filament(analysis, tool),
+        flush_setup=state.flush_setup_command,
+        toolchange_setup=state.toolchange_setup,
+    )
 
     mode = _z_reference_mode(options.z_reference_mode)
     reference_z: float | None = None
     if mode is ZReferenceMode.MANUAL:
         if not options.home_corexy:
             raise ResumeError("Manual Z reference mode requires CoreXY homing after the safety lift.")
+        if profile.experimental:
+            raise ResumeError(
+                f"Restarted (manual Z) mode is not available for the {profile.description} yet; "
+                "only the printer-stayed-on mode is."
+            )
         reference_z = _previous_layer(analysis, layer).z
 
     progress = max(0, min(100, round((layer.number - 1) / layer.total * 100)))
@@ -291,10 +317,9 @@ def _resume_preamble(
         f"M73 P{progress}",
     ]
     lines.extend(state.motion_commands)
+    lines.extend(heat_commands(profile, station))
     lines.extend(
         [
-            f"M140 S{bed}",
-            f"M104 S{nozzle}",
             "G90",
             "G21",
             "M83",
@@ -324,73 +349,14 @@ def _resume_preamble(
         ]
     )
     if options.home_corexy:
-        lines.append("G28 X ; Bambu CoreXY re-home only; never home Z")
-    lines.extend(
-        [
-            "M975 S1",
-            "; Move to the stock P1S filament-change station at the lifted Z position.",
-            "G1 X60 F12000",
-            "G1 Y245",
-            "G1 Y265 F3000",
-            "M620 M",
-            f"M620 S{tool}A",
-            f"M190 S{bed}",
-            f"M109 S{nozzle}",
-            "G1 X120 F12000",
-            "G1 X20 Y50 F12000",
-            "G1 Y-3",
-            f"T{tool}",
-            "G1 X54 F12000",
-            "G1 Y265",
-            "M400",
-            f"M621 S{tool}A",
-            state.flush_setup_command or "M620.1 E F149.669 T270",
-            "T1000",
-            f"M109 S{nozzle} ; reassert print temperature after tool/AMS selection",
-            "M412 S1",
-            # Bambu firmware: G90 (issued above for the Z lift) also switches E to
-            # absolute. Without this M83 every relative E value in the retained body
-            # is executed as an absolute position and no filament is extruded.
-            "G90",
-            "M83 ; relative extrusion must be re-selected after G90 on Bambu firmware",
-        ]
-    )
-    retract = _retraction_length(analysis)
-    if options.purge_length_mm > 0:
-        lines.extend(
-            [
-                "; Refill the melt zone over the rear purge chute (nozzle may have oozed or been retracted).",
-                "M400",
-                "G92 E0",
-                f"G1 E{_format_number(options.purge_length_mm)} F{_purge_feed(analysis, tool)}"
-                " ; purge within the filament's max volumetric speed",
-                "M400",
-            ]
-        )
-        if retract > 0:
-            lines.append(f"G1 E-{_format_number(retract)} F1800 ; retract before wiping and travel")
-        lines.extend(
-            [
-                "M106 P1 S255",
-                "M400 S3",
-                "G1 X70 F9000",
-                "G1 X76 F15000",
-                "G1 X65 F15000",
-                "G1 X76 F15000",
-                "G1 X65 F15000 ; shake off purged filament",
-                "G1 X80 F6000",
-                "G1 X95 F15000",
-                "G1 X80 F15000",
-                "G1 X165 F15000 ; wipe",
-                "M400",
-                "M106 P1 S0",
-            ]
-        )
+        lines.append(home_command(profile))
+    lines.extend(station_block(profile, station))
     lines.extend(state.fan_commands)
     for command in state.auxiliary_commands:
         if not command.startswith("M975"):
             lines.append(command)
 
+    retract = station.retract
     first_xy = _first_layer_xy(analysis, layer)
     if first_xy is not None:
         lines.append(
@@ -443,10 +409,13 @@ def _validate_output(
     if preamble_end < 0:
         raise ResumeError("Internal validation failed: resume block terminator is missing.")
     preamble = text[:preamble_end]
-    tool_index = preamble.rfind("T1000")
-    final_heat_index = preamble.rfind("M109 S")
-    if tool_index < 0 or final_heat_index < tool_index:
-        raise ResumeError("Internal validation failed: print temperature is not reasserted after T1000.")
+    # The last tool selection (T1000 on the P1 series, T<n> H<h> on the H2) can change the nozzle
+    # temperature, so the print temperature must be waited for again after it.
+    preamble_codes = [_code(line) for line in preamble.splitlines()]
+    tool_lines = [index for index, code in enumerate(preamble_codes) if re.match(r"^T\d+(?:\s|$)", code)]
+    heat_lines = [index for index, code in enumerate(preamble_codes) if re.match(r"^M109\s+S", code)]
+    if not tool_lines or not heat_lines or heat_lines[-1] < tool_lines[-1]:
+        raise ResumeError("Internal validation failed: print temperature is not reasserted after the tool selection.")
 
     preamble_lines = preamble.splitlines()
     z_assignments: list[tuple[int, float]] = []

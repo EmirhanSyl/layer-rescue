@@ -35,6 +35,7 @@ from .gcode import (
     config_float,
 )
 from .machine_state import _scan_machine_state, _validate_supported_source
+from .printers import park_position
 from .resume import ResumeOptions, ZReferenceMode, _resume_preamble
 from .toolpath import LayerToolpaths, read_toolpaths
 from .supports import SupportPlan, emit_support_layer, plan_supports
@@ -288,7 +289,7 @@ def plan_insert(text_or_analysis: str | Analysis, options: InsertOptions) -> Ins
     if park_z < options.part_height_mm + 5.0:
         raise ResumeError("The part is too tall to park the toolhead safely above it.")
     center_x = (min_x + max_x) / 2
-    park_xy = (236.0, 250.0) if center_x < 128 else (20.0, 250.0)
+    park_xy = park_position(analysis, center_x)
 
     return InsertPlan(
         analysis=analysis,

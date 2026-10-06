@@ -411,6 +411,29 @@ MESSAGE_PATTERNS: list[tuple[re.Pattern[str], str]] = [
             "Test edilmemiş kurulum: bu iş {n} filament kullanıyor (AMS/filament değişimi), Layer Rescue ise "
             "şimdiye kadar yalnızca tek filamentle test edildi. Seçilen katmanda kullanılan filamenti yükler.{h}",
         ),
+        # printers.py
+        (
+            r"No resume sequence for '(?P<m>.*)': Layer Rescue knows the filament station, purge and homing moves "
+            r"of the Bambu Lab P1/X1 and H2 series only\. Running another printer's moves could crash the toolhead\.",
+            "'{m}' için devam dizisi yok: Layer Rescue yalnızca Bambu Lab P1/X1 ve H2 serisinin filament istasyonu, "
+            "purge ve home hareketlerini biliyor. Başka bir yazıcının hareketleri baskı kafasını çarptırabilir.",
+        ),
+        (
+            r"Experimental H2 sequence: purge, wipe, hotend selection and X homing follow Bambu Studio's stock H2 "
+            r"G-code but have not been run on a printer yet\. Watch the printer until it is printing on the part\.(?P<h>.*)",
+            "Deneysel H2 dizisi: purge, silme, hotend seçimi ve X home hareketleri Bambu Studio'nun stok H2 "
+            "G-code'unu izliyor ama henüz gerçek bir yazıcıda çalıştırılmadı. Parçanın üzerine basmaya başlayana kadar "
+            "yazıcıyı izleyin.{h}",
+        ),
+        (
+            r"Could not determine the hotend \(T<n> H<h>\) or extruder used by the selected layer; "
+            r"the H2 sequence needs both\.",
+            "Seçilen katmanda kullanılan hotend (T<n> H<h>) veya ekstruder belirlenemedi; H2 dizisi ikisine de ihtiyaç duyar.",
+        ),
+        (
+            r"Restarted \(manual Z\) mode is not available for the (?P<p>.+) yet; only the printer-stayed-on mode is\.",
+            "Yeniden başlatılmış (manuel Z) mod {p} için henüz yok; yalnızca yazıcının açık kaldığı mod kullanılabilir.",
+        ),
         # resume.py
         (
             r"Manual Z reference requires a preceding successfully printed layer\.",
