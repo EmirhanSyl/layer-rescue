@@ -57,6 +57,8 @@ Her özelliği kendi P1S'imde gerçek baskılarla denedim ve hepsini videoları,
 - Bambu Studio G-code'u, katman bazlı baskı, göreli ekstrüzyon
 - Parça aynı plakada sağlam duruyor (devam modu) ya da plakadan ayrılmış / bitmiş ve etrafına basılan duvara geri oturabiliyor (yerleştirme modu, beta)
 
+Desteklenen yazıcı aileleri: Bambu Lab P1/X1 serisi (P1S'te test edildi; P1P, X1, X1C ve X1E aynı hareketleri kullanır) ve deneysel olarak H2 serisi (H2D, H2S, H2C: purge, silme ve hotend seçimi stok H2 G-code'unu izliyor ama henüz gerçek bir yazıcıda çalıştırılmadı; yalnızca yazıcının açık kaldığı mod kullanılabilir). A1 ve A1 mini dahil diğer yazıcılar, istasyonları başka yerde olduğu için reddedilir.
+
 Henüz test edilmeyenler: diğer yazıcı modelleri ve AMS/çok filamentli işler. Bir iş test edilen kurulumun dışında kalıyorsa Layer Rescue bunun sebebini söyler ve devam etmeden önce riskleri kabul etmenizi ister (CLI: `--allow-untested`). Birden fazla filament varsa, devam edilen katmanda kullanılan filamenti yükler. Bunlardan birini denerseniz lütfen [sonuçlarınızı paylaşın](#sonuçlarınızı-paylaşın).
 
 Nesne bazlı baskı ve spiral vazo, Layer Rescue'nun çalışma şekline henüz uymuyor; bu yüzden bu işler hâlâ reddediliyor.
@@ -196,7 +198,7 @@ Layer Rescue baskıları kurtarıyor ama tamiri görünmez yapamıyor ve henüz 
 - **Katmanı siz seçiyorsunuz ve hatalar belli oluyor.** Baskının gerçekte nerede durduğunu otomatik bulan bir şey yok. [Katmanı seçmek](#katmanı-seçmek) bölümüne bakın.
 - **Yeniden başlatmadan sonra sonuç sizin elinize bağlı.** Nozzle parçanın üstüne gözle yerleştiriliyor.
 - **Yerleştirme modu hâlâ beta.** Parçanın duvara ne kadar iyi oturduğu büyük ölçüde şekline bağlı: bazıları içine girip sıkıca oturuyor, bazıları kayabiliyor, bazıları yapıştırma istiyor, bazıları hiç oturmayabiliyor. Yuvarlak parçaların yönünü duvar sabitleyemiyor, doğru yönde oturtmak size kalıyor. Plakada tek obje ve prime tower olmadan çalışıyor.
-- **Şimdilik tek yazıcıda test edildi.** Yukarıdaki her şey tek filamentli bir Bambu Lab P1S'te test edildi. Diğer yazıcıları ve çok filamentli işleri pencerede riskleri kabul ederek deneyebilirsiniz; ama park, purge ve home hareketleri P1S için hazırlandı, bu yüzden başlangıcı yakından izleyin.
+- **Şimdilik tek yazıcıda test edildi.** Yukarıdaki her şey tek filamentli bir Bambu Lab P1S'te test edildi. Diğer yazıcıları ve çok filamentli işleri pencerede riskleri kabul ederek deneyebilirsiniz; ama başlangıcı yakından izleyin: P1/X1 hareketleri bir P1S'te hazırlandı, H2 dizisi ise yalnızca dilimlenmiş dosyalar üzerinden kontrol edildi.
 
 ### Yol haritası
 
