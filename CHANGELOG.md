@@ -6,6 +6,8 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-10-08
+
 ### Added
 
 - Printer profiles. The machine-specific part of the resume sequence (filament station, purge and wipe, X homing, tool selection, temperatures, insert-mode park position) now depends on the printer family instead of always using P1S moves.
@@ -125,7 +127,8 @@ First stable release. Every mode has been tested on a real P1S; the write-ups ar
 - Atomic in-place rewrite with a backup file.
 - CLI analysis and batch conversion.
 
-[Unreleased]: https://github.com/EmirhanSyl/layer-rescue/compare/v1.0.1...HEAD
+[Unreleased]: https://github.com/EmirhanSyl/layer-rescue/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/EmirhanSyl/layer-rescue/releases/tag/v1.1.0
 [1.0.1]: https://github.com/EmirhanSyl/layer-rescue/releases/tag/v1.0.1
 [1.0.0]: https://github.com/EmirhanSyl/layer-rescue/releases/tag/v1.0.0
 [0.2.2]: https://github.com/EmirhanSyl/layer-rescue/releases/tag/v0.2.2
