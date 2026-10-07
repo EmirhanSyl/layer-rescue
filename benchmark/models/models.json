@@ -1,0 +1,163 @@
+{
+  "M1_tensile_D638-I_t7": {
+    "size_mm": [
+      19.0,
+      7.0,
+      165.0
+    ],
+    "seam_z": 82.5,
+    "gauge_width": 13.0,
+    "gauge_length": 57.0,
+    "fillet_radius": 76.0,
+    "standard": "ASTM D638 Type I outline, T = 7 mm",
+    "bbox_mm": [
+      19.0,
+      7.0,
+      165.0
+    ],
+    "volume_cm3": 18.36,
+    "watertight": true,
+    "seam_layer_0p2": 412,
+    "recommended_wall_mm": 15.0
+  },
+  "M2_flex_80x10x5": {
+    "size_mm": [
+      10,
+      5,
+      80
+    ],
+    "seam_z": 40.0,
+    "standard": "ISO 178 based, thickness 5 mm (deviation: minimum narrow side in insert mode)",
+    "bbox_mm": [
+      10.0,
+      5.0,
+      80.0
+    ],
+    "volume_cm3": 4.0,
+    "watertight": true,
+    "seam_layer_0p2": 200,
+    "recommended_wall_mm": 15.0
+  },
+  "M3_shear_block_20x20x30": {
+    "size_mm": [
+      20,
+      20,
+      30
+    ],
+    "seam_z": 15.0,
+    "standard": "custom shear block",
+    "bbox_mm": [
+      20.0,
+      20.0,
+      30.0
+    ],
+    "volume_cm3": 12.0,
+    "watertight": true,
+    "seam_layer_0p2": 75,
+    "recommended_wall_mm": 7.5
+  },
+  "G1_square_20": {
+    "seam_z": 20.0,
+    "section": "square 20 x 20",
+    "bbox_mm": [
+      21.6,
+      21.6,
+      30.0
+    ],
+    "volume_cm3": 12.08,
+    "watertight": true,
+    "seam_layer_0p2": 100,
+    "recommended_wall_mm": 10.0
+  },
+  "G2_cylinder_d20": {
+    "seam_z": 20.0,
+    "section": "circle d = 20",
+    "bbox_mm": [
+      21.6,
+      21.6,
+      30.0
+    ],
+    "volume_cm3": 9.5,
+    "watertight": true,
+    "seam_layer_0p2": 100,
+    "recommended_wall_mm": 10.0
+  },
+  "G3a_cone_10deg": {
+    "seam_z": 20.0,
+    "section": "cone, base d = 16, flare 10 deg per side, top d = 26.6",
+    "bbox_mm": [
+      29.24,
+      29.24,
+      30.0
+    ],
+    "volume_cm3": 11.05,
+    "watertight": true,
+    "seam_layer_0p2": 100,
+    "recommended_wall_mm": 10.0
+  },
+  "G3b_cone_25deg": {
+    "seam_z": 20.0,
+    "section": "cone, base d = 16, flare 25 deg per side, top d = 44.0",
+    "bbox_mm": [
+      48.38,
+      48.38,
+      30.0
+    ],
+    "volume_cm3": 23.06,
+    "watertight": true,
+    "seam_layer_0p2": 100,
+    "recommended_wall_mm": 10.0
+  },
+  "G4_tube_d24_d16": {
+    "seam_z": 20.0,
+    "section": "tube, outer d = 24, inner d = 16",
+    "bbox_mm": [
+      25.6,
+      25.6,
+      30.0
+    ],
+    "volume_cm3": 7.61,
+    "watertight": true,
+    "seam_layer_0p2": 100,
+    "recommended_wall_mm": 10.0
+  },
+  "G5_L_30x20": {
+    "seam_z": 20.0,
+    "section": "L, 30 x 20, arm 8",
+    "bbox_mm": [
+      31.6,
+      21.6,
+      30.0
+    ],
+    "volume_cm3": 10.15,
+    "watertight": true,
+    "seam_layer_0p2": 100,
+    "recommended_wall_mm": 10.0
+  },
+  "G6_thin_5x30": {
+    "seam_z": 3.0,
+    "section": "5 x 30 (minimum narrow side)",
+    "bbox_mm": [
+      6.6,
+      31.6,
+      13.0
+    ],
+    "volume_cm3": 1.97,
+    "watertight": true,
+    "seam_layer_0p2": 15,
+    "recommended_wall_mm": 2.0
+  },
+  "G7_overhang": {
+    "seam_z": 20.0,
+    "section": "G1 + 0 deg ledge (+X, z = 25-27) + 45 deg overhang (-X, z = 22-27)",
+    "bbox_mm": [
+      34.49,
+      21.6,
+      30.0
+    ],
+    "volume_cm3": 12.45,
+    "watertight": true,
+    "seam_layer_0p2": 100,
+    "recommended_wall_mm": 10.0
+  }
+}
