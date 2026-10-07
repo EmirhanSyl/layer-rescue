@@ -103,6 +103,18 @@ H2C_CONFIG = {
     "hot_plate_temp": "55",
 }
 
+# H2D (two nozzles, no hotend rack): same structure as the H2C start, without hotend remap (M620 N),
+# and a 350 mm wide bed (stock H2D start in Bambu Studio 2.08).
+H2D_START = [line for line in H2C_START if not line.startswith("M620 N")]
+H2D_START = [
+    line.replace("machine: H2C", "machine: H2D").replace("E-14", "E-10") for line in H2D_START
+]
+H2D_CONFIG = {
+    **H2C_CONFIG,
+    "printable_area": "0x0,350x0,350x320,0x320",
+    "extruder_printable_area": "0x0,325x0,325x320,0x320#25x0,350x0,350x320,25x320",
+}
+
 
 def _bed_slinger_start(model: str, purge_x: str, shake_x: str) -> list[str]:
     return [

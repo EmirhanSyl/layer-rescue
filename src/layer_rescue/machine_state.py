@@ -25,6 +25,7 @@ class MachineState:
     active_hotend: int | None = None  # H2: hotend of the last ``T<n> H<h>`` / ``M620 S<n>A H<h>``
     active_extruder: int | None = None  # H2: extruder index of the last ``M104/M109 S.. T<e>`` that heated
     toolchange_setup: tuple[str, ...] = ()  # H2: last M620.10 / M620.11 flush and cut settings
+    hotend_remap: bool = False  # H2C: the start G-code enables hotend remap (M620 N); the H2D's does not
 
 
 TOOL_RE = TOOL_SELECT_RE
@@ -48,6 +49,7 @@ def _scan_machine_state(analysis: Analysis, stop_line: int) -> MachineState:
     active_hotend: int | None = None
     active_extruder: int | None = None
     toolchange_setup: dict[str, str] = {}
+    hotend_remap = False
 
     for raw_line in analysis.lines[analysis.executable_start_line : stop_line]:
         code = _code(raw_line)
@@ -66,6 +68,8 @@ def _scan_machine_state(analysis: Analysis, stop_line: int) -> MachineState:
                 extruder = _parameter(code, "T")
                 if extruder is not None:
                     active_extruder = int(extruder)
+        elif command == "M620" and code.split()[1:2] == ["N"]:
+            hotend_remap = True
         elif command in TOOLCHANGE_SETUP_COMMANDS:
             tokens = code.split()
             # Keep the latest of each variant (A0/A1, P/K/S...); R = retracted length, used after a change.
@@ -125,6 +129,7 @@ def _scan_machine_state(analysis: Analysis, stop_line: int) -> MachineState:
         active_hotend=active_hotend,
         active_extruder=active_extruder,
         toolchange_setup=tuple(toolchange_setup.values()),
+        hotend_remap=hotend_remap,
     )
 
 

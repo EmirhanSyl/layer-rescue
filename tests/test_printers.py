@@ -373,6 +373,8 @@ from fake_slicer import (  # noqa: E402
     A1_START,
     H2C_CONFIG,
     H2C_START,
+    H2D_CONFIG,
+    H2D_START,
     bambu_like_gcode,
 )
 from layer_rescue.insert import PAUSE_BLOCK_END, PAUSE_BLOCK_START, InsertOptions, build_insert_gcode  # noqa: E402
@@ -381,7 +383,8 @@ from layer_rescue.printers import reachable_bounds as _reachable  # noqa: E402
 PRINTERS = {
     # model: (start G-code, config, part centre, lines that must appear in the station block)
     "Bambu Lab P1S": (None, {}, (128.0, 128.0), ["G1 Y265 F3000", "T1000"]),
-    "Bambu Lab H2C": (H2C_START, H2C_CONFIG, (165.0, 160.0), ["G150.3", "T0 H-1", "G28 X T300"]),
+    "Bambu Lab H2C": (H2C_START, H2C_CONFIG, (165.0, 160.0), ["G150.3", "T0 H-1", "G28 X T300", "M620 N"]),
+    "Bambu Lab H2D": (H2D_START, H2D_CONFIG, (175.0, 160.0), ["G150.3", "T0 H-1", "G28 X T300"]),
     "Bambu Lab A1": (A1_START, A1_CONFIG, (128.0, 128.0), ["G1 X-48.2 F3000", "G1 X-28.5 F30000"]),
     "Bambu Lab A1 mini": (A1_MINI_START, A1_MINI_CONFIG, (90.0, 90.0), ["G1 X-13.5 F3000", "G1 X0 F30000"]),
 }
@@ -413,6 +416,14 @@ class EveryModeTests(unittest.TestCase):
                 for pattern in P1S_ONLY:
                     self.assertNotRegex(line, pattern, f"{model}: {line}")
 
+    def test_hotend_remap_only_where_the_job_enables_it(self) -> None:
+        h2c = _preamble(build_resume_gcode(_job("Bambu Lab H2C"), ResumeOptions(start_layer=40, allow_untested=True))[0])
+        h2d = _preamble(build_resume_gcode(_job("Bambu Lab H2D"), ResumeOptions(start_layer=40, allow_untested=True))[0])
+        self.assertIn("M620 N", h2c)
+        self.assertNotIn("M620 N", h2d)
+        cut = [line for line in h2d if line.startswith("M620.11 S")]
+        self.assertEqual(cut, ["M620.11 S1 L0 I0 B-1 R10 D8 E-10 F623.623"])
+
     def test_resume_retained(self) -> None:
         for model in PRINTERS:
             with self.subTest(model=model):
@@ -423,6 +434,7 @@ class EveryModeTests(unittest.TestCase):
         soft_endstops = {
             "Bambu Lab P1S": "M221 X0 Y0 Z0",
             "Bambu Lab H2C": "M211 X0 Y0 Z0",
+            "Bambu Lab H2D": "M211 X0 Y0 Z0",
             "Bambu Lab A1": "M211 X0 Y0 Z0",
             "Bambu Lab A1 mini": "M211 X0 Y0 Z0",
         }
@@ -463,7 +475,7 @@ class EveryModeTests(unittest.TestCase):
                 min_x, min_y, max_x, max_y = _reachable(analyze_gcode(_job(model, part_height=12, addition_height=6)))
                 self.assertTrue(min_x <= x <= max_x and min_y <= y <= max_y, f"{model}: park {x},{y}")
                 self.assertLess(output.index(PAUSE_BLOCK_END), output.index("; LAYER_RESCUE_BLOCK_START"))
-                if model == "Bambu Lab H2C":
+                if model in {"Bambu Lab H2C", "Bambu Lab H2D"}:
                     after_wall = output.split(PAUSE_BLOCK_START, 1)[1]
                     for raw in after_wall.splitlines():
                         code = raw.split(";", 1)[0].strip()

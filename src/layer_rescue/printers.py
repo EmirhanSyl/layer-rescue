@@ -214,6 +214,7 @@ class StationContext:
     extruder: int | None = None
     flush_setup: str | None = None
     toolchange_setup: tuple[str, ...] = ()
+    hotend_remap: bool = False
 
 
 def heat_commands(profile: PrinterProfile, ctx: StationContext) -> list[str]:
@@ -362,7 +363,10 @@ def _h2_station(ctx: StationContext) -> list[str]:
         "M975 S1",
         "; H2: tool/hotend selection, purge and wipe use the firmware's own moves (stock H2 G-code).",
         "M620 M ; enable remap (stock H2 start)",
-        "M620 N ; enable hotend remap (stock H2 start)",
+    ]
+    if ctx.hotend_remap:  # only when the job's own start G-code does it (H2C hotend rack, not the H2D)
+        lines.append("M620 N ; enable hotend remap (stock H2C start)")
+    lines += [
         *settings,
     ]
     if cut:

@@ -342,6 +342,7 @@ def _resume_preamble(
         extruder=state.active_extruder if state.active_extruder is not None else extruder_for_filament(analysis, tool),
         flush_setup=state.flush_setup_command,
         toolchange_setup=state.toolchange_setup,
+        hotend_remap=state.hotend_remap,
     )
 
     mode = _z_reference_mode(options.z_reference_mode)
