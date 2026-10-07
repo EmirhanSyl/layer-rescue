@@ -14,7 +14,14 @@ Families:
   (``T<n> H<h>``) and temperatures are addressed per extruder (``M104 S.. T<e>``). This sequence is
   derived from Bambu Studio's stock H2 G-code and has not been run on a printer yet.
 
-Any other printer (A1, A1 mini, other brands) gets the P1 sequence, as before printer profiles existed.
+* ``a1``: Bambu Lab A1 (not the A1 mini). A bed slinger: Y moves the bed, there is no rear purge
+  chute. Purge and wipe happen off the bed on the left (``X-48.2``, shaken against ``X-28.5``) and the
+  filament is loaded inside ``M620 S<n>A … M621 S<n>A`` as in the stock A1 start G-code.
+
+* ``a1mini``: Bambu Lab A1 mini. Same structure as the A1 with its own positions: purge at
+  ``X-13.5``, shaken against ``X0``.
+
+Any other printer (other brands, Bambu models without a profile) gets the P1 sequence, as before printer profiles existed.
 It is an untested setup, so the user has to accept the risks first (``--allow-untested``).
 
 Sources for the H2 sequence (Bambu does not publish documentation for these commands, so the H2
@@ -27,6 +34,16 @@ sequence mirrors what their own templates do):
 * ``G150.3`` / ``G150.2`` / ``G150.1``: the start template purges after ``G150.3`` and then runs
   ``G150.2`` / ``G150.1`` followed by ``G1 Y-16 ; move away from the trash bin``; the end template
   calls ``G150.3`` above the finished part. Their exact firmware behaviour is inferred, not documented.
+* A1: ``Bambu Lab A1 0.4 nozzle template machine_start_gcode.json`` / ``… change_filament_gcode.json``
+  (same repository), also embedded in every A1 job's CONFIG_BLOCK. The filament load block
+  (``M620 M``, ``M620 S<n>A``, ``T<n>``, ``M620.1 E …``, ``M621``), the purge position ``X-48.2`` and
+  the ``X-28.5`` / ``X-48.2`` wipe-and-shake come from the start template; the cutter is at ``X267``
+  in the filament-change template, so nothing here moves to the P1S cutter at ``X20 Y-3``.
+* A1 mini: ``Bambu Lab A1 mini 0.4 nozzle template machine_start_gcode.json`` (same repository):
+  ``G1 X0.0 F30000`` / ``G1 X-13.5 F3000``, the same load block, purge, then ``X0`` / ``X-13.5``
+  wipe and shake.
+* Restarted mode turns soft endstops off with ``M221 X0 Y0 Z0`` on the P1S (its start template) and
+  ``M211 X0 Y0 Z0`` on the A1, A1 mini and H2 (theirs).
 * ``M620.10`` / ``M620.11`` / ``M628 S1 … M629`` / ``T<n> H<h>`` / ``M628 S0`` / ``M629``: order taken
   from the start template's initial filament load.
 """
@@ -44,12 +61,21 @@ class PrinterProfile:
     key: str
     description: str
     experimental: bool = False  # the sequence has never run on a real printer
+    # Soft endstops off before restarted (manual Z) mode moves an unhomed Z. The stock P1S start
+    # G-code uses M221 for this; the A1, A1 mini and H2 start templates use M211.
+    soft_endstops_off: str = "M211 X0 Y0 Z0"
+    purge_x: float | None = None  # bed slingers: off-bed purge position on the left
+    shake_x: float | None = None  # bed slingers: wipe-and-shake partner position
 
 
-P1 = PrinterProfile("p1", "Bambu Lab P1/X1 series")
+P1 = PrinterProfile("p1", "Bambu Lab P1/X1 series", soft_endstops_off="M221 X0 Y0 Z0")
 H2 = PrinterProfile("h2", "Bambu Lab H2 series", experimental=True)
+A1 = PrinterProfile("a1", "Bambu Lab A1", purge_x=-48.2, shake_x=-28.5)
+A1_MINI = PrinterProfile("a1mini", "Bambu Lab A1 mini", purge_x=-13.5, shake_x=0.0)
 
 _H2_MODELS = re.compile(r"\bh2[a-z]?\b", re.IGNORECASE)
+_A1_MODELS = re.compile(r"\ba1\b(?!\s*mini)", re.IGNORECASE)
+_A1_MINI_MODELS = re.compile(r"\ba1\s*mini\b", re.IGNORECASE)
 
 H2_EXPERIMENTAL_WARNING = (
     "Experimental H2 sequence: purge, wipe, hotend selection and X homing follow Bambu Studio's stock H2 "
@@ -57,11 +83,29 @@ H2_EXPERIMENTAL_WARNING = (
 )
 
 
+H2_POWER_CUT_WARNING = (
+    "Experimental power-cut mode on the H2 series: after a power cut Z is not homed, and the purge, wipe and "
+    "X homing commands the H2 needs (G150.3, G150.2, G150.1, G28 X T300) are firmware macros whose Z "
+    "behaviour on an unhomed axis is not documented. Layer Rescue lowers the bed 30 mm first, like the stock "
+    "start G-code, but this has not been checked on a printer: watch the first moves and be ready to stop."
+)
+H2_CLEARANCE_LIMITED = (
+    "Power-cut mode on the H2: the bed can only be lowered {clearance} mm before the purge and wipe macros "
+    "(30 mm in the stock start G-code) because the part is close to the maximum height."
+)
+POWER_CUT_CLEARANCE_MM = 30.0  # stock H2 start: G380 S2 Z42 / G380 S2 Z-12 before G28 X T300 and G150.x
+POWER_CUT_HEIGHT_MARGIN_MM = 5.0
+
+
 def printer_profile(analysis: Analysis) -> PrinterProfile:
     """The profile for the job's printer. Printers without their own profile fall back to the P1 sequence."""
     model = analysis.printer_model or ""
     if _H2_MODELS.search(model):
         return H2
+    if _A1_MINI_MODELS.search(model):
+        return A1_MINI
+    if _A1_MODELS.search(model):
+        return A1
     return P1
 
 
@@ -135,6 +179,26 @@ def extruder_for_filament(analysis: Analysis, tool: int) -> int:
     return logical % 2  # what the stock H2 start G-code uses
 
 
+def power_cut_clearance(
+    analysis: Analysis, profile: PrinterProfile, mode: object, reference_z: float | None, lift: float
+) -> float:
+    """Extra relative bed drop before the H2 macros in restarted mode (0 elsewhere)."""
+    if profile is not H2 or reference_z is None or getattr(mode, "value", mode) != "manual":
+        return 0.0
+    height = config_list(analysis, "printable_height")
+    max_z = height[0] if height else 250.0
+    room = max_z - POWER_CUT_HEIGHT_MARGIN_MM - (reference_z + lift)
+    return round(max(0.0, min(POWER_CUT_CLEARANCE_MM, room)), 3)
+
+
+def extruder_suffix(analysis: Analysis, active_extruder: int | None, tool: int) -> str:
+    """`` T<e>`` for nozzle temperature commands on the H2 (two extruders), empty elsewhere."""
+    if printer_profile(analysis) is not H2:
+        return ""
+    extruder = active_extruder if active_extruder is not None else extruder_for_filament(analysis, tool)
+    return f" T{extruder}"
+
+
 # ----------------------------------------------------------------------------- sequences
 
 
@@ -161,6 +225,8 @@ def heat_commands(profile: PrinterProfile, ctx: StationContext) -> list[str]:
 def home_command(profile: PrinterProfile) -> str:
     if profile is H2:
         return "G28 X T300 ; CoreXY X re-home as in the stock H2 start G-code; never home Z"
+    if profile.purge_x is not None:
+        return f"G28 X ; re-home X as in the stock {profile.description} start G-code; never home Z"
     return "G28 X ; Bambu CoreXY re-home only; never home Z"
 
 
@@ -168,6 +234,8 @@ def station_block(profile: PrinterProfile, ctx: StationContext) -> list[str]:
     """Select the filament, reach print temperature and purge/wipe, ending with ``G90`` + ``M83``."""
     if profile is H2:
         return _h2_station(ctx)
+    if profile.purge_x is not None:
+        return _bed_slinger_station(profile, ctx)
     return _p1_station(ctx)
 
 
@@ -232,6 +300,43 @@ def _p1_station(ctx: StationContext) -> list[str]:
                 "M106 P1 S0",
             ]
         )
+    return lines
+
+
+def _bed_slinger_station(profile: PrinterProfile, ctx: StationContext) -> list[str]:
+    """A1 / A1 mini: load, purge and wipe off the bed on the left, like their stock start G-code."""
+    assert profile.purge_x is not None and profile.shake_x is not None
+    purge_x, shake_x = _format_number(profile.purge_x), _format_number(profile.shake_x)
+    lines = [
+        "M975 S1",
+        f"; {profile.description}: purge and wipe off the bed on the left, as in its stock start G-code "
+        "(no rear chute).",
+        f"G1 X{shake_x} F30000",
+        f"G1 X{purge_x} F3000",
+        "M620 M",
+        f"M620 S{ctx.tool}A",
+        f"M190 S{ctx.bed}",
+        f"M109 S{ctx.nozzle}",
+        "M400",
+        f"T{ctx.tool}",
+        f"G1 X{purge_x} F3000",
+        "M400",
+    ]
+    if ctx.flush_setup:
+        lines.append(ctx.flush_setup)
+    lines += [
+        f"M621 S{ctx.tool}A",
+        f"M109 S{ctx.nozzle} ; reassert print temperature after tool/AMS selection",
+        "G90",
+        "M83 ; relative extrusion must be re-selected after G90 on Bambu firmware",
+    ]
+    if ctx.purge_length > 0:
+        lines.append(f"; Refill the melt zone at X{purge_x}, off the bed.")
+        lines.extend(_purge(ctx))
+        lines += ["M106 P1 S178", "M400 S3"]
+        for _ in range(3):
+            lines += [f"G1 X{shake_x} F30000", f"G1 X{purge_x} F3000 ; wipe and shake"]
+        lines += ["M400", "M106 P1 S0"]
     return lines
 
 

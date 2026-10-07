@@ -9,13 +9,18 @@ All notable changes to this project are documented here. The format is based on
 ### Added
 
 - Printer profiles. The machine-specific part of the resume sequence (filament station, purge and wipe, X homing, tool selection, temperatures, insert-mode park position) now depends on the printer family instead of always using P1S moves.
-- Experimental H2 series sequence (H2D, H2S, H2C), behind the untested-setup confirmation: purge and wipe with the firmware's `G150.3` / `G150.2` / `G150.1` instead of P1S coordinates (which are on the H2 bed), tool and hotend selected together (`M620 S<n>A H<h>`, `T<n> H<h>`) with the job's `M620.10` / `M620.11` flush and cut settings, temperatures addressed to the extruder (`M104/M109 S.. T<e>`), and `G28 X T300` like the stock H2 start. The cut sequence (`M620.11 S…`) is only sent inside an `M628 S1` / `M629` block and the tool change is followed by `M628 S0` / `M629`, as in the stock H2 start. Restarted (manual Z) mode is not offered on the H2 yet.
+- Experimental H2 series sequence (H2D, H2S, H2C), behind the untested-setup confirmation: purge and wipe with the firmware's `G150.3` / `G150.2` / `G150.1` instead of P1S coordinates (which are on the H2 bed), tool and hotend selected together (`M620 S<n>A H<h>`, `T<n> H<h>`) with the job's `M620.10` / `M620.11` flush and cut settings, temperatures addressed to the extruder (`M104/M109 S.. T<e>`), and `G28 X T300` like the stock H2 start. The cut sequence (`M620.11 S…`) is only sent inside an `M628 S1` / `M629` block and the tool change is followed by `M628 S0` / `M629`, as in the stock H2 start. Restarted (power cut) mode on the H2 is experimental and warned about up front: after a power cut Z is not homed, and the Z behaviour of `G150.x` and `G28 X T300` on an unhomed axis is not documented. Like the stock H2 start G-code (`G380 S2 Z42` / `Z-12` before these commands), the bed is lowered 30 mm (relative, less if the part is close to the maximum height) before `G28 X T300` and the purge/wipe macros, and again before the end G-code's `G150.x`.
+- Bambu Lab A1 sequence (not the A1 mini), behind the untested-setup confirmation: the P1S moves put the purge at Y265 over the rear edge of the A1 bed and drove to the P1S cutter at X20 Y-3. The A1 now purges and wipes off the bed on the left (`X-48.2`, shaken against `X-28.5`) and loads the filament inside `M620 S<n>A … M621` like the stock A1 start G-code.
+- Bambu Lab A1 mini sequence: same structure as the A1 with its own positions (purge at `X-13.5`, shaken against `X0`), from the stock A1 mini start G-code.
 
 ### Changed
 
 - Insert mode parks at a rear corner of the printer's own bed, inside the area every nozzle can reach (unchanged on the P1S: X236/X20, Y250).
 
 ### Fixed
+
+- Restarted (manual Z) mode turned soft endstops off with `M221 X0 Y0 Z0`, the P1S command. The A1, A1 mini and H2 start G-code uses `M211 X0 Y0 Z0`; each printer now gets its own.
+- Insert mode on the H2: the standby and adhesion temperatures are sent to the printing extruder (`M104 S.. T<e>`).
 
 - The purge before resuming ran at a fixed `F200` (about 8 mm³/s), several times what a 0.2 mm nozzle profile allows (2 mm³/s for PLA), so the extruder could skip or grind. The purge feed now follows the active filament's `filament_max_volumetric_speed` (80 %, never faster than before). Applies to resume and insert mode.
 

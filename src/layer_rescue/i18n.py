@@ -425,8 +425,22 @@ MESSAGE_PATTERNS: list[tuple[re.Pattern[str], str]] = [
             "Seçilen katmanda kullanılan hotend (T<n> H<h>) veya ekstruder belirlenemedi; H2 dizisi ikisine de ihtiyaç duyar.",
         ),
         (
-            r"Restarted \(manual Z\) mode is not available for the (?P<p>.+) yet; only the printer-stayed-on mode is\.",
-            "Yeniden başlatılmış (manuel Z) mod {p} için henüz yok; yalnızca yazıcının açık kaldığı mod kullanılabilir.",
+            r"Experimental power-cut mode on the H2 series: after a power cut Z is not homed, and the purge, wipe "
+            r"and X homing commands the H2 needs \(G150\.3, G150\.2, G150\.1, G28 X T300\) are firmware macros "
+            r"whose Z behaviour on an unhomed axis is not documented\. Layer Rescue lowers the bed 30 mm first, like "
+            r"the stock start G-code, but this has not been checked on a printer: watch the first moves and be ready "
+            r"to stop\.(?P<h>.*)",
+            "H2 serisinde deneysel elektrik kesintisi modu: elektrik kesintisinden sonra Z'ye home atılmamış olur; "
+            "H2'nin ihtiyaç duyduğu purge, silme ve X home komutları (G150.3, G150.2, G150.1, G28 X T300) ise home "
+            "atılmamış bir eksende Z'yi nasıl hareket ettirdiği belgelenmemiş firmware makroları. Layer Rescue stok "
+            "başlangıç G-code'u gibi önce tablayı 30 mm indiriyor, ama bu henüz bir yazıcıda denenmedi: ilk "
+            "hareketleri izleyin ve durdurmaya hazır olun.{h}",
+        ),
+        (
+            r"Power-cut mode on the H2: the bed can only be lowered (?P<c>[\d.]+) mm before the purge and wipe macros "
+            r"\(30 mm in the stock start G-code\) because the part is close to the maximum height\.",
+            "H2'de elektrik kesintisi modu: parça azami yüksekliğe yakın olduğu için tabla purge ve silme "
+            "makrolarından önce yalnızca {c} mm indirilebiliyor (stok başlangıç G-code'unda 30 mm).",
         ),
         # resume.py
         (

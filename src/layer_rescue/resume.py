@@ -25,10 +25,15 @@ from .gcode import (
 )
 from .machine_state import MachineState, _scan_machine_state, _validate_supported_source
 from .printers import (
+    H2,
+    H2_CLEARANCE_LIMITED,
+    POWER_CUT_CLEARANCE_MM,
+    POWER_CUT_HEIGHT_MARGIN_MM,
     StationContext,
     extruder_for_filament,
     heat_commands,
     home_command,
+    power_cut_clearance,
     printer_profile,
     station_block,
 )
@@ -253,6 +258,58 @@ def _relativize_z(body: list[str], start_z: float) -> list[str]:
     return output
 
 
+END_GCODE_MARKER = "; MACHINE_END_GCODE_START"
+
+
+def _lower_bed_before_end_macros(body: list[str], analysis: Analysis) -> tuple[list[str], float]:
+    """H2 power-cut mode: give the end G-code's G150.x macros the same clearance as the preamble.
+
+    The stock H2 end G-code runs G150.3 0.4 mm above the finished part. With an unhomed Z that is the
+    same open question as in the preamble, so the bed is lowered first (relative) and every absolute
+    Z of the end G-code is raised by the same amount, keeping its own moves unchanged relative to it.
+    """
+    try:
+        start = body.index(END_GCODE_MARKER)
+    except ValueError:
+        return body, 0.0
+    end_codes = [_code(line) for line in body[start:]]
+    if not any(code.upper().startswith("G150") for code in end_codes):
+        return body, 0.0
+    highest = max(
+        (z for code in end_codes if _command(code) in {"G0", "G1", "G2", "G3"} and (z := _parameter(code, "Z")) is not None),
+        default=0.0,
+    )
+    height = analysis.config.get("printable_height")
+    match = NUMBER_RE.search(height) if height else None
+    max_z = float(match.group(0)) if match else 250.0
+    clearance = round(max(0.0, min(POWER_CUT_CLEARANCE_MM, max_z - POWER_CUT_HEIGHT_MARGIN_MM - highest)), 3)
+    if clearance <= 0:
+        return body, 0.0
+
+    shifted = body[: start + 1] + [
+        "G91",
+        f"G1 Z{_format_number(clearance)} F600 ; lower the bed before the H2 end-G-code macros (power-cut mode)",
+        "G90",
+    ]
+    positioning = "G90"
+    for raw in body[start + 1 :]:
+        code = _code(raw)
+        command = _command(code)
+        if command in {"G90", "G91"}:
+            positioning = command
+        z_value = _parameter(code, "Z") if command in {"G0", "G1", "G2", "G3"} else None
+        if z_value is None or positioning == "G91":
+            shifted.append(raw)
+            continue
+        comment = raw.split(";", 1)[1] if ";" in raw else ""
+        tokens = [
+            f"Z{_format_number(z_value + clearance)}" if token.upper().startswith("Z") else token
+            for token in code.split()
+        ]
+        shifted.append(" ".join(tokens) + (f" ;{comment}" if comment else ""))
+    return shifted, clearance
+
+
 def _resume_preamble(
     analysis: Analysis,
     layer: LayerInfo,
@@ -292,12 +349,8 @@ def _resume_preamble(
     if mode is ZReferenceMode.MANUAL:
         if not options.home_corexy:
             raise ResumeError("Manual Z reference mode requires CoreXY homing after the safety lift.")
-        if profile.experimental:
-            raise ResumeError(
-                f"Restarted (manual Z) mode is not available for the {profile.description} yet; "
-                "only the printer-stayed-on mode is."
-            )
         reference_z = _previous_layer(analysis, layer).z
+    clearance = power_cut_clearance(analysis, profile, mode, reference_z, options.z_lift_mm)
 
     progress = max(0, min(100, round((layer.number - 1) / layer.total * 100)))
     safety_note = (
@@ -335,7 +388,7 @@ def _resume_preamble(
             [
                 # Same as the stock P1S start G-code: after a power cycle Z is not homed, so the
                 # firmware's soft limits must not clamp or reinterpret Z moves.
-                "M221 X0 Y0 Z0 ; turn off soft endstops (stock P1S start behaviour for an unhomed Z)",
+                f"{profile.soft_endstops_off} ; turn off soft endstops (as the stock start G-code does for an unhomed Z)",
                 f"G92 Z{_format_number(reference_z)} ; nominal Z of the aligned last-layer surface",
                 "; Restarted mode: every Z move below is relative to the aligned nozzle position,",
                 "; so the job does not depend on the firmware's absolute Z after a power cycle.",
@@ -348,6 +401,17 @@ def _resume_preamble(
             "G90",
         ]
     )
+    if clearance > 0:
+        # H2 after a power cut: the stock start G-code lowers the bed ~30 mm (relative) before it runs
+        # G28 X T300 and the G150.x purge/wipe macros on an unhomed Z. Do the same, so these
+        # firmware commands run with the clearance they are designed for.
+        lines.extend(
+            [
+                "G91",
+                f"G1 Z{_format_number(clearance)} F600 ; lower the bed for the H2 macros, like the stock start",
+                "G90",
+            ]
+        )
     if options.home_corexy:
         lines.append(home_command(profile))
     lines.extend(station_block(profile, station))
@@ -368,7 +432,7 @@ def _resume_preamble(
         approach_note = "approach the recovered layer at the rear station"
     if mode is ZReferenceMode.MANUAL:
         assert reference_z is not None
-        approach = layer.z - (reference_z + options.z_lift_mm)
+        approach = layer.z - (reference_z + options.z_lift_mm + clearance)
         lines.extend(_relative_z_move(approach, "F600", approach_note))
     else:
         lines.append(f"G1 Z{_format_number(layer.z)} F600 ; {approach_note}")
@@ -491,6 +555,8 @@ def build_resume_gcode(text: str, options: ResumeOptions) -> tuple[str, ResumeRe
     prefix = list(analysis.lines[: analysis.config_end_line + 1])
     body = list(analysis.lines[layer.change_line :])
     if mode is ZReferenceMode.MANUAL:
+        if printer_profile(analysis) is H2:
+            body, _ = _lower_bed_before_end_macros(body, analysis)
         body = _relativize_z(body, layer.z)
     output_lines = prefix + ["", "; EXECUTABLE_BLOCK_START"] + preamble + body
     output = analysis.newline.join(output_lines) + analysis.newline
@@ -501,6 +567,10 @@ def build_resume_gcode(text: str, options: ResumeOptions) -> tuple[str, ResumeRe
         warnings.append(
             "Manual Z mode depends on the operator aligning the nozzle to the last successful layer before job start."
         )
+        profile = printer_profile(analysis)
+        clearance = power_cut_clearance(analysis, profile, mode, reference_z, options.z_lift_mm)
+        if profile.experimental and clearance < POWER_CUT_CLEARANCE_MM:
+            warnings.append(H2_CLEARANCE_LIMITED.format(clearance=_format_number(clearance)))
 
     report = ResumeReport(
         start_layer=options.start_layer,

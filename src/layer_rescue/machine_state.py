@@ -6,7 +6,7 @@ import re
 from dataclasses import dataclass
 
 from .gcode import Analysis, ResumeError, _code, _command, _first_number, _next_extrusion_mode, _parameter
-from .printers import AMS_SELECT_RE, H2_EXPERIMENTAL_WARNING, TOOL_SELECT_RE, printer_profile
+from .printers import AMS_SELECT_RE, H2_EXPERIMENTAL_WARNING, H2_POWER_CUT_WARNING, TOOL_SELECT_RE, printer_profile
 
 
 @dataclass(frozen=True)
@@ -153,6 +153,7 @@ def untested_setup(analysis: Analysis) -> list[str]:
         )
     if printer_profile(analysis).experimental:
         reasons.append(H2_EXPERIMENTAL_WARNING)
+        reasons.append(H2_POWER_CUT_WARNING)
     slots = filament_slots(analysis)
     if any(slot > 0 for slot in slots):
         reasons.append(
