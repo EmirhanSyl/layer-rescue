@@ -9,11 +9,10 @@ All notable changes to this project are documented here. The format is based on
 ### Added
 
 - Printer profiles. The machine-specific part of the resume sequence (filament station, purge and wipe, X homing, tool selection, temperatures, insert-mode park position) now depends on the printer family instead of always using P1S moves.
-- Experimental H2 series sequence (H2D, H2S, H2C), behind the untested-setup confirmation: purge and wipe with the firmware's `G150.3` / `G150.2` / `G150.1` instead of P1S coordinates (which are on the H2 bed), tool and hotend selected together (`M620 S<n>A H<h>`, `T<n> H<h>`) with the job's `M620.10` / `M620.11` flush and cut settings, temperatures addressed to the extruder (`M104/M109 S.. T<e>`), and `G28 X T300` like the stock H2 start. Restarted (manual Z) mode is not offered on the H2 yet.
+- Experimental H2 series sequence (H2D, H2S, H2C), behind the untested-setup confirmation: purge and wipe with the firmware's `G150.3` / `G150.2` / `G150.1` instead of P1S coordinates (which are on the H2 bed), tool and hotend selected together (`M620 S<n>A H<h>`, `T<n> H<h>`) with the job's `M620.10` / `M620.11` flush and cut settings, temperatures addressed to the extruder (`M104/M109 S.. T<e>`), and `G28 X T300` like the stock H2 start. The cut sequence (`M620.11 S…`) is only sent inside an `M628 S1` / `M629` block and the tool change is followed by `M628 S0` / `M629`, as in the stock H2 start. Restarted (manual Z) mode is not offered on the H2 yet.
 
 ### Changed
 
-- Printers without a known-safe sequence (A1, A1 mini, other brands) are refused instead of running P1S moves after accepting the risks.
 - Insert mode parks at a rear corner of the printer's own bed, inside the area every nozzle can reach (unchanged on the P1S: X236/X20, Y250).
 
 ### Fixed

@@ -13,7 +13,12 @@ from test_core import sample_gcode
 
 def h2_gcode(*, model: str = "Bambu Lab H2C", hotend: bool = True) -> str:
     """A small H2C-style job: two extruders, 0.2 mm nozzles, the filament on extruder 2 (physical 0)."""
-    select = "M620 S0A H1\nM109 S220 T0\nT0 H1\nM621 S0A" if hotend else "M620 S0A\nM109 S220 T0\nT0\nM621 S0A"
+    # Bambu Studio 2.08 resolves the hotend to -1 (no particular hotend) for a plain H2C job.
+    select = (
+        "M620 S0A H-1\nM400\nT0 H-1\nM400\nM628 S0\nM629\nM400\nM621 S0A\nM104 S220"
+        if hotend
+        else "M620 S0A\nM400\nT0\nM400\nM621 S0A\nM104 S220"
+    )
     return f"""; HEADER_BLOCK_START
 ; BambuStudio 02.08.02.61
 ; total layer number: 4
@@ -46,8 +51,11 @@ G28 X T300
 T1000
 M620.10 A0 F74.8347 H0.2 T220 P220 S1
 M620.10 A1 F74.8347 H0.2 T220 P220 S1
-M620.11 P1 I0 B1 E0
-M620.11 K0 I0 B1 R0
+M620.11 P1 I0 B-1 E0
+M620.11 K1 I0 B-1 R10 F623.623
+M628 S1
+M620.11 S1 L0 I0 B-1 R10 D8 E-14 F623.623
+M629
 {select}
 M620.10 R0
 G150.3
@@ -112,11 +120,17 @@ class ProfileTests(unittest.TestCase):
             with self.subTest(model=model):
                 self.assertIs(printer_profile(analyze_gcode(sample_gcode(printer=model))), profile)
 
-    def test_unknown_printers_are_refused(self) -> None:
+    def test_other_printers_use_the_p1_sequence_after_accepting_the_risks(self) -> None:
         for model in ("Bambu Lab A1", "Bambu Lab A1 mini", "Prusa MK4"):
             with self.subTest(model=model):
-                with self.assertRaisesRegex(ResumeError, "No resume sequence"):
-                    build_resume_gcode(sample_gcode(printer=model), ResumeOptions(start_layer=3, allow_untested=True))
+                self.assertIs(printer_profile(analyze_gcode(sample_gcode(printer=model))), P1)
+                with self.assertRaisesRegex(ResumeError, "Untested printer.*--allow-untested"):
+                    build_resume_gcode(sample_gcode(printer=model), ResumeOptions(start_layer=3))
+                output, report = build_resume_gcode(
+                    sample_gcode(printer=model), ResumeOptions(start_layer=3, allow_untested=True)
+                )
+                self.assertIn("G1 Y265 F3000", _preamble(output))
+                self.assertTrue(any(warning.startswith("Untested printer") for warning in report.warnings))
 
     def test_park_position_on_a_p1s_is_unchanged(self) -> None:
         analysis = analyze_gcode(sample_gcode().replace(
@@ -162,24 +176,40 @@ class H2SequenceTests(unittest.TestCase):
 
     def test_selects_the_hotend_with_the_tool(self) -> None:
         preamble = _preamble(self.build()[0])
-        self.assertIn("M620 S0A H1", preamble)
-        self.assertIn("T0 H1", preamble)
+        self.assertIn("M620 S0A H-1", preamble)
+        self.assertIn("T0 H-1", preamble)
         self.assertIn("M621 S0A", preamble)
-        self.assertLess(preamble.index("M620 S0A H1"), preamble.index("T0 H1"))
-        self.assertLess(preamble.index("T0 H1"), preamble.index("M621 S0A"))
+        self.assertLess(preamble.index("M620 S0A H-1"), preamble.index("T0 H-1"))
+        self.assertLess(preamble.index("T0 H-1"), preamble.index("M621 S0A"))
 
     def test_copies_the_flush_and_cut_setup_before_the_tool_change(self) -> None:
         preamble = _preamble(self.build()[0])
-        select = preamble.index("M620 S0A H1")
+        select = preamble.index("M620 S0A H-1")
         for line in (
             "M620.10 A0 F74.8347 H0.2 T220 P220 S1",
             "M620.10 A1 F74.8347 H0.2 T220 P220 S1",
-            "M620.11 P1 I0 B1 E0",
-            "M620.11 K0 I0 B1 R0",
+            "M620.11 P1 I0 B-1 E0",
+            "M620.11 K1 I0 B-1 R10 F623.623",
         ):
             self.assertIn(line, preamble)
             self.assertLess(preamble.index(line), select)
         self.assertNotIn("M620.10 R0", preamble)
+
+    def test_cut_sequence_is_only_sent_inside_m628_m629(self) -> None:
+        preamble = _preamble(self.build()[0])
+        cut = preamble.index("M620.11 S1 L0 I0 B-1 R10 D8 E-14 F623.623")
+        self.assertEqual(preamble[cut - 1], "M628 S1")
+        self.assertEqual(preamble[cut + 1], "M629")
+        self.assertLess(cut, preamble.index("M620 S0A H-1"))
+        self.assertEqual(sum(1 for line in preamble if line.startswith("M620.11 S")), 1)
+
+    def test_tool_change_follows_the_stock_h2_structure(self) -> None:
+        preamble = _preamble(self.build()[0])
+        for line in ("M620 M", "M620 N"):
+            self.assertLess(preamble.index(line), preamble.index("M620 S0A H-1"))
+        tool = preamble.index("T0 H-1")
+        self.assertEqual(preamble[tool + 1 : tool + 5], ["M400", "M628 S0", "M629", "M400"])
+        self.assertLess(tool + 4, preamble.index("M621 S0A"))
 
     def test_temperatures_address_the_extruder(self) -> None:
         preamble = _preamble(self.build()[0])
@@ -188,7 +218,7 @@ class H2SequenceTests(unittest.TestCase):
         for line in nozzle:
             self.assertTrue(line.endswith(" T0"), line)
         self.assertGreater(
-            max(i for i, line in enumerate(preamble) if line.startswith("M109 S220 T0")), preamble.index("T0 H1")
+            max(i for i, line in enumerate(preamble) if line.startswith("M109 S220 T0")), preamble.index("T0 H-1")
         )
 
     def test_extruder_falls_back_to_the_filament_map(self) -> None:

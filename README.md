@@ -57,7 +57,7 @@ I tested every feature on my own P1S with real prints and wrote down each one st
 - Bambu Studio G-code, by-layer printing, relative extrusion
 - The part is still firmly attached to the same plate (resume mode), or it came off / is finished and fits back into a wall printed around it (insert mode, beta)
 
-Supported printer families: the Bambu Lab P1/X1 series (P1S tested; P1P, X1, X1C and X1E use the same moves) and, experimentally, the H2 series (H2D, H2S, H2C: purge, wipe and hotend selection follow the stock H2 G-code but have not been run on a printer yet, and only the printer-stayed-on mode is available). Other printers, including the A1 and A1 mini, are refused because their stations are elsewhere.
+Supported printer families: the Bambu Lab P1/X1 series (P1S tested; P1P, X1, X1C and X1E use the same moves) and, experimentally, the H2 series (H2D, H2S, H2C: purge, wipe and hotend selection follow the stock H2 G-code but have not been run on a printer yet, and only the printer-stayed-on mode is available). Other printers, including the A1 and A1 mini, use the P1/X1 moves after you accept the risks.
 
 Not tested yet: other printer models and AMS/multi-filament jobs. When a job falls outside what's been tested, Layer Rescue tells you why and asks you to accept the risks before it continues (CLI: `--allow-untested`). With several filaments it loads the filament that was active at the layer you continue from. If you try one of these, please [share your results](#share-your-results).
 

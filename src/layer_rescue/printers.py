@@ -14,7 +14,21 @@ Families:
   (``T<n> H<h>``) and temperatures are addressed per extruder (``M104 S.. T<e>``). This sequence is
   derived from Bambu Studio's stock H2 G-code and has not been run on a printer yet.
 
-Anything else (A1 / A1 mini bed slingers, other brands) has no known-safe sequence and is refused.
+Any other printer (A1, A1 mini, other brands) gets the P1 sequence, as before printer profiles existed.
+It is an untested setup, so the user has to accept the risks first (``--allow-untested``).
+
+Sources for the H2 sequence (Bambu does not publish documentation for these commands, so the H2
+sequence mirrors what their own templates do):
+
+* Bambu Studio printer profiles, ``resources/profiles/BBL/machine/Bambu Lab H2C 0.4 nozzle template
+  machine_start_gcode.json`` / ``... change_filament_gcode.json`` / ``... machine_end_gcode.json``
+  (https://github.com/bambulab/BambuStudio). The same templates are embedded in every sliced file's
+  CONFIG_BLOCK as ``machine_start_gcode`` and ``change_filament_gcode``.
+* ``G150.3`` / ``G150.2`` / ``G150.1``: the start template purges after ``G150.3`` and then runs
+  ``G150.2`` / ``G150.1`` followed by ``G1 Y-16 ; move away from the trash bin``; the end template
+  calls ``G150.3`` above the finished part. Their exact firmware behaviour is inferred, not documented.
+* ``M620.10`` / ``M620.11`` / ``M628 S1 … M629`` / ``T<n> H<h>`` / ``M628 S0`` / ``M629``: order taken
+  from the start template's initial filament load.
 """
 
 from __future__ import annotations
@@ -35,7 +49,6 @@ class PrinterProfile:
 P1 = PrinterProfile("p1", "Bambu Lab P1/X1 series")
 H2 = PrinterProfile("h2", "Bambu Lab H2 series", experimental=True)
 
-_P1_MODELS = re.compile(r"\b(p1s|p1p|x1|x1c|x1e|x1-carbon)\b", re.IGNORECASE)
 _H2_MODELS = re.compile(r"\bh2[a-z]?\b", re.IGNORECASE)
 
 H2_EXPERIMENTAL_WARNING = (
@@ -45,16 +58,11 @@ H2_EXPERIMENTAL_WARNING = (
 
 
 def printer_profile(analysis: Analysis) -> PrinterProfile:
-    """The profile for the job's printer, or a ResumeError when no safe sequence is known."""
+    """The profile for the job's printer. Printers without their own profile fall back to the P1 sequence."""
     model = analysis.printer_model or ""
     if _H2_MODELS.search(model):
         return H2
-    if _P1_MODELS.search(model):
-        return P1
-    raise ResumeError(
-        f"No resume sequence for '{model}': Layer Rescue knows the filament station, purge and homing moves "
-        "of the Bambu Lab P1/X1 and H2 series only. Running another printer's moves could crash the toolhead."
-    )
+    return P1
 
 
 # ----------------------------------------------------------------------------- config helpers
@@ -227,6 +235,12 @@ def _p1_station(ctx: StationContext) -> list[str]:
     return lines
 
 
+def _is_cut_sequence(line: str) -> bool:
+    """``M620.11 S<n> ...``: the filament cut + retraction, recorded between ``M628 S1`` and ``M629``."""
+    tokens = line.split()
+    return len(tokens) > 1 and tokens[0].upper() == "M620.11" and tokens[1][:1].upper() == "S"
+
+
 def _h2_station(ctx: StationContext) -> list[str]:
     if ctx.hotend is None or ctx.extruder is None:
         raise ResumeError(
@@ -234,14 +248,30 @@ def _h2_station(ctx: StationContext) -> list[str]:
             "the H2 sequence needs both."
         )
     hotend, extruder = ctx.hotend, ctx.extruder
+    # Same structure as the stock H2 start G-code: flush (M620.10) and cut-retraction (M620.11 P/K)
+    # settings, the cut sequence recorded between M628 S1 and M629, the tool change, then an empty
+    # M628 S0 / M629 block. The cut lines are only ever sent inside that block.
+    cut = [line for line in ctx.toolchange_setup if _is_cut_sequence(line)]
+    settings = [line for line in ctx.toolchange_setup if not _is_cut_sequence(line)]
     lines = [
         "M975 S1",
         "; H2: tool/hotend selection, purge and wipe use the firmware's own moves (stock H2 G-code).",
-        *ctx.toolchange_setup,
+        "M620 M ; enable remap (stock H2 start)",
+        "M620 N ; enable hotend remap (stock H2 start)",
+        *settings,
+    ]
+    if cut:
+        lines.extend(["M628 S1", *cut, "M629"])
+    lines += [
         f"M620 S{ctx.tool}A H{hotend}",
         f"M190 S{ctx.bed}",
         f"M109 S{ctx.nozzle} T{extruder}",
+        "M400",
         f"T{ctx.tool} H{hotend}",
+        "M400",
+        "M628 S0",
+        "M629",
+        "M400",
         f"M621 S{ctx.tool}A",
         f"M109 S{ctx.nozzle} T{extruder} ; reassert print temperature after tool/hotend selection",
         "G90",

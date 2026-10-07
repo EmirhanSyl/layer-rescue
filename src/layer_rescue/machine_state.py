@@ -151,11 +151,8 @@ def untested_setup(analysis: Analysis) -> list[str]:
             f"Untested printer: this G-code is for '{model}', and Layer Rescue has only been tested on the "
             "Bambu Lab P1S. Parking, purging and homing positions may not fit this printer."
         )
-    try:
-        if printer_profile(analysis).experimental:
-            reasons.append(H2_EXPERIMENTAL_WARNING)
-    except ResumeError:
-        pass  # refused outright by _validate_supported_source
+    if printer_profile(analysis).experimental:
+        reasons.append(H2_EXPERIMENTAL_WARNING)
     slots = filament_slots(analysis)
     if any(slot > 0 for slot in slots):
         reasons.append(
@@ -175,7 +172,6 @@ def _validate_supported_source(analysis: Analysis, state: MachineState, allow_un
     if spiral not in {"0", "false", "off", ""}:
         raise ResumeError("MVP safety guard: spiral-vase G-code is not supported.")
 
-    printer_profile(analysis)  # no known-safe station/purge/homing moves for this printer: refuse
     untested = untested_setup(analysis)
     if untested and not allow_untested:
         raise ResumeError(untested[0] + UNTESTED_HINT)

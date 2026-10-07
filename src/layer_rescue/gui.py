@@ -18,7 +18,6 @@ from .gui_widgets import (
 )
 from .i18n import Translator
 from .machine_state import untested_setup
-from .printers import printer_profile
 
 
 def _bring_to_front(root: Any) -> None:
@@ -42,7 +41,6 @@ def launch(path: Path, translator: Translator | None = None) -> int:
 
     try:
         analysis = analyze_gcode(path.read_text(encoding="utf-8", errors="replace"))
-        printer_profile(analysis)  # refuse printers without a known-safe sequence before asking anything
     except (OSError, ResumeError) as exc:
         root.withdraw()
         messagebox.showerror("Layer Rescue", tr.message(str(exc)))
