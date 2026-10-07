@@ -120,6 +120,52 @@ H2D_PRO_START = [
     line.replace(" H-1", "").replace(" B-1", "").replace("machine: H2D", "machine: H2D Pro") for line in H2D_START
 ]
 
+# H2S (one nozzle): no hotend selection, no recorded cut sequence (no M628 S1 block), temperatures
+# without an extruder index, 340 x 320 bed (stock H2S start in Bambu Studio 2.08).
+H2S_START = [
+    ";===== machine: H2S =========================",
+    "M140 S55",
+    "M104 S220",
+    "G90",
+    "M83",
+    "M620 M",
+    "G28 X T300",
+    "T1000 O0",
+    "M211 X0 Y0 Z0 ;turn off soft endstop",
+    "M620.10 A0 F498.898 H0.4 T240 P220 S1",
+    "M620.10 A1 F498.898 H0.4 T240 P220 S1",
+    "M620.11 P0 I0 E0",
+    "M620 S0A",
+    "M400",
+    "T0",
+    "M400",
+    "M628 S0",
+    "M629",
+    "M400",
+    "M621 S0A",
+    "M190 S55",
+    "M109 S220",
+    "G150.3",
+    "G1 E45 F498",
+    "G150.2",
+    "G150.1",
+    "G91",
+    "G1 Y-16 F12000",
+    "G90",
+    "M83",
+    "M1002 set_gcode_claim_speed_level : 5",
+    "M106 S0",
+]
+H2S_CONFIG = {
+    **H2C_CONFIG,
+    "nozzle_diameter": "0.4",
+    "printable_area": "0x0,340x0,340x320,0x320",
+    "extruder_printable_area": "",
+    "printable_height": "340",
+    "filament_map": "1",
+    "physical_extruder_map": "0",
+}
+
 
 def _bed_slinger_start(model: str, purge_x: str, shake_x: str) -> list[str]:
     return [

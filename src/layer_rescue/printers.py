@@ -9,9 +9,11 @@ Families:
 
 * ``p1``: Bambu Lab P1S / P1P / X1 / X1C / X1E. Same 256 mm CoreXY frame, purge chute at the rear,
   filament cutter at the front left. The P1S is the printer Layer Rescue was developed and tested on.
-* ``h2``: Bambu Lab H2D / H2D Pro / H2S / H2C. Larger bed with two extruders (and on the H2C a
-  hotend rack). Purge and wipe are firmware macros (``G150.x``), tools are selected together with a
-  hotend (``T<n> H<h>``) where the job's start G-code does so (not on the H2D Pro: ``T<n>``) and temperatures are addressed per extruder (``M104 S.. T<e>``). This sequence is
+* ``h2``: Bambu Lab H2D / H2D Pro / H2S / H2C. Larger bed, two extruders on the H2C / H2D / H2D Pro
+  (the H2S has one; the H2C adds a hotend rack). Purge and wipe are firmware macros (``G150.x``), tools are selected together with a
+  hotend (``T<n> H<h>``) where the job's start G-code does so (not on the H2D Pro: ``T<n>``), and on
+  the two-nozzle models temperatures are addressed per extruder (``M104 S.. T<e>``; the single-nozzle
+  H2S does not). This sequence is
   derived from Bambu Studio's stock H2 G-code and has not been run on a printer yet.
 
 * ``a1``: Bambu Lab A1 (not the A1 mini). A bed slinger: Y moves the bed, there is no rear purge
@@ -53,7 +55,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 
-from .gcode import NUMBER_RE, Analysis, ResumeError, _format_number
+from .gcode import NUMBER_RE, Analysis, _format_number
 
 
 @dataclass(frozen=True)
@@ -169,6 +171,18 @@ TOOL_SELECT_RE = re.compile(r"^T(\d+)(?:\s+H(-?\d+))?\s*$", re.IGNORECASE)
 AMS_SELECT_RE = re.compile(r"^M620\s+S(\d+)A(?:\s+H(-?\d+))?\b", re.IGNORECASE)
 
 
+def has_several_extruders(analysis: Analysis) -> bool:
+    """Two nozzles (H2C / H2D / H2D Pro): temperatures name the extruder. The H2S has one and does not."""
+    return len(config_list(analysis, "nozzle_diameter")) > 1
+
+
+def job_extruder(analysis: Analysis, active_extruder: int | None, tool: int) -> int | None:
+    """The ``T<e>`` for nozzle temperatures, or None on a single-extruder printer."""
+    if not has_several_extruders(analysis):
+        return None
+    return active_extruder if active_extruder is not None else extruder_for_filament(analysis, tool)
+
+
 def extruder_for_filament(analysis: Analysis, tool: int) -> int:
     """Physical extruder index (the ``T`` of ``M104``) that prints filament ``tool`` on an H2."""
     filament_map = config_list(analysis, "filament_map")
@@ -195,8 +209,8 @@ def extruder_suffix(analysis: Analysis, active_extruder: int | None, tool: int) 
     """`` T<e>`` for nozzle temperature commands on the H2 (two extruders), empty elsewhere."""
     if printer_profile(analysis) is not H2:
         return ""
-    extruder = active_extruder if active_extruder is not None else extruder_for_filament(analysis, tool)
-    return f" T{extruder}"
+    extruder = job_extruder(analysis, active_extruder, tool)
+    return f" T{extruder}" if extruder is not None else ""
 
 
 # ----------------------------------------------------------------------------- sequences
@@ -219,7 +233,7 @@ class StationContext:
 
 def heat_commands(profile: PrinterProfile, ctx: StationContext) -> list[str]:
     if profile is H2:
-        return [f"M140 S{ctx.bed}", f"M104 S{ctx.nozzle} T{ctx.extruder}"]
+        return [f"M140 S{ctx.bed}", f"M104 S{ctx.nozzle}{_t(ctx.extruder)}"]
     return [f"M140 S{ctx.bed}", f"M104 S{ctx.nozzle}"]
 
 
@@ -341,6 +355,10 @@ def _bed_slinger_station(profile: PrinterProfile, ctx: StationContext) -> list[s
     return lines
 
 
+def _t(extruder: int | None) -> str:
+    return f" T{extruder}" if extruder is not None else ""
+
+
 def _is_cut_sequence(line: str) -> bool:
     """``M620.11 S<n> ...``: the filament cut + retraction, recorded between ``M628 S1`` and ``M629``."""
     tokens = line.split()
@@ -348,9 +366,7 @@ def _is_cut_sequence(line: str) -> bool:
 
 
 def _h2_station(ctx: StationContext) -> list[str]:
-    if ctx.extruder is None:
-        raise ResumeError("Could not determine the extruder used by the selected layer; the H2 sequence needs it.")
-    extruder = ctx.extruder
+    extruder = _t(ctx.extruder)  # " T<e>" on two-nozzle H2s, "" on the H2S
     # H2C / H2D select the hotend with the tool (T<n> H<h>); the H2D Pro's start G-code selects the
     # tool alone (T<n>). Mirror whatever the job itself does.
     hotend = f" H{ctx.hotend}" if ctx.hotend is not None else ""
@@ -374,7 +390,7 @@ def _h2_station(ctx: StationContext) -> list[str]:
     lines += [
         f"M620 S{ctx.tool}A{hotend}",
         f"M190 S{ctx.bed}",
-        f"M109 S{ctx.nozzle} T{extruder}",
+        f"M109 S{ctx.nozzle}{extruder}",
         "M400",
         f"T{ctx.tool}{hotend}",
         "M400",
@@ -382,7 +398,7 @@ def _h2_station(ctx: StationContext) -> list[str]:
         "M629",
         "M400",
         f"M621 S{ctx.tool}A",
-        f"M109 S{ctx.nozzle} T{extruder} ; reassert print temperature after tool/hotend selection",
+        f"M109 S{ctx.nozzle}{extruder} ; reassert print temperature after tool/hotend selection",
         "G90",
         "M83 ; relative extrusion must be re-selected after G90 on Bambu firmware",
     ]

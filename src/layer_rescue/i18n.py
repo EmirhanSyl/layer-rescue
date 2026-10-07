@@ -420,10 +420,6 @@ MESSAGE_PATTERNS: list[tuple[re.Pattern[str], str]] = [
             "yazıcıyı izleyin.{h}",
         ),
         (
-            r"Could not determine the extruder used by the selected layer; the H2 sequence needs it\.",
-            "Seçilen katmanda kullanılan ekstruder belirlenemedi; H2 dizisi buna ihtiyaç duyar.",
-        ),
-        (
             r"Experimental power-cut mode on the H2 series: after a power cut Z is not homed, and the purge, wipe "
             r"and X homing commands the H2 needs \(G150\.3, G150\.2, G150\.1, G28 X T300\) are firmware macros "
             r"whose Z behaviour on an unhomed axis is not documented\. Layer Rescue lowers the bed 30 mm first, like "
