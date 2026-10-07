@@ -52,14 +52,40 @@ Her özelliği kendi P1S'imde gerçek baskılarla denedim ve hepsini videoları,
 
 ## Test edilenler
 
+Layer Rescue ile basılanlar (yukarıdaki [gerçek testler](#gerçek-testler)):
+
 - Bambu Lab P1S, tek filament
 - Windows ve macOS (Linux kaynaktan kurulumla)
 - Bambu Studio G-code'u, katman bazlı baskı, göreli ekstrüzyon
 - Parça aynı plakada sağlam duruyor (devam modu) ya da plakadan ayrılmış / bitmiş ve etrafına basılan duvara geri oturabiliyor (yerleştirme modu, beta)
 
-Henüz test edilmeyenler: diğer yazıcı modelleri ve AMS/çok filamentli işler. Bir iş test edilen kurulumun dışında kalıyorsa Layer Rescue bunun sebebini söyler ve devam etmeden önce riskleri kabul etmenizi ister (CLI: `--allow-untested`). Birden fazla filament varsa, devam edilen katmanda kullanılan filamenti yükler. Bunlardan birini denerseniz lütfen [sonuçlarınızı paylaşın](#sonuçlarınızı-paylaşın).
+### Tüm Bambu Lab yazıcıları, kendi G-code'larıyla kontrol edildi
 
-Nesne bazlı baskı ve spiral vazo, Layer Rescue'nun çalışma şekline henüz uymuyor; bu yüzden bu işler hâlâ reddediliyor.
+Bambu Lab yazıcıları baskıya aynı şekilde dönmüyor. P1 ve X1 serisi arkadaki kanala purge yapıyor, A1 ve A1 mini tablanın solunda, tabla dışında; daha yeni H2, P2S, X2D ve A2L ise purge, silme ve nozul seçimini modelden modele değişen firmware komutlarına (`G150.x`, `T<n> H<h>`) bırakıyor. Bir yazıcıda doğru olan hareket başka birinde yanlış olabiliyor; bu yüzden Layer Rescue'da herkes için tek bir dizi değil, her yazıcı için ayrı bir dizi var.
+
+Bambu Studio 2.08'deki (02.08.02.61) 14 yazıcının her biri aynı şekilde kontrol edildi:
+
+1. **Gerçek bir dilimleme.** Yazıcı için Layer Rescue kapalıyken bir 3DBenchy dilimlendi; böylece dosyada yazıcının kendi, dokunulmamış başlangıç, filament değişimi ve bitiş G-code'u vardı.
+2. **Bambu'nun kendi şablonları.** Bu G-code, [Bambu Studio kaynak kodundaki](https://github.com/bambulab/BambuStudio/tree/master/resources/profiles/BBL/machine) yazıcı şablonlarıyla (`… machine_start_gcode.json`, `… change_filament_gcode.json`, `… machine_end_gcode.json`) satır satır karşılaştırıldı.
+3. **Bambu'yla aynı hareketler.** Layer Rescue'nun o yazıcıdaki dizisi bunlardan çıkarıldı: nerede purge yapıp sildiği, filamenti ve nozulu nasıl seçtiği, X'e nasıl home attığı, soft endstop'ları hangi komutla kapattığı, sıcaklığın hangi ekstrudere gittiği. Filament seçimi gibi satırlar yeniden yazılmıyor, sizin dosyanızdan kopyalanıyor.
+4. **Her mod, birçok katman.** Gerçek dosya üç modda da (yazıcı açık kaldı, elektrik kesintisi, yerleştirme) baskının altından üstüne farklı katmanlarda dönüştürüldü ve sonuç kontrol edildi: başka bir yazıcıya ait hareket yok, elektrik kesintisinden sonra her Z hareketi göreli, parçanın altına hiçbir şey basılmıyor ve kalan katmanlar eksiksiz.
+
+| Yazıcı | Dizi | Gerçek dilimlemeyle kontrol edildi | Layer Rescue ile basıldı |
+| --- | --- | :---: | :---: |
+| P1S | P1/X1: arkadaki purge kanalı | ✓ | ✓ |
+| P1P, X1, X1 Carbon, X1E | P1/X1: arkadaki purge kanalı | ✓ | |
+| A1 | Tabla dışında, X-48.2'de purge | ✓ | |
+| A1 mini | Tabla dışında, X-13.5'te purge | ✓ | |
+| H2D, H2D Pro, H2S, H2C | Firmware makroları (`G150.x`), deneysel | ✓ | |
+| P2S | Firmware makroları, deneysel | ✓ | |
+| X2D | Firmware makroları, iki nozul, deneysel | ✓ | |
+| A2L | Tabla kaydıran yazıcıda firmware makroları, deneysel | ✓ | |
+
+Kontrol edilmiş bir G-code, basılmış bir parça demek değil. P1S dışındaki her yazıcıda Layer Rescue önce riskleri kabul etmenizi istiyor (CLI: `--allow-untested`); deneysel olarak işaretlenen diziler ise Bambu'nun belgelemediği firmware komutlarına dayanıyor. İşin başlangıcını izleyin; bu yazıcılardan birinde Layer Rescue ile baskı yaparsanız lütfen [sonuçlarınızı paylaşın](#sonuçlarınızı-paylaşın): bir yazıcıyı ortadaki sütundan sağdakine taşıyan şey gerçek bir baskı.
+
+Başka markaların yazıcıları, riskleri kabul ettikten sonra P1/X1 hareketlerini kullanır.
+
+Henüz test edilmeyenler: AMS / çok filamentli işler ve bir H2D'nin ya da X2D'nin iki nozulunu da kullanan işler. Birden fazla filament varsa Layer Rescue, devam edilen katmanda kullanılan filamenti yükler. Nesne bazlı baskı ve spiral vazo, Layer Rescue'nun çalışma şekline henüz uymuyor; bu yüzden bu işler hâlâ reddediliyor.
 
 ## Kurulum
 
@@ -196,7 +222,8 @@ Layer Rescue baskıları kurtarıyor ama tamiri görünmez yapamıyor ve henüz 
 - **Katmanı siz seçiyorsunuz ve hatalar belli oluyor.** Baskının gerçekte nerede durduğunu otomatik bulan bir şey yok. [Katmanı seçmek](#katmanı-seçmek) bölümüne bakın.
 - **Yeniden başlatmadan sonra sonuç sizin elinize bağlı.** Nozzle parçanın üstüne gözle yerleştiriliyor.
 - **Yerleştirme modu hâlâ beta.** Parçanın duvara ne kadar iyi oturduğu büyük ölçüde şekline bağlı: bazıları içine girip sıkıca oturuyor, bazıları kayabiliyor, bazıları yapıştırma istiyor, bazıları hiç oturmayabiliyor. Yuvarlak parçaların yönünü duvar sabitleyemiyor, doğru yönde oturtmak size kalıyor. Plakada tek obje ve prime tower olmadan çalışıyor.
-- **Şimdilik tek yazıcıda test edildi.** Yukarıdaki her şey tek filamentli bir Bambu Lab P1S'te test edildi. Diğer yazıcıları ve çok filamentli işleri pencerede riskleri kabul ederek deneyebilirsiniz; ama park, purge ve home hareketleri P1S için hazırlandı, bu yüzden başlangıcı yakından izleyin.
+- **Şimdilik tek yazıcıda basıldı.** Gerçek testler tek filamentli bir Bambu Lab P1S'te basıldı. Diğer Bambu Lab yazıcılarının dizileri kendi dilimlenmiş G-code'ları ve Bambu'nun şablonlarıyla kontrol edildi (bkz. [Test edilenler](#test-edilenler)), ama henüz basılmadı; başlangıcı yakından izleyin.
+- **H2 serisinde, P2S'te, X2D'de ve A2L'de elektrik kesintisi modu deneysel.** Elektrik kesintisinden sonra Z'ye home atılmamış olur; H2'nin ihtiyaç duyduğu purge, silme ve X home komutları (`G150.3`, `G150.2`, `G150.1`, `G28 X T300`) ise home atılmamış bir eksende Z'yi nasıl hareket ettirdiği belgelenmemiş firmware makroları. Layer Rescue, stok başlangıç G-code'u gibi bu komutlardan önce (bitiş G-code'undakilerden önce de) tablayı 30 mm indiriyor; ama bu henüz bir yazıcıda denenmedi: ilk hareketleri izleyin ve durdurmaya hazır olun. A2L'de ayrıca timelapse'i kapatın: timelapse her katmanda parçanın 0.4 mm üstündeyken `G150.3` ile purge kutusuna gidiyor.
 
 ### Yol haritası
 
@@ -207,7 +234,7 @@ Layer Rescue baskıları kurtarıyor ama tamiri görünmez yapamıyor ve henüz 
 - Son düzgün katmanı bulmaya yardım, örneğin kumpasla ölçülen yüksekliği katman numarasına çevirmek.
 - Kalabalık bir plakada başarısız objeleri yeniden dilimlemeden çıkarmak.
 - Pencerede ne olduğunu sorup doğru modu seçen kısa bir yönlendirme.
-- Başka yazıcılarda (X1C, A1, H2D ve diğerleri) test edenlerden gelen raporlar ve bir SSS.
+- Şimdiye kadar yalnızca dilimlenmiş dosyalarla kontrol edilen yazıcılarda (X1 Carbon, A1, H2D ve tablodaki diğerleri) gerçek baskılar ve bir SSS.
 
 **Orta vade: yerleştirme modunda daha çok şekil**
 
@@ -219,7 +246,7 @@ Layer Rescue baskıları kurtarıyor ama tamiri görünmez yapamıyor ve henüz 
 **Uzun vade: tabladan başlamayan destekler**
 
 - Araştırma: uzun bir çıkıntıyı altındaki desteğin tamamını basmadan taşımak. Modele eklenen birkaç küçük çıkıntının üstüne baskı sırasında metal bir çubuk ya da sert bir parça konuyor, çıkıntılı kısım onun üzerine basılıyor. Fikir [u/Thing1_Tokyo](https://www.reddit.com/r/3Dprinting/comments/1wvcdxq/comment/pdayrw4/)'dan.
-- OrcaSlicer desteği ve başka yazıcı aileleri.
+- OrcaSlicer desteği ve başka markaların yazıcıları.
 
 Buraya uymayan bir fikriniz ya da kullanım senaryonuz mu var? [Bir issue açın](https://github.com/EmirhanSyl/layer-rescue/issues/new/choose).
 

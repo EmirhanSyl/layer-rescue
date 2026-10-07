@@ -22,7 +22,7 @@ from . import geometry as geo
 from ._version import __version__
 from .flow import FlowSettings, flow_settings_from_config
 from .gcode import (
-    LAYER_MARKER_RE,
+    layer_numbers,
     Analysis,
     LayerInfo,
     ResumeError,
@@ -35,6 +35,7 @@ from .gcode import (
     config_float,
 )
 from .machine_state import _scan_machine_state, _validate_supported_source
+from .printers import extruder_suffix, park_position
 from .resume import ResumeOptions, ZReferenceMode, _resume_preamble
 from .toolpath import LayerToolpaths, read_toolpaths
 from .supports import SupportPlan, emit_support_layer, plan_supports
@@ -288,7 +289,7 @@ def plan_insert(text_or_analysis: str | Analysis, options: InsertOptions) -> Ins
     if park_z < options.part_height_mm + 5.0:
         raise ResumeError("The part is too tall to park the toolhead safely above it.")
     center_x = (min_x + max_x) / 2
-    park_xy = (236.0, 250.0) if center_x < 128 else (20.0, 250.0)
+    park_xy = park_position(analysis, center_x)
 
     return InsertPlan(
         analysis=analysis,
@@ -464,6 +465,7 @@ def _adhesion_body(
     boost_nozzle: int,
     speed_restore: str,
     fallback_fan: str | None,
+    extruder: str = "",
 ) -> list[str]:
     """The retained body with the first ``adhesion_layers`` layers printed hotter, slower and without part fan."""
     options = plan.options
@@ -480,7 +482,7 @@ def _adhesion_body(
         if index == restore_at:
             output.append("; Layer Rescue: end of adhesion layers, back to normal settings")
             if boost_nozzle != nozzle:
-                output.append(f"M104 S{nozzle}")
+                output.append(f"M104 S{nozzle}{extruder}")
             if options.adhesion_speed_percent != 100:
                 output.append(speed_restore)
             if options.adhesion_fan_off and last_fan:
@@ -541,6 +543,7 @@ def build_insert_gcode(
     wall_filament = emit.filament_mm
 
     park_x, park_y = plan.park_xy
+    extruder = extruder_suffix(analysis, state.active_extruder, state.active_tool or 0)
     pause_gcode = [
         part.strip()
         for part in (analysis.config.get("machine_pause_gcode") or "").replace("\\n", "\n").splitlines()
@@ -560,7 +563,9 @@ def build_insert_gcode(
         ]
     )
     if options.standby_temperature:
-        output.append(f"M104 S{options.standby_temperature} ; standby while paused (reheated before printing)")
+        output.append(
+            f"M104 S{options.standby_temperature}{extruder} ; standby while paused (reheated before printing)"
+        )
     output.append("M400")
     output.extend(pause_gcode)
     output.append(PAUSE_BLOCK_END)
@@ -590,7 +595,7 @@ def build_insert_gcode(
             output.append(f"M220 S{options.adhesion_speed_percent}")
 
     body = _adhesion_body(
-        analysis, plan, plan.resume_layer.change_line, nozzle, boost_nozzle, speed_restore, fallback_fan
+        analysis, plan, plan.resume_layer.change_line, nozzle, boost_nozzle, speed_restore, fallback_fan, extruder
     )
     max_z = config_float(analysis.config, "printable_height", default=250.0)
     output.extend(_offset_z(body, plan.z_offset, max_z))
@@ -632,7 +637,7 @@ def validate_insert_output(text: str, plan: InsertPlan) -> None:
     options = plan.options
     out_lines = text.splitlines()
 
-    markers = [int(m.group(1)) for line in out_lines if (m := LAYER_MARKER_RE.match(line))]
+    markers = layer_numbers(out_lines)
     expected = [layer.number for layer in plan.printed_layers] + list(
         range(plan.resume_layer.number, plan.analysis.last_layer + 1)
     )

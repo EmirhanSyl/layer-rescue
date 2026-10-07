@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import math
 import re
 from dataclasses import dataclass, field
 from enum import Enum
@@ -10,7 +11,6 @@ from pathlib import Path
 
 from ._version import __version__
 from .gcode import (
-    LAYER_MARKER_RE,
     NUMBER_RE,
     Analysis,
     LayerInfo,
@@ -21,8 +21,20 @@ from .gcode import (
     _next_extrusion_mode,
     _parameter,
     analyze_gcode,
+    layer_numbers,
 )
 from .machine_state import MachineState, _scan_machine_state, _validate_supported_source
+from .printers import (
+    CLEARANCE_LIMITED,
+    POWER_CUT_HEIGHT_MARGIN_MM,
+    StationContext,
+    job_extruder,
+    heat_commands,
+    home_command,
+    power_cut_clearance,
+    printer_profile,
+    station_block,
+)
 
 
 class ZReferenceMode(str, Enum):
@@ -97,6 +109,38 @@ def _first_layer_xy(analysis: Analysis, layer: LayerInfo) -> tuple[float, float]
         if e_value is not None and e_value > 0:
             return None
     return None
+
+
+FILAMENT_AREA_175 = math.pi * (1.75 / 2) ** 2
+MAX_PURGE_FEED = 200.0  # mm/min of filament: the original fixed rate, about 8 mm³/s with 1.75 mm filament
+MIN_PURGE_FEED = 10.0
+PURGE_VOLUMETRIC_FACTOR = 0.8  # stay below the filament's max volumetric speed, like the stock start G-code
+
+
+def _config_at(analysis: Analysis, key: str, index: int) -> float | None:
+    """Per-filament config value (comma separated) for ``index``, falling back to the first entry."""
+    value = analysis.config.get(key)
+    if not value:
+        return None
+    entries = [entry for entry in value.split(",") if entry.strip()]
+    if not entries:
+        return None
+    match = NUMBER_RE.search(entries[index] if 0 <= index < len(entries) else entries[0])
+    return float(match.group(0)) if match else None
+
+
+def _purge_feed(analysis: Analysis, tool: int) -> int:
+    """Filament feed (mm/min) for the purge that respects the filament's max volumetric speed.
+
+    A fixed F200 is ~8 mm³/s; a 0.2 mm nozzle profile allows ~2 mm³/s, so the extruder would skip.
+    """
+    max_volumetric = _config_at(analysis, "filament_max_volumetric_speed", tool)
+    if max_volumetric is None or max_volumetric <= 0:
+        return int(MAX_PURGE_FEED)
+    diameter = _config_at(analysis, "filament_diameter", tool) or 1.75
+    area = math.pi * (diameter / 2) ** 2 if diameter > 0 else FILAMENT_AREA_175
+    feed = max_volumetric * PURGE_VOLUMETRIC_FACTOR / area * 60
+    return int(max(MIN_PURGE_FEED, min(MAX_PURGE_FEED, math.floor(feed))))
 
 
 def _retraction_length(analysis: Analysis) -> float:
@@ -212,6 +256,59 @@ def _relativize_z(body: list[str], start_z: float) -> list[str]:
     return output
 
 
+END_GCODE_MARKER = "; MACHINE_END_GCODE_START"
+
+
+def _lower_bed_before_end_macros(body: list[str], analysis: Analysis) -> tuple[list[str], float]:
+    """H2 / A2L power-cut mode: give the end G-code's G150.x macros the same clearance as the preamble.
+
+    The stock H2 end G-code runs G150.3 0.4 mm above the finished part. With an unhomed Z that is the
+    same open question as in the preamble, so the bed is lowered first (relative) and every absolute
+    Z of the end G-code is raised by the same amount, keeping its own moves unchanged relative to it.
+    """
+    try:
+        start = body.index(END_GCODE_MARKER)
+    except ValueError:
+        return body, 0.0
+    end_codes = [_code(line) for line in body[start:]]
+    if not any(code.upper().startswith("G150") for code in end_codes):
+        return body, 0.0
+    highest = max(
+        (z for code in end_codes if _command(code) in {"G0", "G1", "G2", "G3"} and (z := _parameter(code, "Z")) is not None),
+        default=0.0,
+    )
+    height = analysis.config.get("printable_height")
+    match = NUMBER_RE.search(height) if height else None
+    max_z = float(match.group(0)) if match else 250.0
+    wanted = printer_profile(analysis).power_cut_clearance_mm
+    clearance = round(max(0.0, min(wanted, max_z - POWER_CUT_HEIGHT_MARGIN_MM - highest)), 3)
+    if clearance <= 0:
+        return body, 0.0
+
+    shifted = body[: start + 1] + [
+        "G91",
+        f"G1 Z{_format_number(clearance)} F600 ; lower the bed before the end-G-code macros (power-cut mode)",
+        "G90",
+    ]
+    positioning = "G90"
+    for raw in body[start + 1 :]:
+        code = _code(raw)
+        command = _command(code)
+        if command in {"G90", "G91"}:
+            positioning = command
+        z_value = _parameter(code, "Z") if command in {"G0", "G1", "G2", "G3"} else None
+        if z_value is None or positioning == "G91":
+            shifted.append(raw)
+            continue
+        comment = raw.split(";", 1)[1] if ";" in raw else ""
+        tokens = [
+            f"Z{_format_number(z_value + clearance)}" if token.upper().startswith("Z") else token
+            for token in code.split()
+        ]
+        shifted.append(" ".join(tokens) + (f" ;{comment}" if comment else ""))
+    return shifted, clearance
+
+
 def _resume_preamble(
     analysis: Analysis,
     layer: LayerInfo,
@@ -232,6 +329,23 @@ def _resume_preamble(
         raise ResumeError("The purge length must be between 0 and 100 mm of filament.")
 
     tool = state.active_tool or 0  # the filament slot that was printing when the selected layer starts
+    profile = printer_profile(analysis)
+    station = StationContext(
+        tool=tool,
+        nozzle=nozzle,
+        bed=bed,
+        purge_length=options.purge_length_mm,
+        purge_feed=_purge_feed(analysis, tool),
+        retract=_retraction_length(analysis),
+        hotend=state.active_hotend,
+        extruder=job_extruder(analysis, state.active_extruder, tool),
+        flush_setup=state.flush_setup_command,
+        toolchange_setup=state.toolchange_setup,
+        hotend_remap=state.hotend_remap,
+        ams_select_command=state.ams_select_command,
+        ams_release_command=state.ams_release_command,
+        ams_select_extras=state.ams_select_extras,
+    )
 
     mode = _z_reference_mode(options.z_reference_mode)
     reference_z: float | None = None
@@ -239,6 +353,7 @@ def _resume_preamble(
         if not options.home_corexy:
             raise ResumeError("Manual Z reference mode requires CoreXY homing after the safety lift.")
         reference_z = _previous_layer(analysis, layer).z
+    clearance = power_cut_clearance(analysis, profile, mode, reference_z, options.z_lift_mm)
 
     progress = max(0, min(100, round((layer.number - 1) / layer.total * 100)))
     safety_note = (
@@ -258,10 +373,9 @@ def _resume_preamble(
         f"M73 P{progress}",
     ]
     lines.extend(state.motion_commands)
+    lines.extend(heat_commands(profile, station))
     lines.extend(
         [
-            f"M140 S{bed}",
-            f"M104 S{nozzle}",
             "G90",
             "G21",
             "M83",
@@ -277,7 +391,7 @@ def _resume_preamble(
             [
                 # Same as the stock P1S start G-code: after a power cycle Z is not homed, so the
                 # firmware's soft limits must not clamp or reinterpret Z moves.
-                "M221 X0 Y0 Z0 ; turn off soft endstops (stock P1S start behaviour for an unhomed Z)",
+                f"{profile.soft_endstops_off} ; turn off soft endstops (as the stock start G-code does for an unhomed Z)",
                 f"G92 Z{_format_number(reference_z)} ; nominal Z of the aligned last-layer surface",
                 "; Restarted mode: every Z move below is relative to the aligned nozzle position,",
                 "; so the job does not depend on the firmware's absolute Z after a power cycle.",
@@ -290,73 +404,26 @@ def _resume_preamble(
             "G90",
         ]
     )
+    if clearance > 0:
+        # H2 after a power cut: the stock start G-code lowers the bed ~30 mm (relative) before it runs
+        # G28 X T300 and the G150.x purge/wipe macros on an unhomed Z. Do the same, so these
+        # firmware commands run with the clearance they are designed for.
+        lines.extend(
+            [
+                "G91",
+                f"G1 Z{_format_number(clearance)} F600 ; lower the bed before the firmware macros, like the stock start",
+                "G90",
+            ]
+        )
     if options.home_corexy:
-        lines.append("G28 X ; Bambu CoreXY re-home only; never home Z")
-    lines.extend(
-        [
-            "M975 S1",
-            "; Move to the stock P1S filament-change station at the lifted Z position.",
-            "G1 X60 F12000",
-            "G1 Y245",
-            "G1 Y265 F3000",
-            "M620 M",
-            f"M620 S{tool}A",
-            f"M190 S{bed}",
-            f"M109 S{nozzle}",
-            "G1 X120 F12000",
-            "G1 X20 Y50 F12000",
-            "G1 Y-3",
-            f"T{tool}",
-            "G1 X54 F12000",
-            "G1 Y265",
-            "M400",
-            f"M621 S{tool}A",
-            state.flush_setup_command or "M620.1 E F149.669 T270",
-            "T1000",
-            f"M109 S{nozzle} ; reassert print temperature after tool/AMS selection",
-            "M412 S1",
-            # Bambu firmware: G90 (issued above for the Z lift) also switches E to
-            # absolute. Without this M83 every relative E value in the retained body
-            # is executed as an absolute position and no filament is extruded.
-            "G90",
-            "M83 ; relative extrusion must be re-selected after G90 on Bambu firmware",
-        ]
-    )
-    retract = _retraction_length(analysis)
-    if options.purge_length_mm > 0:
-        lines.extend(
-            [
-                "; Refill the melt zone over the rear purge chute (nozzle may have oozed or been retracted).",
-                "M400",
-                "G92 E0",
-                f"G1 E{_format_number(options.purge_length_mm)} F200",
-                "M400",
-            ]
-        )
-        if retract > 0:
-            lines.append(f"G1 E-{_format_number(retract)} F1800 ; retract before wiping and travel")
-        lines.extend(
-            [
-                "M106 P1 S255",
-                "M400 S3",
-                "G1 X70 F9000",
-                "G1 X76 F15000",
-                "G1 X65 F15000",
-                "G1 X76 F15000",
-                "G1 X65 F15000 ; shake off purged filament",
-                "G1 X80 F6000",
-                "G1 X95 F15000",
-                "G1 X80 F15000",
-                "G1 X165 F15000 ; wipe",
-                "M400",
-                "M106 P1 S0",
-            ]
-        )
+        lines.append(home_command(profile))
+    lines.extend(station_block(profile, station))
     lines.extend(state.fan_commands)
     for command in state.auxiliary_commands:
         if not command.startswith("M975"):
             lines.append(command)
 
+    retract = station.retract
     first_xy = _first_layer_xy(analysis, layer)
     if first_xy is not None:
         lines.append(
@@ -368,7 +435,7 @@ def _resume_preamble(
         approach_note = "approach the recovered layer at the rear station"
     if mode is ZReferenceMode.MANUAL:
         assert reference_z is not None
-        approach = layer.z - (reference_z + options.z_lift_mm)
+        approach = layer.z - (reference_z + options.z_lift_mm + clearance)
         lines.extend(_relative_z_move(approach, "F600", approach_note))
     else:
         lines.append(f"G1 Z{_format_number(layer.z)} F600 ; {approach_note}")
@@ -392,11 +459,7 @@ def _validate_output(
     z_reference_mode: ZReferenceMode,
     reference_z: float | None,
 ) -> None:
-    layers = [
-        int(match.group(1))
-        for line in text.splitlines()
-        if (match := LAYER_MARKER_RE.match(line))
-    ]
+    layers = layer_numbers(text.splitlines())
     if not layers or layers[0] != start_layer:
         raise ResumeError("Internal validation failed: the first retained layer is incorrect.")
     # The last layer number can be below the markers' "total" (Bambu counts independent support
@@ -409,10 +472,13 @@ def _validate_output(
     if preamble_end < 0:
         raise ResumeError("Internal validation failed: resume block terminator is missing.")
     preamble = text[:preamble_end]
-    tool_index = preamble.rfind("T1000")
-    final_heat_index = preamble.rfind("M109 S")
-    if tool_index < 0 or final_heat_index < tool_index:
-        raise ResumeError("Internal validation failed: print temperature is not reasserted after T1000.")
+    # The last tool selection (T1000 on the P1 series, T<n> H<h> on the H2) can change the nozzle
+    # temperature, so the print temperature must be waited for again after it.
+    preamble_codes = [_code(line) for line in preamble.splitlines()]
+    tool_lines = [index for index, code in enumerate(preamble_codes) if re.match(r"^T\d+(?:\s|$)", code)]
+    heat_lines = [index for index, code in enumerate(preamble_codes) if re.match(r"^M109\s+S", code)]
+    if not tool_lines or not heat_lines or heat_lines[-1] < tool_lines[-1]:
+        raise ResumeError("Internal validation failed: print temperature is not reasserted after the tool selection.")
 
     preamble_lines = preamble.splitlines()
     z_assignments: list[tuple[int, float]] = []
@@ -488,6 +554,8 @@ def build_resume_gcode(text: str, options: ResumeOptions) -> tuple[str, ResumeRe
     prefix = list(analysis.lines[: analysis.config_end_line + 1])
     body = list(analysis.lines[layer.change_line :])
     if mode is ZReferenceMode.MANUAL:
+        if printer_profile(analysis).power_cut_clearance_mm > 0:
+            body, _ = _lower_bed_before_end_macros(body, analysis)
         body = _relativize_z(body, layer.z)
     output_lines = prefix + ["", "; EXECUTABLE_BLOCK_START"] + preamble + body
     output = analysis.newline.join(output_lines) + analysis.newline
@@ -498,6 +566,10 @@ def build_resume_gcode(text: str, options: ResumeOptions) -> tuple[str, ResumeRe
         warnings.append(
             "Manual Z mode depends on the operator aligning the nozzle to the last successful layer before job start."
         )
+        profile = printer_profile(analysis)
+        clearance = power_cut_clearance(analysis, profile, mode, reference_z, options.z_lift_mm)
+        if 0 < profile.power_cut_clearance_mm and clearance < profile.power_cut_clearance_mm:
+            warnings.append(CLEARANCE_LIMITED.format(short=profile.short, clearance=_format_number(clearance)))
 
     report = ResumeReport(
         start_layer=options.start_layer,

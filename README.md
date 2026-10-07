@@ -52,14 +52,40 @@ I tested every feature on my own P1S with real prints and wrote down each one st
 
 ## Tested on
 
+Printed with Layer Rescue (the [real-world tests](#real-world-tests) above):
+
 - Bambu Lab P1S, single filament
 - Windows and macOS (Linux from source)
 - Bambu Studio G-code, by-layer printing, relative extrusion
 - The part is still firmly attached to the same plate (resume mode), or it came off / is finished and fits back into a wall printed around it (insert mode, beta)
 
-Not tested yet: other printer models and AMS/multi-filament jobs. When a job falls outside what's been tested, Layer Rescue tells you why and asks you to accept the risks before it continues (CLI: `--allow-untested`). With several filaments it loads the filament that was active at the layer you continue from. If you try one of these, please [share your results](#share-your-results).
+### Every Bambu Lab printer, checked against its own G-code
 
-By-object printing and spiral vase don't fit the way Layer Rescue works yet, so those jobs are still turned down.
+Bambu Lab printers don't all resume the same way. The P1 and X1 series purge into a chute at the back, the A1 and A1 mini purge off the bed on the left, and the newer H2, P2S, X2D and A2L leave purging, wiping and nozzle selection to firmware commands (`G150.x`, `T<n> H<h>`) that differ from model to model. Moves that are right on one printer can be wrong on another, so Layer Rescue has a sequence for each printer instead of one for all.
+
+Each of the 14 printers in Bambu Studio 2.08 (02.08.02.61) was checked the same way:
+
+1. **A real slice.** A 3DBenchy was sliced for the printer with Layer Rescue switched off, so the file contained the printer's own, untouched start, filament-change and end G-code.
+2. **Bambu's own templates.** That G-code was compared line by line with the printer templates in the [Bambu Studio source](https://github.com/bambulab/BambuStudio/tree/master/resources/profiles/BBL/machine) (`… machine_start_gcode.json`, `… change_filament_gcode.json`, `… machine_end_gcode.json`).
+3. **The same moves as Bambu.** Layer Rescue's sequence for the printer was derived from those: where it purges and wipes, how it selects the filament and nozzle, how it homes X, which command turns the soft endstops off, which extruder gets the temperature. Lines such as the filament selection are copied from your own file, not retyped.
+4. **Every mode, many layers.** The real file was converted in all three modes (printer stayed on, power cut, insert) at layers from the bottom to the top of the print, and the result was checked: no moves from another printer, every Z move relative after a power cut, nothing printed below the part, and the remaining layers complete.
+
+| Printer | Sequence | Checked against a real slice | Printed with Layer Rescue |
+| --- | --- | :---: | :---: |
+| P1S | P1/X1: rear purge chute | ✓ | ✓ |
+| P1P, X1, X1 Carbon, X1E | P1/X1: rear purge chute | ✓ | |
+| A1 | Off-bed purge at X-48.2 | ✓ | |
+| A1 mini | Off-bed purge at X-13.5 | ✓ | |
+| H2D, H2D Pro, H2S, H2C | Firmware macros (`G150.x`), experimental | ✓ | |
+| P2S | Firmware macros, experimental | ✓ | |
+| X2D | Firmware macros, two nozzles, experimental | ✓ | |
+| A2L | Firmware macros on a bed slinger, experimental | ✓ | |
+
+A checked G-code is not a printed part. On every printer except the P1S, Layer Rescue still asks you to accept the risks first (CLI: `--allow-untested`), and the sequences marked experimental rely on firmware commands that Bambu doesn't document. Watch the start of the job, and if you print with it on one of these printers, please [share your results](#share-your-results): a real print is what moves a printer from the middle column to the right one.
+
+Printers from other brands get the P1/X1 moves after you accept the risks.
+
+Not tested yet: AMS / multi-filament jobs and jobs that use both nozzles of an H2D or X2D. With several filaments Layer Rescue loads the filament that was active at the layer you continue from. By-object printing and spiral vase don't fit the way Layer Rescue works yet, so those jobs are still turned down.
 
 ## Install
 
@@ -194,7 +220,8 @@ Layer Rescue saves prints, but it can't make the repair invisible or do everythi
 - **You pick the layer, and mistakes show.** There's no automatic detection of where the print really stopped. See [Picking the layer](#picking-the-layer).
 - **After a restart, the result depends on your hands.** The nozzle is placed on the part by eye.
 - **Insert mode is still beta.** How well a part fits the wall depends a lot on its shape: some drop in and sit snugly, some can shift, some need glue, and some may not fit at all. Round parts can't be oriented by the wall, so you have to seat them facing the right way. It handles one object on the plate and no prime tower.
-- **Tested on one printer so far.** Everything above was tested on a Bambu Lab P1S with a single filament. You can try other printers and multi-filament jobs by accepting the risks in the window, but the parking, purging and homing moves were made for the P1S, so watch the start closely.
+- **Printed on one printer so far.** The real-world tests were printed on a Bambu Lab P1S with a single filament. The sequences for the other Bambu Lab printers were checked against their own sliced G-code and Bambu's templates (see [Tested on](#tested-on)), but not printed yet, so watch the start closely.
+- **Power-cut mode on the H2 series, the P2S, the X2D and the A2L is experimental.** After a power cut Z is not homed, and the purge, wipe and X homing commands the H2 needs (`G150.3`, `G150.2`, `G150.1`, `G28 X T300`) are firmware macros whose Z behaviour on an unhomed axis isn't documented. Like the stock start G-code, Layer Rescue lowers the bed 30 mm before these commands (also before the end G-code's), but this hasn't been checked on a printer yet: watch the first moves and be ready to stop. On the A2L, also turn timelapse off: its timelapse moves to the purge bin with `G150.3` on every layer, 0.4 mm above the part.
 
 ### Roadmap
 
@@ -205,7 +232,7 @@ Layer Rescue saves prints, but it can't make the repair invisible or do everythi
 - Help with finding the last good layer, for example turning a caliper height into a layer number.
 - Dropping failed objects from a crowded plate without re-slicing.
 - A short guide in the window that asks what happened and picks the right mode.
-- Reports from people testing on other printers (X1C, A1, H2D and more), plus an FAQ.
+- Real prints on the printers that have only been checked against sliced files so far (X1 Carbon, A1, H2D and the rest of the table), plus an FAQ.
 
 **Mid term: insert mode for more shapes**
 
@@ -217,7 +244,7 @@ Layer Rescue saves prints, but it can't make the repair invisible or do everythi
 **Long term: supports that don't start from the bed**
 
 - Research: holding up a tall overhang without printing the whole support underneath. A few small ledges on the model carry a metal bar or another rigid part placed mid-print, and the overhang is printed on top of it. Idea from [u/Thing1_Tokyo](https://www.reddit.com/r/3Dprinting/comments/1wvcdxq/comment/pdayrw4/).
-- OrcaSlicer support and other printer families.
+- OrcaSlicer support and printers from other brands.
 
 Got an idea or a use case that doesn't fit here? [Open an issue](https://github.com/EmirhanSyl/layer-rescue/issues/new/choose).
 

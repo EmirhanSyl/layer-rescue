@@ -6,6 +6,7 @@ import re
 from dataclasses import dataclass
 
 from .gcode import Analysis, ResumeError, _code, _command, _first_number, _next_extrusion_mode, _parameter
+from .printers import AMS_SELECT_RE, TOOL_SELECT_RE, experimental_warnings, printer_profile
 
 
 @dataclass(frozen=True)
@@ -21,10 +22,19 @@ class MachineState:
     flush_setup_command: str | None = None
     auxiliary_commands: tuple[str, ...] = ()
     active_tool: int | None = None  # filament slot (T/M620 S<n>A) in use when the selected layer starts
+    active_hotend: int | None = None  # H2: hotend of the last ``T<n> H<h>`` / ``M620 S<n>A H<h>``
+    active_extruder: int | None = None  # H2: extruder index of the last ``M104/M109 S.. T<e>`` that heated
+    toolchange_setup: tuple[str, ...] = ()  # H2: last M620.10 / M620.11 flush and cut settings
+    hotend_remap: bool = False  # H2C: the start G-code enables hotend remap (M620 N); the H2D's does not
+    # The job's own filament selection lines, copied as they are (the X2D adds a "B" flag and an
+    # M620.22 line that the H2 does not have).
+    ams_select_command: str | None = None  # last M620 S<n>A ...
+    ams_release_command: str | None = None  # last M621 S<n>A ...
+    ams_select_extras: tuple[str, ...] = ()  # M620.22 ... lines
 
 
-TOOL_RE = re.compile(r"^T(\d+)\s*$", re.IGNORECASE)
-AMS_SELECT_RE = re.compile(r"^M620\s+S(\d+)A\b", re.IGNORECASE)
+TOOL_RE = TOOL_SELECT_RE
+TOOLCHANGE_SETUP_COMMANDS = {"M620.10", "M620.11"}
 TESTED_PRINTERS = ("p1s",)
 UNTESTED_HINT = " To try it anyway, accept the risks (CLI: --allow-untested)."
 
@@ -41,6 +51,13 @@ def _scan_machine_state(analysis: Analysis, stop_line: int) -> MachineState:
     flush_setup: str | None = None
     auxiliary_commands: dict[str, str] = {}
     active_tool: int | None = None
+    active_hotend: int | None = None
+    active_extruder: int | None = None
+    toolchange_setup: dict[str, str] = {}
+    hotend_remap = False
+    ams_select_command: str | None = None
+    ams_release_command: str | None = None
+    ams_select_extras: dict[str, str] = {}
 
     for raw_line in analysis.lines[analysis.executable_start_line : stop_line]:
         code = _code(raw_line)
@@ -50,10 +67,31 @@ def _scan_machine_state(analysis: Analysis, stop_line: int) -> MachineState:
         tool_match = TOOL_RE.match(code) or AMS_SELECT_RE.match(code)
         if tool_match and 0 <= int(tool_match.group(1)) < 255:
             active_tool = int(tool_match.group(1))
+            if tool_match.group(2) is not None:
+                active_hotend = int(tool_match.group(2))
         if command in {"M104", "M109"}:
             value = _parameter(code, "S")
             if value is not None and value > 0:
                 nozzle_temperature = int(round(value))
+                extruder = _parameter(code, "T")
+                if extruder is not None:
+                    active_extruder = int(extruder)
+        elif command == "M620" and code.split()[1:2] == ["N"]:
+            hotend_remap = True
+        elif command == "M620" and AMS_SELECT_RE.match(code):
+            ams_select_command = code
+        elif command == "M621" and re.match(r"^M621\s+S\d+A\b", code, re.IGNORECASE):
+            ams_release_command = code
+        elif command == "M620.22":
+            ams_select_extras[code.split()[1] if len(code.split()) > 1 else ""] = code
+        elif command in TOOLCHANGE_SETUP_COMMANDS:
+            tokens = code.split()
+            # Keep the latest of each variant (A0/A1, P/K/S...); R = retracted length, used after a change.
+            if len(tokens) > 1 and not tokens[1].upper().startswith("R"):
+                key = f"{command} {tokens[1][:1].upper()}"
+                if command == "M620.10":
+                    key = f"{command} {tokens[1].upper()}"
+                toolchange_setup[key] = code
         elif command in {"M140", "M190"}:
             value = _parameter(code, "S")
             if value is not None and value > 0:
@@ -102,6 +140,13 @@ def _scan_machine_state(analysis: Analysis, stop_line: int) -> MachineState:
         flush_setup_command=flush_setup,
         auxiliary_commands=tuple(auxiliary_commands[key] for key in sorted(auxiliary_commands)),
         active_tool=active_tool,
+        active_hotend=active_hotend,
+        active_extruder=active_extruder,
+        toolchange_setup=tuple(toolchange_setup.values()),
+        hotend_remap=hotend_remap,
+        ams_select_command=ams_select_command,
+        ams_release_command=ams_release_command,
+        ams_select_extras=tuple(ams_select_extras.values()),
     )
 
 
@@ -128,6 +173,7 @@ def untested_setup(analysis: Analysis) -> list[str]:
             f"Untested printer: this G-code is for '{model}', and Layer Rescue has only been tested on the "
             "Bambu Lab P1S. Parking, purging and homing positions may not fit this printer."
         )
+    reasons.extend(experimental_warnings(printer_profile(analysis)))
     slots = filament_slots(analysis)
     if any(slot > 0 for slot in slots):
         reasons.append(
