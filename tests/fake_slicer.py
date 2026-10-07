@@ -228,6 +228,50 @@ P2S_CONFIG = {
     "printer_structure": "corexy",
 }
 
+# X2D (two nozzles, 256 mm CoreXY): H2 macros, "G28 X T300 R", "M620 S0A H-1 B" + M620.22, "M621 S0A B",
+# the active nozzle is physical extruder 1 (stock X2D start in Bambu Studio 2.08).
+X2D_START = [
+    ";======== X2D start gcode==========",
+    "M140 S55",
+    "M620 M ;enable remap",
+    "G28 X T300 R",
+    "G150.1 F8000 ; wipe mouth to avoid filament stick to heatbed",
+    "G150.3",
+    "M104 S220 T1 ; rise temp in advance",
+    "M211 X0 Y0 Z0 ;turn off soft endstop",
+    "M620.10 A0 F523.843 H0.4 T240 P220 S1",
+    "M620.10 A1 F523.843 H0.4 T240 P220 S1",
+    "M620.11 P0 L0 I0 B-1 E0",
+    "M620.11 K0 I0 B-1 R0",
+    "M620 S0A H-1 B   ; switch material if AMS exist",
+    "M620.22 I0 P1    ; enable remote extruder runout auto purge.",
+    "M400",
+    "T0 H-1",
+    "M400",
+    "M628 S0",
+    "M629",
+    "M400",
+    "M621 S0A B",
+    "M104 S220",
+    "M190 S55",
+    "M109 S220",
+    "G150.2",
+    "G150.1 F8000",
+    "G91",
+    "G1 Y-16 F12000 ; move away from the trash bin",
+    "G90",
+    "M83",
+    "M106 S0",
+]
+X2D_CONFIG = {
+    **H2C_CONFIG,
+    "printable_area": "0x0,256x0,256x256,0x256",
+    "extruder_printable_area": "0x0,256x0,256x256,0x256#20.5x0,256x0,256x256,20.5x256",
+    "printable_height": "261",
+    "filament_map": "1",
+    "physical_extruder_map": "1,0",
+}
+
 
 def _bed_slinger_start(model: str, purge_x: str, shake_x: str) -> list[str]:
     return [

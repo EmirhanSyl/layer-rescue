@@ -22,6 +22,8 @@ Families:
 
 * ``p2s``: Bambu Lab P2S. 256 mm CoreXY like the P1S, but its stock G-code is the H2S's: firmware
   macros ``G150.x``, ``G28 X T300``, ``G1 Y-16`` away from the bin, no layer-num comments.
+* ``x2d``: Bambu Lab X2D. 256 mm CoreXY with two nozzles and the H2 macros; ``G28 X T300 R``, and the
+  job's own ``M620 S<n>A H<h> B`` / ``M620.22`` / ``M621 S<n>A B`` lines are copied.
 * ``a2l``: Bambu Lab A2L. Bed slinger with the same firmware macros; leaves the bin with ``G1 X20``.
 * ``a1mini``: Bambu Lab A1 mini. Same structure as the A1 with its own positions: purge at
   ``X-13.5``, shaken against ``X0``.
@@ -103,6 +105,18 @@ P2S = PrinterProfile(
     bin_exit="G1 Y-16 F12000",
     power_cut_clearance_mm=30.0,
 )
+# X2D: a 256 mm CoreXY with two nozzles and the H2 firmware macros. Its stock start homes X with
+# "G28 X T300 R", selects the filament with "M620 S<n>A H<h> B" + "M620.22 ..." (copied from the job).
+X2D = PrinterProfile(
+    "x2d",
+    "Bambu Lab X2D",
+    experimental=True,
+    macro_station=True,
+    short="X2D",
+    home="G28 X T300 R",
+    bin_exit="G1 Y-16 F12000",
+    power_cut_clearance_mm=30.0,
+)
 # A2L: a bed slinger (printer_structure = i3) that uses the H2 firmware macros. Its stock start homes
 # X and Z together (G28 X Z P0 T300 W); Z must never be homed here, so it gets a plain X home.
 A2L = PrinterProfile(
@@ -124,6 +138,7 @@ _A1_MODELS = re.compile(r"\ba1\b(?!\s*mini)", re.IGNORECASE)
 _A1_MINI_MODELS = re.compile(r"\ba1\s*mini\b", re.IGNORECASE)
 _A2L_MODELS = re.compile(r"\ba2l\b", re.IGNORECASE)
 _P2S_MODELS = re.compile(r"\bp2s\b", re.IGNORECASE)
+_X2D_MODELS = re.compile(r"\bx2d\b", re.IGNORECASE)
 
 EXPERIMENTAL_WARNING = (
     "Experimental {short} sequence: purge, wipe, hotend selection and X homing follow Bambu Studio's stock "
@@ -175,6 +190,8 @@ def printer_profile(analysis: Analysis) -> PrinterProfile:
         return A2L
     if _P2S_MODELS.search(model):
         return P2S
+    if _X2D_MODELS.search(model):
+        return X2D
     if _A1_MINI_MODELS.search(model):
         return A1_MINI
     if _A1_MODELS.search(model):
@@ -300,6 +317,9 @@ class StationContext:
     flush_setup: str | None = None
     toolchange_setup: tuple[str, ...] = ()
     hotend_remap: bool = False
+    ams_select_command: str | None = None
+    ams_release_command: str | None = None
+    ams_select_extras: tuple[str, ...] = ()
 
 
 def heat_commands(profile: PrinterProfile, ctx: StationContext) -> list[str]:
@@ -430,6 +450,13 @@ def _t(extruder: int | None) -> str:
     return f" T{extruder}" if extruder is not None else ""
 
 
+def _same_slot(command: str | None, tool: int) -> str | None:
+    """``command`` (an M620 / M621 line) if it selects filament slot ``tool``."""
+    if command and re.match(rf"^M62[01]\s+S{tool}A\b", command, re.IGNORECASE):
+        return command
+    return None
+
+
 def _is_cut_sequence(line: str) -> bool:
     """``M620.11 S<n> ...``: the filament cut + retraction, recorded between ``M628 S1`` and ``M629``."""
     tokens = line.split()
@@ -459,8 +486,13 @@ def _macro_station(profile: PrinterProfile, ctx: StationContext) -> list[str]:
     ]
     if cut:
         lines.extend(["M628 S1", *cut, "M629"])
+    # Copy the job's own M620 / M621 lines when they select this filament (X2D: "M620 S0A H-1 B",
+    # "M621 S0A B" and an M620.22 line); otherwise build them.
+    select = _same_slot(ctx.ams_select_command, ctx.tool) or f"M620 S{ctx.tool}A{hotend}"
+    release = _same_slot(ctx.ams_release_command, ctx.tool) or f"M621 S{ctx.tool}A"
     lines += [
-        f"M620 S{ctx.tool}A{hotend}",
+        select,
+        *(ctx.ams_select_extras if select == ctx.ams_select_command else ()),
         f"M190 S{ctx.bed}",
         f"M109 S{ctx.nozzle}{extruder}",
         "M400",
@@ -469,7 +501,7 @@ def _macro_station(profile: PrinterProfile, ctx: StationContext) -> list[str]:
         "M628 S0",
         "M629",
         "M400",
-        f"M621 S{ctx.tool}A",
+        release,
         f"M109 S{ctx.nozzle}{extruder} ; reassert print temperature after tool/hotend selection",
         "G90",
         "M83 ; relative extrusion must be re-selected after G90 on Bambu firmware",

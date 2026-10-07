@@ -342,6 +342,9 @@ def _resume_preamble(
         flush_setup=state.flush_setup_command,
         toolchange_setup=state.toolchange_setup,
         hotend_remap=state.hotend_remap,
+        ams_select_command=state.ams_select_command,
+        ams_release_command=state.ams_release_command,
+        ams_select_extras=state.ams_select_extras,
     )
 
     mode = _z_reference_mode(options.z_reference_mode)

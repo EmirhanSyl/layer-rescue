@@ -26,6 +26,11 @@ class MachineState:
     active_extruder: int | None = None  # H2: extruder index of the last ``M104/M109 S.. T<e>`` that heated
     toolchange_setup: tuple[str, ...] = ()  # H2: last M620.10 / M620.11 flush and cut settings
     hotend_remap: bool = False  # H2C: the start G-code enables hotend remap (M620 N); the H2D's does not
+    # The job's own filament selection lines, copied as they are (the X2D adds a "B" flag and an
+    # M620.22 line that the H2 does not have).
+    ams_select_command: str | None = None  # last M620 S<n>A ...
+    ams_release_command: str | None = None  # last M621 S<n>A ...
+    ams_select_extras: tuple[str, ...] = ()  # M620.22 ... lines
 
 
 TOOL_RE = TOOL_SELECT_RE
@@ -50,6 +55,9 @@ def _scan_machine_state(analysis: Analysis, stop_line: int) -> MachineState:
     active_extruder: int | None = None
     toolchange_setup: dict[str, str] = {}
     hotend_remap = False
+    ams_select_command: str | None = None
+    ams_release_command: str | None = None
+    ams_select_extras: dict[str, str] = {}
 
     for raw_line in analysis.lines[analysis.executable_start_line : stop_line]:
         code = _code(raw_line)
@@ -70,6 +78,12 @@ def _scan_machine_state(analysis: Analysis, stop_line: int) -> MachineState:
                     active_extruder = int(extruder)
         elif command == "M620" and code.split()[1:2] == ["N"]:
             hotend_remap = True
+        elif command == "M620" and AMS_SELECT_RE.match(code):
+            ams_select_command = code
+        elif command == "M621" and re.match(r"^M621\s+S\d+A\b", code, re.IGNORECASE):
+            ams_release_command = code
+        elif command == "M620.22":
+            ams_select_extras[code.split()[1] if len(code.split()) > 1 else ""] = code
         elif command in TOOLCHANGE_SETUP_COMMANDS:
             tokens = code.split()
             # Keep the latest of each variant (A0/A1, P/K/S...); R = retracted length, used after a change.
@@ -130,6 +144,9 @@ def _scan_machine_state(analysis: Analysis, stop_line: int) -> MachineState:
         active_extruder=active_extruder,
         toolchange_setup=tuple(toolchange_setup.values()),
         hotend_remap=hotend_remap,
+        ams_select_command=ams_select_command,
+        ams_release_command=ams_release_command,
+        ams_select_extras=tuple(ams_select_extras.values()),
     )
 
 
