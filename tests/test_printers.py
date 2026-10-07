@@ -114,6 +114,7 @@ class ProfileTests(unittest.TestCase):
             ("Bambu Lab X1C", P1),
             ("Bambu Lab X1E", P1),
             ("Bambu Lab H2D", H2),
+            ("Bambu Lab H2D Pro", H2),
             ("Bambu Lab H2S", H2),
             ("Bambu Lab H2C", H2),
             ("Bambu Lab A1", A1),
@@ -313,9 +314,12 @@ class H2SequenceTests(unittest.TestCase):
         self.assertGreater(travel, preamble.index("G150.1"))
         self.assertEqual(preamble[travel + 1], "G1 Z0.6 F600")
 
-    def test_missing_hotend_is_refused(self) -> None:
-        with self.assertRaisesRegex(ResumeError, "hotend"):
-            self.build(h2_gcode(hotend=False))
+    def test_tool_without_hotend_mirrors_the_job(self) -> None:
+        # The H2D Pro start G-code selects the tool alone: M620 S0A / T0, no H.
+        preamble = _preamble(self.build(h2_gcode(hotend=False))[0])
+        self.assertIn("M620 S0A", preamble)
+        self.assertIn("T0", preamble)
+        self.assertFalse(any(re.match(r"^(T\d|M620 S\d+A)\b.*\bH", line) for line in preamble))
 
     def test_power_cut_mode_lowers_the_bed_before_the_macros(self) -> None:
         output, report = self.build(z_reference_mode=ZReferenceMode.MANUAL, home_corexy=True)
@@ -374,6 +378,7 @@ from fake_slicer import (  # noqa: E402
     H2C_CONFIG,
     H2C_START,
     H2D_CONFIG,
+    H2D_PRO_START,
     H2D_START,
     bambu_like_gcode,
 )
@@ -385,6 +390,7 @@ PRINTERS = {
     "Bambu Lab P1S": (None, {}, (128.0, 128.0), ["G1 Y265 F3000", "T1000"]),
     "Bambu Lab H2C": (H2C_START, H2C_CONFIG, (165.0, 160.0), ["G150.3", "T0 H-1", "G28 X T300", "M620 N"]),
     "Bambu Lab H2D": (H2D_START, H2D_CONFIG, (175.0, 160.0), ["G150.3", "T0 H-1", "G28 X T300"]),
+    "Bambu Lab H2D Pro": (H2D_PRO_START, H2D_CONFIG, (175.0, 160.0), ["G150.3", "T0", "M620 S0A", "G28 X T300"]),
     "Bambu Lab A1": (A1_START, A1_CONFIG, (128.0, 128.0), ["G1 X-48.2 F3000", "G1 X-28.5 F30000"]),
     "Bambu Lab A1 mini": (A1_MINI_START, A1_MINI_CONFIG, (90.0, 90.0), ["G1 X-13.5 F3000", "G1 X0 F30000"]),
 }
@@ -421,6 +427,13 @@ class EveryModeTests(unittest.TestCase):
         h2d = _preamble(build_resume_gcode(_job("Bambu Lab H2D"), ResumeOptions(start_layer=40, allow_untested=True))[0])
         self.assertIn("M620 N", h2c)
         self.assertNotIn("M620 N", h2d)
+        pro = _preamble(
+            build_resume_gcode(_job("Bambu Lab H2D Pro"), ResumeOptions(start_layer=40, allow_untested=True))[0]
+        )
+        self.assertIn("T0", pro)
+        self.assertIn("M620 S0A", pro)
+        self.assertNotIn("M620 N", pro)
+        self.assertIn("M620.11 S1 L0 I0 R10 D8 E-10 F623.623", pro)
         cut = [line for line in h2d if line.startswith("M620.11 S")]
         self.assertEqual(cut, ["M620.11 S1 L0 I0 B-1 R10 D8 E-10 F623.623"])
 
@@ -435,6 +448,7 @@ class EveryModeTests(unittest.TestCase):
             "Bambu Lab P1S": "M221 X0 Y0 Z0",
             "Bambu Lab H2C": "M211 X0 Y0 Z0",
             "Bambu Lab H2D": "M211 X0 Y0 Z0",
+            "Bambu Lab H2D Pro": "M211 X0 Y0 Z0",
             "Bambu Lab A1": "M211 X0 Y0 Z0",
             "Bambu Lab A1 mini": "M211 X0 Y0 Z0",
         }
@@ -475,7 +489,7 @@ class EveryModeTests(unittest.TestCase):
                 min_x, min_y, max_x, max_y = _reachable(analyze_gcode(_job(model, part_height=12, addition_height=6)))
                 self.assertTrue(min_x <= x <= max_x and min_y <= y <= max_y, f"{model}: park {x},{y}")
                 self.assertLess(output.index(PAUSE_BLOCK_END), output.index("; LAYER_RESCUE_BLOCK_START"))
-                if model in {"Bambu Lab H2C", "Bambu Lab H2D"}:
+                if model.startswith("Bambu Lab H2"):
                     after_wall = output.split(PAUSE_BLOCK_START, 1)[1]
                     for raw in after_wall.splitlines():
                         code = raw.split(";", 1)[0].strip()

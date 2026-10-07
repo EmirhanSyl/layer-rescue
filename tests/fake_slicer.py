@@ -115,6 +115,11 @@ H2D_CONFIG = {
     "extruder_printable_area": "0x0,325x0,325x320,0x320#25x0,350x0,350x320,25x320",
 }
 
+# H2D Pro: the H2D start without hotend selection (M620 S0A / T0, M620.11 without B).
+H2D_PRO_START = [
+    line.replace(" H-1", "").replace(" B-1", "").replace("machine: H2D", "machine: H2D Pro") for line in H2D_START
+]
+
 
 def _bed_slinger_start(model: str, purge_x: str, shake_x: str) -> list[str]:
     return [

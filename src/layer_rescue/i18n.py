@@ -420,9 +420,8 @@ MESSAGE_PATTERNS: list[tuple[re.Pattern[str], str]] = [
             "yazıcıyı izleyin.{h}",
         ),
         (
-            r"Could not determine the hotend \(T<n> H<h>\) or extruder used by the selected layer; "
-            r"the H2 sequence needs both\.",
-            "Seçilen katmanda kullanılan hotend (T<n> H<h>) veya ekstruder belirlenemedi; H2 dizisi ikisine de ihtiyaç duyar.",
+            r"Could not determine the extruder used by the selected layer; the H2 sequence needs it\.",
+            "Seçilen katmanda kullanılan ekstruder belirlenemedi; H2 dizisi buna ihtiyaç duyar.",
         ),
         (
             r"Experimental power-cut mode on the H2 series: after a power cut Z is not homed, and the purge, wipe "

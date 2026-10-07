@@ -9,9 +9,9 @@ Families:
 
 * ``p1``: Bambu Lab P1S / P1P / X1 / X1C / X1E. Same 256 mm CoreXY frame, purge chute at the rear,
   filament cutter at the front left. The P1S is the printer Layer Rescue was developed and tested on.
-* ``h2``: Bambu Lab H2D / H2S / H2C. Larger bed with two extruders (and on the H2C a hotend rack).
-  Purge and wipe are firmware macros (``G150.x``), tools are selected together with a hotend
-  (``T<n> H<h>``) and temperatures are addressed per extruder (``M104 S.. T<e>``). This sequence is
+* ``h2``: Bambu Lab H2D / H2D Pro / H2S / H2C. Larger bed with two extruders (and on the H2C a
+  hotend rack). Purge and wipe are firmware macros (``G150.x``), tools are selected together with a
+  hotend (``T<n> H<h>``) where the job's start G-code does so (not on the H2D Pro: ``T<n>``) and temperatures are addressed per extruder (``M104 S.. T<e>``). This sequence is
   derived from Bambu Studio's stock H2 G-code and has not been run on a printer yet.
 
 * ``a1``: Bambu Lab A1 (not the A1 mini). A bed slinger: Y moves the bed, there is no rear purge
@@ -348,12 +348,12 @@ def _is_cut_sequence(line: str) -> bool:
 
 
 def _h2_station(ctx: StationContext) -> list[str]:
-    if ctx.hotend is None or ctx.extruder is None:
-        raise ResumeError(
-            "Could not determine the hotend (T<n> H<h>) or extruder used by the selected layer; "
-            "the H2 sequence needs both."
-        )
-    hotend, extruder = ctx.hotend, ctx.extruder
+    if ctx.extruder is None:
+        raise ResumeError("Could not determine the extruder used by the selected layer; the H2 sequence needs it.")
+    extruder = ctx.extruder
+    # H2C / H2D select the hotend with the tool (T<n> H<h>); the H2D Pro's start G-code selects the
+    # tool alone (T<n>). Mirror whatever the job itself does.
+    hotend = f" H{ctx.hotend}" if ctx.hotend is not None else ""
     # Same structure as the stock H2 start G-code: flush (M620.10) and cut-retraction (M620.11 P/K)
     # settings, the cut sequence recorded between M628 S1 and M629, the tool change, then an empty
     # M628 S0 / M629 block. The cut lines are only ever sent inside that block.
@@ -372,11 +372,11 @@ def _h2_station(ctx: StationContext) -> list[str]:
     if cut:
         lines.extend(["M628 S1", *cut, "M629"])
     lines += [
-        f"M620 S{ctx.tool}A H{hotend}",
+        f"M620 S{ctx.tool}A{hotend}",
         f"M190 S{ctx.bed}",
         f"M109 S{ctx.nozzle} T{extruder}",
         "M400",
-        f"T{ctx.tool} H{hotend}",
+        f"T{ctx.tool}{hotend}",
         "M400",
         "M628 S0",
         "M629",
