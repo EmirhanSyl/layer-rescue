@@ -22,7 +22,7 @@ from . import geometry as geo
 from ._version import __version__
 from .flow import FlowSettings, flow_settings_from_config
 from .gcode import (
-    LAYER_MARKER_RE,
+    layer_numbers,
     Analysis,
     LayerInfo,
     ResumeError,
@@ -637,7 +637,7 @@ def validate_insert_output(text: str, plan: InsertPlan) -> None:
     options = plan.options
     out_lines = text.splitlines()
 
-    markers = [int(m.group(1)) for line in out_lines if (m := LAYER_MARKER_RE.match(line))]
+    markers = layer_numbers(out_lines)
     expected = [layer.number for layer in plan.printed_layers] + list(
         range(plan.resume_layer.number, plan.analysis.last_layer + 1)
     )

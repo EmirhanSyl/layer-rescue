@@ -20,6 +20,9 @@ Families:
   chute. Purge and wipe happen off the bed on the left (``X-48.2``, shaken against ``X-28.5``) and the
   filament is loaded inside ``M620 S<n>A … M621 S<n>A`` as in the stock A1 start G-code.
 
+* ``p2s``: Bambu Lab P2S. 256 mm CoreXY like the P1S, but its stock G-code is the H2S's: firmware
+  macros ``G150.x``, ``G28 X T300``, ``G1 Y-16`` away from the bin, no layer-num comments.
+* ``a2l``: Bambu Lab A2L. Bed slinger with the same firmware macros; leaves the bin with ``G1 X20``.
 * ``a1mini``: Bambu Lab A1 mini. Same structure as the A1 with its own positions: purge at
   ``X-13.5``, shaken against ``X0``.
 
@@ -68,33 +71,97 @@ class PrinterProfile:
     soft_endstops_off: str = "M211 X0 Y0 Z0"
     purge_x: float | None = None  # bed slingers: off-bed purge position on the left
     shake_x: float | None = None  # bed slingers: wipe-and-shake partner position
+    # Printers whose stock G-code purges and wipes with the firmware macros G150.3 / G150.2 / G150.1.
+    macro_station: bool = False
+    short: str = ""  # short name used in messages ("H2", "A2L")
+    home: str = "G28 X"  # X-only re-home; never home Z
+    bin_exit: str = ""  # relative move away from the purge bin after wiping (stock G-code)
+    power_cut_clearance_mm: float = 0.0  # restarted mode: relative bed drop before the firmware macros
+    timelapse_macro: bool = False  # the layer-change timelapse block calls G150.3 just above the part (A2L)
 
 
 P1 = PrinterProfile("p1", "Bambu Lab P1/X1 series", soft_endstops_off="M221 X0 Y0 Z0")
-H2 = PrinterProfile("h2", "Bambu Lab H2 series", experimental=True)
+H2 = PrinterProfile(
+    "h2",
+    "Bambu Lab H2 series",
+    experimental=True,
+    macro_station=True,
+    short="H2",
+    home="G28 X T300",
+    bin_exit="G1 Y-16 F12000",
+    power_cut_clearance_mm=30.0,
+)
+# P2S: a 256 mm CoreXY like the P1S, but its stock G-code uses the H2 firmware macros and the same
+# sequence as the single-nozzle H2S (G28 X T300 before G150.x, G1 Y-16 away from the bin).
+P2S = PrinterProfile(
+    "p2s",
+    "Bambu Lab P2S",
+    experimental=True,
+    macro_station=True,
+    short="P2S",
+    home="G28 X T300",
+    bin_exit="G1 Y-16 F12000",
+    power_cut_clearance_mm=30.0,
+)
+# A2L: a bed slinger (printer_structure = i3) that uses the H2 firmware macros. Its stock start homes
+# X and Z together (G28 X Z P0 T300 W); Z must never be homed here, so it gets a plain X home.
+A2L = PrinterProfile(
+    "a2l",
+    "Bambu Lab A2L",
+    experimental=True,
+    macro_station=True,
+    short="A2L",
+    home="G28 X",
+    bin_exit="G1 X20 F12000",
+    power_cut_clearance_mm=30.0,
+    timelapse_macro=True,
+)
 A1 = PrinterProfile("a1", "Bambu Lab A1", purge_x=-48.2, shake_x=-28.5)
 A1_MINI = PrinterProfile("a1mini", "Bambu Lab A1 mini", purge_x=-13.5, shake_x=0.0)
 
 _H2_MODELS = re.compile(r"\bh2[a-z]?\b", re.IGNORECASE)
 _A1_MODELS = re.compile(r"\ba1\b(?!\s*mini)", re.IGNORECASE)
 _A1_MINI_MODELS = re.compile(r"\ba1\s*mini\b", re.IGNORECASE)
+_A2L_MODELS = re.compile(r"\ba2l\b", re.IGNORECASE)
+_P2S_MODELS = re.compile(r"\bp2s\b", re.IGNORECASE)
 
-H2_EXPERIMENTAL_WARNING = (
-    "Experimental H2 sequence: purge, wipe, hotend selection and X homing follow Bambu Studio's stock H2 "
-    "G-code but have not been run on a printer yet. Watch the printer until it is printing on the part."
+EXPERIMENTAL_WARNING = (
+    "Experimental {short} sequence: purge, wipe, hotend selection and X homing follow Bambu Studio's stock "
+    "{short} G-code but have not been run on a printer yet. Watch the printer until it is printing on the part."
+)
+POWER_CUT_WARNING = (
+    "Experimental power-cut mode on the {short}: after a power cut Z is not homed, and the purge, wipe and "
+    "X homing commands the {short} needs (G150.3, G150.2, G150.1, {home}) are firmware macros whose Z "
+    "behaviour on an unhomed axis is not documented. Layer Rescue lowers the bed {clearance} mm first, as the "
+    "stock start G-code lowers it before these commands, but this has not been checked on a printer: watch "
+    "the first moves and be ready to stop."
+)
+TIMELAPSE_MACRO_WARNING = (
+    "Power-cut mode on the {short}: with timelapse on, every layer moves to the purge bin with G150.3 only "
+    "0.4 mm above the part, on a Z that is not homed. Turn timelapse off on the printer before starting."
+)
+CLEARANCE_LIMITED = (
+    "Power-cut mode on the {short}: the bed can only be lowered {clearance} mm before the purge and wipe "
+    "macros because the part is close to the maximum height."
 )
 
 
-H2_POWER_CUT_WARNING = (
-    "Experimental power-cut mode on the H2 series: after a power cut Z is not homed, and the purge, wipe and "
-    "X homing commands the H2 needs (G150.3, G150.2, G150.1, G28 X T300) are firmware macros whose Z "
-    "behaviour on an unhomed axis is not documented. Layer Rescue lowers the bed 30 mm first, like the stock "
-    "start G-code, but this has not been checked on a printer: watch the first moves and be ready to stop."
-)
-H2_CLEARANCE_LIMITED = (
-    "Power-cut mode on the H2: the bed can only be lowered {clearance} mm before the purge and wipe macros "
-    "(30 mm in the stock start G-code) because the part is close to the maximum height."
-)
+def experimental_warnings(profile: PrinterProfile) -> list[str]:
+    if not profile.experimental:
+        return []
+    warnings = [EXPERIMENTAL_WARNING.format(short=profile.short)]
+    if profile.power_cut_clearance_mm > 0:
+        warnings.append(
+            POWER_CUT_WARNING.format(
+                short=profile.short,
+                home=profile.home,
+                clearance=_format_number(profile.power_cut_clearance_mm),
+            )
+        )
+    if profile.timelapse_macro:
+        warnings.append(TIMELAPSE_MACRO_WARNING.format(short=profile.short))
+    return warnings
+
 POWER_CUT_CLEARANCE_MM = 30.0  # stock H2 start: G380 S2 Z42 / G380 S2 Z-12 before G28 X T300 and G150.x
 POWER_CUT_HEIGHT_MARGIN_MM = 5.0
 
@@ -104,6 +171,10 @@ def printer_profile(analysis: Analysis) -> PrinterProfile:
     model = analysis.printer_model or ""
     if _H2_MODELS.search(model):
         return H2
+    if _A2L_MODELS.search(model):
+        return A2L
+    if _P2S_MODELS.search(model):
+        return P2S
     if _A1_MINI_MODELS.search(model):
         return A1_MINI
     if _A1_MODELS.search(model):
@@ -197,17 +268,17 @@ def power_cut_clearance(
     analysis: Analysis, profile: PrinterProfile, mode: object, reference_z: float | None, lift: float
 ) -> float:
     """Extra relative bed drop before the H2 macros in restarted mode (0 elsewhere)."""
-    if profile is not H2 or reference_z is None or getattr(mode, "value", mode) != "manual":
+    if profile.power_cut_clearance_mm <= 0 or reference_z is None or getattr(mode, "value", mode) != "manual":
         return 0.0
     height = config_list(analysis, "printable_height")
     max_z = height[0] if height else 250.0
     room = max_z - POWER_CUT_HEIGHT_MARGIN_MM - (reference_z + lift)
-    return round(max(0.0, min(POWER_CUT_CLEARANCE_MM, room)), 3)
+    return round(max(0.0, min(profile.power_cut_clearance_mm, room)), 3)
 
 
 def extruder_suffix(analysis: Analysis, active_extruder: int | None, tool: int) -> str:
     """`` T<e>`` for nozzle temperature commands on the H2 (two extruders), empty elsewhere."""
-    if printer_profile(analysis) is not H2:
+    if not printer_profile(analysis).macro_station:
         return ""
     extruder = job_extruder(analysis, active_extruder, tool)
     return f" T{extruder}" if extruder is not None else ""
@@ -232,14 +303,14 @@ class StationContext:
 
 
 def heat_commands(profile: PrinterProfile, ctx: StationContext) -> list[str]:
-    if profile is H2:
+    if profile.macro_station:
         return [f"M140 S{ctx.bed}", f"M104 S{ctx.nozzle}{_t(ctx.extruder)}"]
     return [f"M140 S{ctx.bed}", f"M104 S{ctx.nozzle}"]
 
 
 def home_command(profile: PrinterProfile) -> str:
-    if profile is H2:
-        return "G28 X T300 ; CoreXY X re-home as in the stock H2 start G-code; never home Z"
+    if profile.macro_station:
+        return f"{profile.home} ; X re-home only (stock {profile.short} G-code); never home Z"
     if profile.purge_x is not None:
         return f"G28 X ; re-home X as in the stock {profile.description} start G-code; never home Z"
     return "G28 X ; Bambu CoreXY re-home only; never home Z"
@@ -247,8 +318,8 @@ def home_command(profile: PrinterProfile) -> str:
 
 def station_block(profile: PrinterProfile, ctx: StationContext) -> list[str]:
     """Select the filament, reach print temperature and purge/wipe, ending with ``G90`` + ``M83``."""
-    if profile is H2:
-        return _h2_station(ctx)
+    if profile.macro_station:
+        return _macro_station(profile, ctx)
     if profile.purge_x is not None:
         return _bed_slinger_station(profile, ctx)
     return _p1_station(ctx)
@@ -365,7 +436,7 @@ def _is_cut_sequence(line: str) -> bool:
     return len(tokens) > 1 and tokens[0].upper() == "M620.11" and tokens[1][:1].upper() == "S"
 
 
-def _h2_station(ctx: StationContext) -> list[str]:
+def _macro_station(profile: PrinterProfile, ctx: StationContext) -> list[str]:
     extruder = _t(ctx.extruder)  # " T<e>" on two-nozzle H2s, "" on the H2S
     # H2C / H2D select the hotend with the tool (T<n> H<h>); the H2D Pro's start G-code selects the
     # tool alone (T<n>). Mirror whatever the job itself does.
@@ -377,8 +448,9 @@ def _h2_station(ctx: StationContext) -> list[str]:
     settings = [line for line in ctx.toolchange_setup if not _is_cut_sequence(line)]
     lines = [
         "M975 S1",
-        "; H2: tool/hotend selection, purge and wipe use the firmware's own moves (stock H2 G-code).",
-        "M620 M ; enable remap (stock H2 start)",
+        f"; {profile.short}: tool/hotend selection, purge and wipe use the firmware's own moves "
+        f"(stock {profile.short} G-code).",
+        f"M620 M ; enable remap (stock {profile.short} start)",
     ]
     if ctx.hotend_remap:  # only when the job's own start G-code does it (H2C hotend rack, not the H2D)
         lines.append("M620 N ; enable hotend remap (stock H2C start)")
@@ -413,7 +485,7 @@ def _h2_station(ctx: StationContext) -> list[str]:
                 "G150.2 ; firmware: wipe",
                 "G150.1 ; firmware: wipe",
                 "G91",
-                "G1 Y-16 F12000 ; move away from the purge bin (stock H2)",
+                f"{profile.bin_exit} ; move away from the purge bin (stock {profile.short})",
                 "G90",
                 "M83",
             ]

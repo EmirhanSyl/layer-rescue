@@ -166,6 +166,68 @@ H2S_CONFIG = {
     "physical_extruder_map": "0",
 }
 
+# A2L (bed slinger with the H2 firmware macros), from the stock A2L start in Bambu Studio 2.08. Its
+# layer-change G-code has no "; layer num/total_layer_count" comment, only "M73 L<n>".
+A2L_START = [
+    ";======== A2L start gcode==========",
+    "T1000 O0",
+    "M140 S55",
+    "M620 M ;enable remap",
+    "G91",
+    "G380 S2 Z22 F1200",
+    "G380 S2 Z-12 F1200",
+    "G90",
+    "M104 S140 A",
+    "G28 X Z P0 T300 W",
+    "G150.3",
+    "G1 Z1.3 F1200",
+    "G150.1 F16000 ; wipe mouth to avoid filament stick to heatbed",
+    "M211 X0 Y0 Z0 ;turn off soft endstop",
+    "G150.3",
+    "M620.10 A0 F573.733 H0.4 T240 P220 S1",
+    "M620.10 A1 F573.733 H0.4 T240 P220 S1",
+    "M620.11 P0 L0 I0 E0",
+    "M620.11 K0 I0 R0",
+    "M620 S0A   ; switch material if AMS exist",
+    "M400",
+    "T0",
+    "M400",
+    "M628 S0",
+    "M629",
+    "M400",
+    "M621 S0A",
+    "M104 S220",
+    "M190 S55",
+    "M109 S220",
+    "G0 Z1.3 F1200",
+    "G150.2",
+    "G150.1 F16000",
+    "G91",
+    "G1 X20 F12000 ; move away from the trash bin",
+    "G90",
+    "M83",
+    "M106 S0",
+]
+A2L_CONFIG = {
+    "nozzle_diameter": "0.4",
+    "printable_area": "0x0,330x0,330x320,0x320",
+    "printable_height": "325",
+    "printer_structure": "i3",
+    "bed_exclude_area": "",
+    "filament_map": "1",
+    "physical_extruder_map": "0",
+    "hot_plate_temp": "55",
+}
+
+# P2S: the single-nozzle H2S sequence on a 256 mm CoreXY bed (stock P2S start in Bambu Studio 2.08).
+P2S_START = [line.replace("machine: H2S", "machine: P2S") for line in H2S_START]
+P2S_CONFIG = {
+    **H2S_CONFIG,
+    "printable_area": "0x0,256x0,256x256,0x256",
+    "printable_height": "256",
+    "printer_structure": "corexy",
+}
+
 
 def _bed_slinger_start(model: str, purge_x: str, shake_x: str) -> list[str]:
     return [
@@ -262,6 +324,7 @@ def bambu_like_gcode(
     extra_config: dict[str, str] | None = None,
     machine_start: list[str] | None = None,
     timelapse_lift: bool = True,
+    layer_num_comments: bool = True,
 ) -> str:
     cx, cy = center
     total_height = part_height + addition_height
@@ -328,7 +391,7 @@ def bambu_like_gcode(
             f"; Z_HEIGHT: {z:g}",
             f"; LAYER_HEIGHT: {z - previous_z:g}",
             "G1 E-.8 F1800",
-            f"; layer num/total_layer_count: {n}/{n_layers}",
+            *([f"; layer num/total_layer_count: {n}/{n_layers}"] if layer_num_comments else []),
             "; update layer progress",
             f"M73 L{n}",
             f"M991 S0 P{n - 1} ;notify layer change",

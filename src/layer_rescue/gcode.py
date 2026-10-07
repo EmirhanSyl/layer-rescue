@@ -12,6 +12,8 @@ LAYER_MARKER_RE = re.compile(
     r"^\s*;\s*layer num/total_layer_count:\s*(\d+)\s*/\s*(\d+)\s*$",
     re.IGNORECASE,
 )
+PROGRESS_LAYER_RE = re.compile(r"^\s*M73\s+L(\d+)\b", re.IGNORECASE)
+TOTAL_LAYERS_RE = re.compile(r"^\s*;\s*total layer number:\s*(\d+)\s*$", re.IGNORECASE)
 Z_HEIGHT_RE = re.compile(r"^\s*;\s*Z_HEIGHT:\s*(-?(?:\d+(?:\.\d*)?|\.\d+))\s*$", re.IGNORECASE)
 CONFIG_RE = re.compile(r"^\s*;\s*([^=]+?)\s*=\s*(.*?)\s*$")
 COMMAND_RE = re.compile(r"^\s*([GMT]\d+(?:\.\d+)?)\b", re.IGNORECASE)
@@ -126,12 +128,50 @@ def _find_marker(lines: list[str], marker: str) -> int:
     raise ResumeError(f"Required Bambu Studio marker is missing: {marker}")
 
 
-def _find_layers(lines: list[str], executable_start: int) -> tuple[LayerInfo, ...]:
-    raw_markers: list[tuple[int, int, int]] = []
-    for index in range(executable_start, len(lines)):
+def layer_markers(lines: list[str] | tuple[str, ...], start: int = 0) -> list[tuple[int, int, int]]:
+    """(line index, layer number, total) for every layer.
+
+    Most Bambu printer templates write ``; layer num/total_layer_count: N/T`` in the layer-change
+    G-code. The A2L's does not; there the layer number is the first ``M73 L<n>`` after each
+    ``; CHANGE_LAYER`` and the total comes from the header's ``; total layer number: T``.
+    """
+    markers: list[tuple[int, int, int]] = []
+    for index in range(start, len(lines)):
         match = LAYER_MARKER_RE.match(lines[index])
         if match:
-            raw_markers.append((index, int(match.group(1)), int(match.group(2))))
+            markers.append((index, int(match.group(1)), int(match.group(2))))
+    if markers:
+        return markers
+
+    total = 0
+    for line in lines[: min(len(lines), 200)]:
+        match = TOTAL_LAYERS_RE.match(line)
+        if match:
+            total = int(match.group(1))
+            break
+    waiting = False
+    for index in range(start, len(lines)):
+        line = lines[index]
+        if line.strip().upper() == "; CHANGE_LAYER":
+            waiting = True
+            continue
+        if waiting:
+            match = PROGRESS_LAYER_RE.match(line)
+            if match:
+                markers.append((index, int(match.group(1)), total))
+                waiting = False
+    if markers and total == 0:
+        total = markers[-1][1]
+        markers = [(index, number, total) for index, number, _ in markers]
+    return markers
+
+
+def layer_numbers(lines: list[str] | tuple[str, ...]) -> list[int]:
+    return [number for _, number, _ in layer_markers(lines)]
+
+
+def _find_layers(lines: list[str], executable_start: int) -> tuple[LayerInfo, ...]:
+    raw_markers = layer_markers(lines, executable_start)
 
     if not raw_markers:
         raise ResumeError("No Bambu Studio layer markers were found.")

@@ -413,29 +413,38 @@ MESSAGE_PATTERNS: list[tuple[re.Pattern[str], str]] = [
         ),
         # printers.py
         (
-            r"Experimental H2 sequence: purge, wipe, hotend selection and X homing follow Bambu Studio's stock H2 "
-            r"G-code but have not been run on a printer yet\. Watch the printer until it is printing on the part\.(?P<h>.*)",
-            "Deneysel H2 dizisi: purge, silme, hotend seçimi ve X home hareketleri Bambu Studio'nun stok H2 "
+            r"Experimental (?P<p>\S+) sequence: purge, wipe, hotend selection and X homing follow Bambu Studio's stock "
+            r"(?P=p) G-code but have not been run on a printer yet\. Watch the printer until it is printing on the "
+            r"part\.(?P<h>.*)",
+            "Deneysel {p} dizisi: purge, silme, hotend seçimi ve X home hareketleri Bambu Studio'nun stok {p} "
             "G-code'unu izliyor ama henüz gerçek bir yazıcıda çalıştırılmadı. Parçanın üzerine basmaya başlayana kadar "
             "yazıcıyı izleyin.{h}",
         ),
         (
-            r"Experimental power-cut mode on the H2 series: after a power cut Z is not homed, and the purge, wipe "
-            r"and X homing commands the H2 needs \(G150\.3, G150\.2, G150\.1, G28 X T300\) are firmware macros "
-            r"whose Z behaviour on an unhomed axis is not documented\. Layer Rescue lowers the bed 30 mm first, like "
-            r"the stock start G-code, but this has not been checked on a printer: watch the first moves and be ready "
-            r"to stop\.(?P<h>.*)",
-            "H2 serisinde deneysel elektrik kesintisi modu: elektrik kesintisinden sonra Z'ye home atılmamış olur; "
-            "H2'nin ihtiyaç duyduğu purge, silme ve X home komutları (G150.3, G150.2, G150.1, G28 X T300) ise home "
-            "atılmamış bir eksende Z'yi nasıl hareket ettirdiği belgelenmemiş firmware makroları. Layer Rescue stok "
-            "başlangıç G-code'u gibi önce tablayı 30 mm indiriyor, ama bu henüz bir yazıcıda denenmedi: ilk "
-            "hareketleri izleyin ve durdurmaya hazır olun.{h}",
+            r"Experimental power-cut mode on the (?P<p>\S+): after a power cut Z is not homed, and the purge, wipe and "
+            r"X homing commands the (?P=p) needs \(G150\.3, G150\.2, G150\.1, (?P<home>[^)]+)\) are firmware macros "
+            r"whose Z behaviour on an unhomed axis is not documented\. Layer Rescue lowers the bed (?P<c>[\d.]+) mm "
+            r"first, as the stock start G-code lowers it before these commands, but this has not been checked on a "
+            r"printer: watch the first moves and be ready to stop\.(?P<h>.*)",
+            "{p} için deneysel elektrik kesintisi modu: elektrik kesintisinden sonra Z'ye home atılmamış olur; {p}'nin "
+            "ihtiyaç duyduğu purge, silme ve X home komutları (G150.3, G150.2, G150.1, {home}) ise home atılmamış bir "
+            "eksende Z'yi nasıl hareket ettirdiği belgelenmemiş firmware makroları. Layer Rescue, stok başlangıç "
+            "G-code'unun bu komutlardan önce yaptığı gibi tablayı önce {c} mm indiriyor, ama bu henüz bir yazıcıda "
+            "denenmedi: ilk hareketleri izleyin ve durdurmaya hazır olun.{h}",
         ),
         (
-            r"Power-cut mode on the H2: the bed can only be lowered (?P<c>[\d.]+) mm before the purge and wipe macros "
-            r"\(30 mm in the stock start G-code\) because the part is close to the maximum height\.",
-            "H2'de elektrik kesintisi modu: parça azami yüksekliğe yakın olduğu için tabla purge ve silme "
-            "makrolarından önce yalnızca {c} mm indirilebiliyor (stok başlangıç G-code'unda 30 mm).",
+            r"Power-cut mode on the (?P<p>\S+): the bed can only be lowered (?P<c>[\d.]+) mm before the purge and wipe "
+            r"macros because the part is close to the maximum height\.",
+            "{p}'de elektrik kesintisi modu: parça azami yüksekliğe yakın olduğu için tabla purge ve silme "
+            "makrolarından önce yalnızca {c} mm indirilebiliyor.",
+        ),
+        (
+            r"Power-cut mode on the (?P<p>\S+): with timelapse on, every layer moves to the purge bin with G150\.3 only "
+            r"0\.4 mm above the part, on a Z that is not homed\. Turn timelapse off on the printer before "
+            r"starting\.(?P<h>.*)",
+            "{p}'de elektrik kesintisi modu: timelapse açıksa her katmanda nozul, home atılmamış bir Z ile parçanın "
+            "yalnızca 0.4 mm üstündeyken G150.3 ile purge kutusuna gider. Başlamadan önce yazıcıda timelapse'i "
+            "kapatın.{h}",
         ),
         # resume.py
         (

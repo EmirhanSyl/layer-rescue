@@ -6,7 +6,7 @@ import unittest
 
 from layer_rescue.gcode import ResumeError, analyze_gcode
 from layer_rescue.machine_state import untested_setup
-from layer_rescue.printers import A1, A1_MINI, H2, P1, park_position, printer_profile, reachable_bounds
+from layer_rescue.printers import A1, A1_MINI, A2L, H2, P1, P2S, park_position, printer_profile, reachable_bounds
 from layer_rescue.resume import ResumeOptions, ZReferenceMode, build_resume_gcode
 from test_core import sample_gcode
 
@@ -118,6 +118,8 @@ class ProfileTests(unittest.TestCase):
             ("Bambu Lab H2S", H2),
             ("Bambu Lab H2C", H2),
             ("Bambu Lab A1", A1),
+            ("Bambu Lab A2L", A2L),
+            ("Bambu Lab P2S", P2S),
             ("Bambu Lab A1 mini", A1_MINI),
         ]:
             with self.subTest(model=model):
@@ -382,6 +384,10 @@ from fake_slicer import (  # noqa: E402
     H2D_START,
     H2S_CONFIG,
     H2S_START,
+    A2L_CONFIG,
+    A2L_START,
+    P2S_CONFIG,
+    P2S_START,
     bambu_like_gcode,
 )
 from layer_rescue.insert import PAUSE_BLOCK_END, PAUSE_BLOCK_START, InsertOptions, build_insert_gcode  # noqa: E402
@@ -394,6 +400,8 @@ PRINTERS = {
     "Bambu Lab H2D": (H2D_START, H2D_CONFIG, (175.0, 160.0), ["G150.3", "T0 H-1", "G28 X T300"]),
     "Bambu Lab H2D Pro": (H2D_PRO_START, H2D_CONFIG, (175.0, 160.0), ["G150.3", "T0", "M620 S0A", "G28 X T300"]),
     "Bambu Lab H2S": (H2S_START, H2S_CONFIG, (170.0, 160.0), ["G150.3", "T0", "M620 S0A", "G28 X T300"]),
+    "Bambu Lab P2S": (P2S_START, P2S_CONFIG, (128.0, 128.0), ["G150.3", "T0", "M620 S0A", "G28 X T300", "G1 Y-16 F12000"]),
+    "Bambu Lab A2L": (A2L_START, A2L_CONFIG, (165.0, 160.0), ["G150.3", "T0", "M620 S0A", "G28 X", "G1 X20 F12000"]),
     "Bambu Lab A1": (A1_START, A1_CONFIG, (128.0, 128.0), ["G1 X-48.2 F3000", "G1 X-28.5 F30000"]),
     "Bambu Lab A1 mini": (A1_MINI_START, A1_MINI_CONFIG, (90.0, 90.0), ["G1 X-13.5 F3000", "G1 X0 F30000"]),
 }
@@ -402,6 +410,8 @@ P1S_ONLY = [r"\bY265\b", r"\bY245\b", r"\bY-3\b", r"^G1 X20 Y50\b", r"^T1000$"]
 
 def _job(model: str, **kwargs: object) -> str:
     start, config, center, _ = PRINTERS[model]
+    if model in {"Bambu Lab A2L", "Bambu Lab P2S"}:
+        kwargs.setdefault("layer_num_comments", False)
     return bambu_like_gcode(
         printer=model,
         machine_start=start,
@@ -461,6 +471,33 @@ class EveryModeTests(unittest.TestCase):
         pause = _block(output, PAUSE_BLOCK_START, PAUSE_BLOCK_END)
         self.assertIn("M104 S140", pause)
 
+    def test_a2l_never_homes_z_and_leaves_the_bin_like_its_stock_start(self) -> None:
+        for mode in (ZReferenceMode.RETAINED, ZReferenceMode.MANUAL):
+            with self.subTest(mode=mode.value):
+                output, report = build_resume_gcode(
+                    _job("Bambu Lab A2L", timelapse_lift=False),
+                    ResumeOptions(start_layer=40, z_reference_mode=mode, allow_untested=True),
+                )
+                preamble = _preamble(output)
+                homes = [line for line in preamble if line.startswith("G28")]
+                self.assertEqual(homes, ["G28 X"])
+                self.assertNotIn("G1 Y-16 F12000", preamble)
+                wipe = preamble.index("G150.1")
+                self.assertEqual(preamble[wipe + 1 : wipe + 3], ["G91", "G1 X20 F12000"])
+                heats = [line for line in preamble if re.match(r"^M10[49] S[1-9]", line)]
+                self.assertTrue(all(" T" not in line for line in heats))
+                self.assertTrue(any(w.startswith("Experimental A2L sequence") for w in report.warnings))
+                self.assertTrue(any("Turn timelapse off" in w for w in report.warnings))
+                if mode is ZReferenceMode.MANUAL:
+                    clearance = preamble.index("G1 Z30 F600")
+                    self.assertLess(clearance, preamble.index("G28 X"))
+
+    def test_layers_found_without_layer_num_comments(self) -> None:
+        analysis = analyze_gcode(_job("Bambu Lab A2L"))
+        self.assertEqual((analysis.first_layer, analysis.last_layer), (1, 70))
+        output, _ = build_resume_gcode(_job("Bambu Lab A2L"), ResumeOptions(start_layer=40, allow_untested=True))
+        self.assertNotIn("; layer num/total_layer_count", output)
+
     def test_resume_retained(self) -> None:
         for model in PRINTERS:
             with self.subTest(model=model):
@@ -474,6 +511,8 @@ class EveryModeTests(unittest.TestCase):
             "Bambu Lab H2D": "M211 X0 Y0 Z0",
             "Bambu Lab H2D Pro": "M211 X0 Y0 Z0",
             "Bambu Lab H2S": "M211 X0 Y0 Z0",
+            "Bambu Lab A2L": "M211 X0 Y0 Z0",
+            "Bambu Lab P2S": "M211 X0 Y0 Z0",
             "Bambu Lab A1": "M211 X0 Y0 Z0",
             "Bambu Lab A1 mini": "M211 X0 Y0 Z0",
         }

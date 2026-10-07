@@ -11,7 +11,6 @@ from pathlib import Path
 
 from ._version import __version__
 from .gcode import (
-    LAYER_MARKER_RE,
     NUMBER_RE,
     Analysis,
     LayerInfo,
@@ -22,12 +21,11 @@ from .gcode import (
     _next_extrusion_mode,
     _parameter,
     analyze_gcode,
+    layer_numbers,
 )
 from .machine_state import MachineState, _scan_machine_state, _validate_supported_source
 from .printers import (
-    H2,
-    H2_CLEARANCE_LIMITED,
-    POWER_CUT_CLEARANCE_MM,
+    CLEARANCE_LIMITED,
     POWER_CUT_HEIGHT_MARGIN_MM,
     StationContext,
     job_extruder,
@@ -262,7 +260,7 @@ END_GCODE_MARKER = "; MACHINE_END_GCODE_START"
 
 
 def _lower_bed_before_end_macros(body: list[str], analysis: Analysis) -> tuple[list[str], float]:
-    """H2 power-cut mode: give the end G-code's G150.x macros the same clearance as the preamble.
+    """H2 / A2L power-cut mode: give the end G-code's G150.x macros the same clearance as the preamble.
 
     The stock H2 end G-code runs G150.3 0.4 mm above the finished part. With an unhomed Z that is the
     same open question as in the preamble, so the bed is lowered first (relative) and every absolute
@@ -282,13 +280,14 @@ def _lower_bed_before_end_macros(body: list[str], analysis: Analysis) -> tuple[l
     height = analysis.config.get("printable_height")
     match = NUMBER_RE.search(height) if height else None
     max_z = float(match.group(0)) if match else 250.0
-    clearance = round(max(0.0, min(POWER_CUT_CLEARANCE_MM, max_z - POWER_CUT_HEIGHT_MARGIN_MM - highest)), 3)
+    wanted = printer_profile(analysis).power_cut_clearance_mm
+    clearance = round(max(0.0, min(wanted, max_z - POWER_CUT_HEIGHT_MARGIN_MM - highest)), 3)
     if clearance <= 0:
         return body, 0.0
 
     shifted = body[: start + 1] + [
         "G91",
-        f"G1 Z{_format_number(clearance)} F600 ; lower the bed before the H2 end-G-code macros (power-cut mode)",
+        f"G1 Z{_format_number(clearance)} F600 ; lower the bed before the end-G-code macros (power-cut mode)",
         "G90",
     ]
     positioning = "G90"
@@ -409,7 +408,7 @@ def _resume_preamble(
         lines.extend(
             [
                 "G91",
-                f"G1 Z{_format_number(clearance)} F600 ; lower the bed for the H2 macros, like the stock start",
+                f"G1 Z{_format_number(clearance)} F600 ; lower the bed before the firmware macros, like the stock start",
                 "G90",
             ]
         )
@@ -457,11 +456,7 @@ def _validate_output(
     z_reference_mode: ZReferenceMode,
     reference_z: float | None,
 ) -> None:
-    layers = [
-        int(match.group(1))
-        for line in text.splitlines()
-        if (match := LAYER_MARKER_RE.match(line))
-    ]
+    layers = layer_numbers(text.splitlines())
     if not layers or layers[0] != start_layer:
         raise ResumeError("Internal validation failed: the first retained layer is incorrect.")
     # The last layer number can be below the markers' "total" (Bambu counts independent support
@@ -556,7 +551,7 @@ def build_resume_gcode(text: str, options: ResumeOptions) -> tuple[str, ResumeRe
     prefix = list(analysis.lines[: analysis.config_end_line + 1])
     body = list(analysis.lines[layer.change_line :])
     if mode is ZReferenceMode.MANUAL:
-        if printer_profile(analysis) is H2:
+        if printer_profile(analysis).power_cut_clearance_mm > 0:
             body, _ = _lower_bed_before_end_macros(body, analysis)
         body = _relativize_z(body, layer.z)
     output_lines = prefix + ["", "; EXECUTABLE_BLOCK_START"] + preamble + body
@@ -570,8 +565,8 @@ def build_resume_gcode(text: str, options: ResumeOptions) -> tuple[str, ResumeRe
         )
         profile = printer_profile(analysis)
         clearance = power_cut_clearance(analysis, profile, mode, reference_z, options.z_lift_mm)
-        if profile.experimental and clearance < POWER_CUT_CLEARANCE_MM:
-            warnings.append(H2_CLEARANCE_LIMITED.format(clearance=_format_number(clearance)))
+        if 0 < profile.power_cut_clearance_mm and clearance < profile.power_cut_clearance_mm:
+            warnings.append(CLEARANCE_LIMITED.format(short=profile.short, clearance=_format_number(clearance)))
 
     report = ResumeReport(
         start_layer=options.start_layer,
