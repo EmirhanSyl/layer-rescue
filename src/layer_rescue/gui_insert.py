@@ -1,27 +1,40 @@
-"""The insert tab ("part came off / print on a finished part") of the Layer Rescue window."""
+"""The insert panel ("part came off / print on a finished part") of the Layer Rescue window."""
 
 from __future__ import annotations
 
 from pathlib import Path
 from typing import Any, Callable, NamedTuple
 
+from . import gui_theme as theme
 from .fileio import rewrite_with
 from .gcode import Analysis, ResumeError
-from .gui_widgets import HINT_COLOR, NOTE_COLOR, Collapsible, frame_background, text_label, wrapped_check
+from .gui_art import Illustration
+from .gui_widgets import (
+    WRAP,
+    Collapsible,
+    StepCard,
+    StepFlow,
+    WrappedCheck,
+    field,
+    secondary_button,
+    set_enabled,
+    swatch,
+    text,
+)
 from .i18n import Translator
 from .insert import InsertOptions, InsertPlan, build_insert_gcode, plan_insert, recommended_wall_height
 from .preview import plan_shapes, view_bounds
 
-CANVAS_SIZE = 260
-LEFT_WRAP = 400
-FULL_WRAP = 680
-COLORS = {
-    "silhouette": ("#d9d4c7", "#8a8272"),
-    "addition": ("", "#2563eb"),
-    "brim": ("", "#b0b5bd"),
-    "wall-bottom": ("", "#6b7280"),
-    "wall-top": ("", "#dc2626"),
-    "support": ("#86efac", "#15803d"),
+CANVAS_SIZE = 240
+INFO_WRAP = 300
+# (fill, outline) per shape kind; amber = the old part, green = the first new layer, as everywhere else.
+COLORS: dict[str, tuple[theme.Color | None, theme.Color]] = {
+    "silhouette": (theme.AMBER_SOFT, theme.AMBER),
+    "addition": (None, theme.GREEN),
+    "brim": (None, theme.LINE),
+    "wall-bottom": (None, theme.FAINT),
+    "wall-top": (None, theme.INK),
+    "support": (("#E6DFF7", "#2D2742"), theme.SUPPORT),
 }
 LEGEND = ("silhouette", "wall-bottom", "wall-top", "addition", "support")
 
@@ -31,40 +44,44 @@ class InsertTab(NamedTuple):
     convert: Callable[[], None]
     ready: Callable[[], str | None]  # None when the G-code can be created, else a status text key
     watched: tuple[Any, ...]  # Tk variables that change ready()
+    controls: dict[str, Any]  # main controls, for test scripts
+    repaint: Callable[[], None]  # light/dark changed
 
 
-def _float(tr: Translator, text: str, field_key: str) -> float:
+def _float(tr: Translator, value: str, field_key: str) -> float:
     try:
-        return float(text.strip().replace(",", "."))
+        return float(value.strip().replace(",", "."))
     except ValueError:
         raise ResumeError(tr("insert.err_number", field=tr(field_key).rstrip(":"))) from None
 
 
-def _int(tr: Translator, text: str, field_key: str) -> int:
-    value = _float(tr, text, field_key)
-    if value != int(value):
+def _int(tr: Translator, value: str, field_key: str) -> int:
+    number = _float(tr, value, field_key)
+    if number != int(number):
         raise ResumeError(tr("insert.err_whole", field=tr(field_key).rstrip(":")))
-    return int(value)
+    return int(number)
 
 
 def build_insert_tab(
-    notebook: Any, root: Any, path: Path, analysis: Analysis, result: dict, tr: Translator, untested_var: Any = None
+    parent: Any,
+    root: Any,
+    path: Path,
+    analysis: Analysis,
+    result: dict,
+    tr: Translator,
+    fonts: theme.Fonts,
+    untested_var: Any = None,
+    reveal: Callable[[Any], None] | None = None,
 ) -> InsertTab:
     import tkinter as tk
-    from tkinter import messagebox, ttk
+    from tkinter import messagebox
 
-    tab = ttk.Frame(notebook, padding=12)
-    tab.columnconfigure(0, weight=1)
-    left = ttk.Frame(tab)
-    left.grid(row=0, column=0, sticky="nw")
-    left.columnconfigure(0, weight=1)
-    right = ttk.Frame(tab)
-    right.grid(row=0, column=1, sticky="n", padx=(16, 0))
-    # Settings most people never touch: closed sections across the full width, under the steps, so opening
-    # them makes the tab a little taller instead of a lot taller.
-    settings = ttk.Frame(tab)
-    settings.grid(row=1, column=0, columnspan=2, sticky="ew", pady=(4, 0))
-    settings.columnconfigure(0, weight=1)
+    import customtkinter as ctk
+
+    panel = ctk.CTkFrame(parent, fg_color="transparent", corner_radius=0)
+    panel.columnconfigure(0, weight=1)
+    controls: dict[str, Any] = {}
+    repaints: list[Callable[[], None]] = []
 
     part_var = tk.StringVar()
     part_layer_var = tk.StringVar()
@@ -88,77 +105,117 @@ def build_insert_tab(
     # What the result area shows: ("start",), ("plan", plan) or ("error", message). Re-rendered on language change.
     shown: dict[str, Any] = {"state": ("start",)}
 
-    text_label(tr, left, "insert.intro", wraplength=LEFT_WRAP, justify="left").grid(
-        row=0, column=0, sticky="w", pady=(0, 8)
-    )
-
-    def section(row: int, key: str) -> Any:
-        frame = ttk.LabelFrame(left, padding=(10, 6))
-        tr.on_change(lambda: frame.configure(text=tr(key)))
-        frame.grid(row=row, column=0, sticky="ew", pady=(0, 8))
-        return frame
-
     # Step 1: part and wall
-    step1 = section(1, "insert.step1")
-    text_label(tr, step1, "insert.part_height").grid(row=0, column=0, sticky="w", pady=2)
-    part_entry = ttk.Entry(step1, width=9, textvariable=part_var)
-    part_entry.grid(row=0, column=1, sticky="w", pady=2, padx=(8, 0))
-    text_label(tr, step1, "insert.part_layer", foreground=HINT_COLOR).grid(row=1, column=0, sticky="w", pady=2)
-    ttk.Entry(step1, width=9, textvariable=part_layer_var).grid(row=1, column=1, sticky="w", pady=2, padx=(8, 0))
-    text_label(tr, step1, "insert.wall_height").grid(row=2, column=0, sticky="w", pady=2)
-    wall_entry = ttk.Entry(step1, width=9, textvariable=wall_var)
-    wall_entry.grid(row=2, column=1, sticky="w", pady=2, padx=(8, 0))
-    text_label(tr, step1, "insert.wall_hint", foreground=HINT_COLOR).grid(row=2, column=2, sticky="w", padx=(8, 0))
-    preview_button = ttk.Button(step1, command=lambda: preview())
-    preview_button.grid(row=0, column=2, rowspan=2, sticky="w", padx=(10, 0))
+    step1 = StepCard(tr, panel, 1, "insert.step1", fonts)
+    step1.frame.grid(row=0, column=0, sticky="ew", pady=(0, 12))
+    grid1 = ctk.CTkFrame(step1.body, fg_color="transparent", corner_radius=0)
+    grid1.grid(row=0, column=0, sticky="w")
+    text(tr, grid1, "insert.part_height", font=fonts.body).grid(row=0, column=0, sticky="w", pady=4)
+    part_entry = field(grid1, part_var)
+    part_entry.grid(row=0, column=1, sticky="w", pady=4, padx=(10, 0))
+    controls["part_height"] = part_entry
+    text(tr, grid1, "insert.part_layer", font=fonts.body, color=theme.MUTED).grid(row=1, column=0, sticky="w", pady=4)
+    part_layer_entry = field(grid1, part_layer_var)
+    part_layer_entry.grid(row=1, column=1, sticky="w", pady=4, padx=(10, 0))
+    controls["part_layer"] = part_layer_entry
+    text(tr, grid1, "insert.wall_height", font=fonts.body).grid(row=2, column=0, sticky="w", pady=4)
+    wall_entry = field(grid1, wall_var)
+    wall_entry.grid(row=2, column=1, sticky="w", pady=4, padx=(10, 0))
+    text(tr, grid1, "insert.wall_hint", font=fonts.small, color=theme.MUTED).grid(
+        row=2, column=2, sticky="w", padx=(10, 0)
+    )
+    preview_button = secondary_button(grid1, lambda: preview(), fonts, height=34)
+    preview_button.grid(row=0, column=2, rowspan=2, sticky="w", padx=(16, 0))
     tr.on_change(lambda: preview_button.configure(text=tr("insert.preview")))
+    controls["preview"] = preview_button
 
     def part_layer_changed(*_: object) -> None:
-        text = part_layer_var.get().strip()
-        if not text:
+        value = part_layer_var.get().strip()
+        if not value:
             return
         try:
-            part_var.set(f"{analysis.layer(int(text)).z:g}")
+            part_var.set(f"{analysis.layer(int(value)).z:g}")
         except (ValueError, ResumeError):
             pass
 
     part_layer_var.trace_add("write", part_layer_changed)
 
-    # Step 2: result of the preview
-    step2 = section(2, "insert.step2")
-    info_label = ttk.Label(step2, justify="left", wraplength=LEFT_WRAP - 20)
-    info_label.grid(row=0, column=0, sticky="w")
-    warn_label = ttk.Label(step2, justify="left", wraplength=LEFT_WRAP - 20, foreground=NOTE_COLOR)
-    warn_label.grid(row=1, column=0, sticky="w", pady=(4, 0))
-
-    # Step 3: safety check
-    step3 = section(3, "insert.step3")
-    text_label(tr, step3, "insert.check_intro", wraplength=LEFT_WRAP - 20, justify="left", foreground=HINT_COLOR).grid(
-        row=0, column=0, sticky="w", pady=(0, 4)
+    # Step 2: result of the preview, next to the top view
+    step2 = StepCard(tr, panel, 2, "insert.step2", fonts)
+    step2.frame.grid(row=1, column=0, sticky="ew", pady=(0, 12))
+    step2.body.columnconfigure(0, weight=1)
+    step2.body.rowconfigure(2, weight=1)  # the warnings sit right under the result, not halfway down the view
+    info_label = text(tr, step2.body, None, font=fonts.body, wrap=INFO_WRAP)
+    info_label.grid(row=0, column=0, sticky="nw")
+    warn_label = text(tr, step2.body, None, font=fonts.small, color=theme.WARN, wrap=INFO_WRAP)
+    warn_label.grid(row=1, column=0, sticky="nw", pady=(8, 0))
+    view = ctk.CTkFrame(step2.body, fg_color="transparent", corner_radius=0)
+    view.grid(row=0, column=1, rowspan=3, sticky="ne", padx=(16, 0))
+    text(tr, view, "insert.legend_title", font=fonts.small, color=theme.MUTED, wrap=CANVAS_SIZE).grid(
+        row=0, column=0, sticky="w", pady=(0, 6)
     )
-    wrapped_check(tr, step3, confirm_var, "insert.check_attended", LEFT_WRAP - 40).grid(row=1, column=0, sticky="w")
-
-    # Right: top view and a two-column legend
-    legend_title = text_label(tr, right, "insert.legend_title", foreground=HINT_COLOR)
-    legend_title.grid(row=0, column=0, sticky="w", pady=(0, 4))
-    canvas = tk.Canvas(right, width=CANVAS_SIZE, height=CANVAS_SIZE, background="white", highlightthickness=1)
-    canvas.grid(row=1, column=0)
-    legend = ttk.Frame(right)
-    legend.grid(row=2, column=0, sticky="w", pady=(6, 0))
+    canvas = tk.Canvas(view, highlightthickness=0, borderwidth=0)
+    canvas.grid(row=1, column=0, sticky="w")
+    legend = ctk.CTkFrame(view, fg_color="transparent", corner_radius=0)
+    legend.grid(row=2, column=0, sticky="w", pady=(8, 0))
     for index, kind in enumerate(LEGEND):
         row, column = index // 2, (index % 2) * 2
         fill, outline = COLORS[kind]
-        swatch = tk.Canvas(legend, width=14, height=14, highlightthickness=0, background=frame_background())
-        swatch.create_rectangle(1, 1, 13, 13, fill=fill or "white", outline=outline, width=2)
-        swatch.grid(row=row, column=column, padx=(0 if column == 0 else 12, 6), pady=1)
-        text_label(tr, legend, f"legend.{kind}").grid(row=row, column=column + 1, sticky="w")
+        swatch(legend, fill or "", outline).grid(row=row, column=column, padx=(0 if column == 0 else 14, 6), pady=2)
+        text(tr, legend, f"legend.{kind}", font=fonts.small).grid(row=row, column=column + 1, sticky="w")
+
+    # Step 3: safety check
+    step3 = StepCard(tr, panel, 3, "insert.step3", fonts)
+    step3.frame.grid(row=2, column=0, sticky="ew", pady=(0, 12))
+    text(tr, step3.body, "insert.check_intro", font=fonts.small, color=theme.MUTED, wrap=WRAP).grid(
+        row=0, column=0, sticky="w", pady=(0, 8)
+    )
+    attended = WrappedCheck(tr, step3.body, confirm_var, "insert.check_attended", fonts)
+    attended.grid(row=1, column=0, sticky="w")
+    controls["check_attended"] = attended
+
+    # The steps open one after another: a valid part height previews the job by itself (step 2), and a
+    # successful preview opens the safety check (step 3). Any step can still be opened by clicking it.
+    flow = StepFlow([step1, step2, step3], reveal)
+    repaints.extend([step1.repaint, step2.repaint, step3.repaint])
+    controls["insert_steps"] = flow
+    controls["insert_step_1"], controls["insert_step_2"], controls["insert_step_3"] = step1, step2, step3
+    pending: dict[str, Any] = {}
+
+    def part_height() -> float | None:
+        try:
+            value = _float(tr, part_var.get(), "insert.part_height")
+        except ResumeError:
+            return None
+        return value if value > 0 else None
+
+    def step1_changed(*_: object) -> None:
+        height = part_height()
+        flow.update(0, height is not None, tr("insert.step1_summary", part=height) if height else "")
+        job = pending.pop("preview", None)
+        if job is not None:
+            panel.after_cancel(job)
+        if height is not None:
+            pending["preview"] = panel.after(StepFlow.SETTLE_MS + 50, auto_preview)
+
+    def auto_preview() -> None:
+        pending.pop("preview", None)
+        if part_height() is not None:
+            preview()
+
+    for watched_var in (part_var, wall_var):
+        watched_var.trace_add("write", step1_changed)
+    confirm_var.trace_add("write", lambda *_: flow.update(2, confirm_var.get(), tr("step.checked")))
+    tr.on_change(step1_changed)
 
     # Advanced settings: two columns of label + field, then the two options.
-    advanced = Collapsible(tr, settings, "insert.advanced")
-    advanced.frame.grid(row=0, column=0, sticky="ew")
-    advanced.header._lr_action = "advanced"  # type: ignore[attr-defined]
-    advanced.body.columnconfigure(0, weight=0)
+    advanced = Collapsible(tr, panel, "insert.advanced", fonts)
+    advanced.frame.grid(row=3, column=0, sticky="ew", pady=(0, 12))
+    controls["advanced"] = advanced
+    fields = ctk.CTkFrame(advanced.body, fg_color="transparent", corner_radius=0)
+    fields.grid(row=0, column=0, sticky="w")
     wall_only: list[Any] = [wall_entry]  # fields that mean nothing without the holding wall
+    wall_only_checks: list[WrappedCheck] = []
     for index, (key, var) in enumerate(
         [
             ("insert.clearance", clearance_var),
@@ -170,46 +227,52 @@ def build_insert_tab(
         ]
     ):
         row, column = index // 2, (index % 2) * 2
-        text_label(tr, advanced.body, key, wraplength=230, justify="left").grid(
-            row=row, column=column, sticky="w", pady=2, padx=(0 if column == 0 else 24, 0)
+        text(tr, fields, key, font=fonts.small, wrap=190).grid(
+            row=row, column=column, sticky="w", pady=4, padx=(0 if column == 0 else 22, 0)
         )
-        entry = ttk.Entry(advanced.body, width=7, textvariable=var)
-        entry.grid(row=row, column=column + 1, sticky="w", pady=2, padx=(8, 0))
+        entry = field(fields, var, width=70)
+        entry.grid(row=row, column=column + 1, sticky="w", pady=4, padx=(8, 0))
+        controls[key.replace("insert.", "")] = entry
         if key in ("insert.lines", "insert.brim"):
             wall_only.append(entry)
-    chamfer_check = wrapped_check(tr, advanced.body, chamfer_var, "insert.chamfer", FULL_WRAP - 40)
-    chamfer_check.grid(row=3, column=0, columnspan=4, sticky="w", pady=(4, 1))
-    wall_only.append(chamfer_check.check)
-    wrapped_check(tr, advanced.body, supports_var, "insert.supports", FULL_WRAP - 40).grid(
-        row=4, column=0, columnspan=4, sticky="w", pady=1
-    )
+    chamfer_check = WrappedCheck(tr, advanced.body, chamfer_var, "insert.chamfer", fonts)
+    chamfer_check.grid(row=1, column=0, sticky="w", pady=(10, 3))
+    wall_only_checks.append(chamfer_check)
+    WrappedCheck(tr, advanced.body, supports_var, "insert.supports", fonts).grid(row=2, column=0, sticky="w", pady=3)
 
     # Experimental features: off by default; the section title says how many are on even when it is closed.
     def experimental_on() -> str:
         count = int(no_wall_var.get()) + int(reheat_var.get())
         return tr("insert.experimental_on", n=count) if count else ""
 
-    experimental = Collapsible(tr, settings, "insert.experimental", suffix=experimental_on)
-    experimental.frame.grid(row=1, column=0, sticky="ew", pady=(6, 0))
-    experimental.header._lr_action = "experimental"  # type: ignore[attr-defined]
+    experimental = Collapsible(tr, panel, "insert.experimental", fonts, suffix=experimental_on)
+    experimental.frame.grid(row=4, column=0, sticky="ew")
+    controls["experimental"] = experimental
     body = experimental.body
-    text_label(tr, body, "insert.experimental_intro", wraplength=FULL_WRAP, justify="left", foreground=NOTE_COLOR).grid(
-        row=0, column=0, sticky="w", pady=(0, 6)
+    side_wrap = WRAP - 330
+    text(tr, body, "insert.experimental_intro", font=fonts.small, color=theme.WARN, wrap=WRAP - 40).grid(
+        row=0, column=0, columnspan=2, sticky="w", pady=(0, 10)
     )
-    no_wall_check = wrapped_check(tr, body, no_wall_var, "insert.no_wall", FULL_WRAP - 40)
-    no_wall_check.grid(row=1, column=0, sticky="w")
-    no_wall_check.check._lr_action = "no_wall"  # type: ignore[attr-defined]
-    text_label(tr, body, "insert.no_wall_hint", wraplength=FULL_WRAP - 30, justify="left", foreground=HINT_COLOR).grid(
-        row=2, column=0, sticky="w", padx=(24, 0), pady=(0, 6)
+    no_wall_check = WrappedCheck(tr, body, no_wall_var, "insert.no_wall", fonts, wrap=side_wrap)
+    no_wall_check.grid(row=1, column=0, sticky="nw")
+    controls["no_wall"] = no_wall_check
+    text(tr, body, "insert.no_wall_hint", font=fonts.small, color=theme.MUTED, wrap=side_wrap).grid(
+        row=2, column=0, sticky="nw", padx=(32, 0), pady=(4, 16)
     )
-    reheat_check = wrapped_check(tr, body, reheat_var, "insert.reheat", FULL_WRAP - 40)
-    reheat_check.grid(row=3, column=0, sticky="w")
-    reheat_check.check._lr_action = "reheat"  # type: ignore[attr-defined]
-    text_label(tr, body, "insert.reheat_hint", wraplength=FULL_WRAP - 30, justify="left", foreground=HINT_COLOR).grid(
-        row=4, column=0, sticky="w", padx=(24, 0)
+    no_wall_art = Illustration(body, "no_wall", background=theme.SURFACE_ALT)
+    no_wall_art.canvas.grid(row=1, column=1, rowspan=2, sticky="ne", padx=(12, 0), pady=(0, 16))
+    repaints.append(no_wall_art.repaint)
+    reheat_check = WrappedCheck(tr, body, reheat_var, "insert.reheat", fonts, wrap=side_wrap)
+    reheat_check.grid(row=3, column=0, sticky="nw")
+    controls["reheat"] = reheat_check
+    text(tr, body, "insert.reheat_hint", font=fonts.small, color=theme.MUTED, wrap=side_wrap).grid(
+        row=4, column=0, sticky="nw", padx=(32, 0), pady=(4, 0)
     )
-    reheat_fields = ttk.Frame(body)
-    reheat_fields.grid(row=5, column=0, sticky="w", padx=(24, 0), pady=(4, 0))
+    reheat_art = Illustration(body, "reheat", background=theme.SURFACE_ALT)
+    reheat_art.canvas.grid(row=3, column=1, rowspan=3, sticky="ne", padx=(12, 0))
+    repaints.append(reheat_art.repaint)
+    reheat_fields = ctk.CTkFrame(body, fg_color="transparent", corner_radius=0)
+    reheat_fields.grid(row=5, column=0, sticky="nw", padx=(32, 0), pady=(8, 0))
     reheat_entries: list[Any] = []
     for index, (key, var) in enumerate(
         [
@@ -219,11 +282,12 @@ def build_insert_tab(
             ("insert.reheat_temp", reheat_temp_var),
         ]
     ):
-        text_label(tr, reheat_fields, key).grid(row=index, column=0, sticky="w", pady=2)
-        entry = ttk.Entry(reheat_fields, width=7, textvariable=var)
-        entry.grid(row=index, column=1, sticky="w", pady=2, padx=(8, 0))
-        entry.state(["disabled"])
+        text(tr, reheat_fields, key, font=fonts.small, wrap=190).grid(row=index, column=0, sticky="w", pady=2, padx=(0, 10))
+        entry = field(reheat_fields, var, width=70)
+        entry.grid(row=index, column=1, sticky="w", pady=2)
+        set_enabled(entry, False)
         reheat_entries.append(entry)
+        controls[key.replace("insert.", "")] = entry
 
     def options() -> InsertOptions:
         wall_text = wall_var.get().strip()
@@ -252,41 +316,61 @@ def build_insert_tab(
         )
 
     def draw(plan: InsertPlan | None) -> None:
+        scale = theme.widget_scaling(canvas)
+        size = CANVAS_SIZE * scale
+        canvas.configure(width=int(size), height=int(size), background=theme.pick(theme.SURFACE_ALT))
         canvas.delete("all")
         if plan is None:
+            canvas.create_text(
+                size / 2, size / 2, text="—", fill=theme.pick(theme.FAINT), font=fonts.heading
+            )
             return
         shapes = plan_shapes(plan)
         min_x, min_y, max_x, max_y = view_bounds(shapes)
-        scale = (CANVAS_SIZE - 20) / max(max_x - min_x, max_y - min_y)
+        factor = (size - 24 * scale) / max(max_x - min_x, max_y - min_y)
 
         def xy(point: tuple[float, float]) -> tuple[float, float]:
-            return (10 + (point[0] - min_x) * scale, CANVAS_SIZE - 10 - (point[1] - min_y) * scale)
+            return (12 * scale + (point[0] - min_x) * factor, size - 12 * scale - (point[1] - min_y) * factor)
 
         for kind in ("silhouette", "addition", "brim", "wall-bottom", "wall-top", "support"):
             fill, outline = COLORS[kind]
             for shape in shapes:
                 if shape.kind == kind and len(shape.points) >= 3:
                     coords = [c for point in shape.points for c in xy(point)]
-                    canvas.create_polygon(*coords, fill=fill, outline=outline, width=1)
+                    canvas.create_polygon(
+                        *coords,
+                        fill=theme.pick(fill) if fill else "",
+                        outline=theme.pick(outline),
+                        width=max(1.0, 1.4 * scale),
+                    )
         canvas.create_text(
-            CANVAS_SIZE / 2, CANVAS_SIZE - 4, text="▼ " + tr("insert.canvas_front"), fill="#6b7280", anchor="s"
+            size / 2, size - 3 * scale, text="▼ " + tr("insert.canvas_front"), fill=theme.pick(theme.MUTED),
+            anchor="s", font=fonts.small,
         )
         if not plan.options.holding_wall:
-            canvas.create_text(CANVAS_SIZE / 2, 6, text=tr("insert.canvas_no_wall"), fill=NOTE_COLOR, anchor="n")
+            canvas.create_text(
+                size / 2, 4 * scale, text=tr("insert.canvas_no_wall"), fill=theme.pick(theme.WARN), anchor="n",
+                font=fonts.small,
+            )
 
     def render() -> None:
         state = shown["state"]
         if state[0] == "start":
-            info_label.configure(text=tr("insert.info_start"), foreground=HINT_COLOR)
+            info_label.configure(text=tr("insert.info_start"), text_color=theme.MUTED)
             warn_label.configure(text="")
+            draw(None)
+            flow.update(1, False)
             return
         if state[0] == "error":
-            info_label.configure(text=tr.message(state[1]), foreground=NOTE_COLOR)
+            info_label.configure(text=tr.message(state[1]), text_color=theme.WARN)
             warn_label.configure(text="")
+            draw(None)
+            flow.update(1, False)
             return
         plan: InsertPlan = state[1]
+        flow.update(1, True, tr("insert.step2_summary", layer=plan.resume_layer.number))
         o = plan.options
-        text = tr(
+        message = tr(
             "insert.info" if o.holding_wall else "insert.info_bare",
             wall_last=plan.wall_layers[-1].number,
             wall_top=plan.wall.top_z,
@@ -299,13 +383,14 @@ def build_insert_tab(
             first=plan.resume_layer.z + plan.z_offset - o.part_height_mm,
         )
         if plan.supports and plan.supports.any:
-            text += tr("insert.info_supports", layer=plan.printed_layers[-1].number)
-        info_label.configure(text=text, foreground="")
+            message += tr("insert.info_supports", layer=plan.printed_layers[-1].number)
+        info_label.configure(text=message, text_color=theme.INK)
         warnings = [tr.message(warning) for warning in plan.warnings]
         warn_label.configure(text=(tr("warnings") + "\n• " + "\n• ".join(warnings)) if warnings else "")
         draw(plan)
 
     tr.on_change(render)
+    repaints.append(render)
 
     def preview() -> InsertPlan | None:
         try:
@@ -313,7 +398,6 @@ def build_insert_tab(
         except (ValueError, ResumeError) as exc:
             last_plan.pop("plan", None)
             shown["state"] = ("error", str(exc))
-            draw(None)
             render()
             return None
         last_plan["plan"] = plan
@@ -323,9 +407,11 @@ def build_insert_tab(
 
     def experimental_changed(*_: object) -> None:
         for widget in wall_only:
-            widget.state(["disabled"] if no_wall_var.get() else ["!disabled"])
+            set_enabled(widget, not no_wall_var.get())
+        for check in wall_only_checks:
+            check.set_enabled(not no_wall_var.get())
         for widget in reheat_entries:
-            widget.state(["!disabled"] if reheat_var.get() else ["disabled"])
+            set_enabled(widget, reheat_var.get())
         experimental.update_title()
         # A preview made with other experimental settings no longer describes the job.
         if shown["state"][0] == "plan":
@@ -333,6 +419,8 @@ def build_insert_tab(
 
     no_wall_var.trace_add("write", experimental_changed)
     reheat_var.trace_add("write", experimental_changed)
+    no_wall_var.trace_add("write", lambda *_: no_wall_art.play() if no_wall_var.get() else None)
+    reheat_var.trace_add("write", lambda *_: reheat_art.play() if reheat_var.get() else None)
 
     def ready() -> str | None:
         if untested_var is not None and not untested_var.get():
@@ -351,7 +439,7 @@ def build_insert_tab(
                 raise ResumeError(tr("insert.err_attended"))
             chosen = options()
             report, _backup = rewrite_with(
-                path, lambda text: build_insert_gcode(text, chosen, last_plan.get("plan"))
+                path, lambda source: build_insert_gcode(source, chosen, last_plan.get("plan"))
             )
             warnings = [tr.message(warning) for warning in report.warnings]
             reheat = (
@@ -382,4 +470,8 @@ def build_insert_tab(
         except (ValueError, OSError, ResumeError) as exc:
             messagebox.showerror("Layer Rescue", tr.message(str(exc)), parent=root)
 
-    return InsertTab(tab, convert, ready, (part_var, confirm_var))
+    def repaint() -> None:
+        for callback in repaints:
+            callback()
+
+    return InsertTab(panel, convert, ready, (part_var, confirm_var), controls, repaint)

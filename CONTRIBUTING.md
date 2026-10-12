@@ -13,7 +13,7 @@ python -m pip install -e .
 python -m unittest discover -s tests -v
 ```
 
-The only third-party runtime dependency is `pyclipper` (polygon offsets for insert mode). Do not add more without a strong reason.
+The third-party runtime dependencies are `pyclipper` (polygon offsets for insert mode) and `customtkinter` (the window; it brings `darkdetect` and `packaging`). Do not add more without a strong reason: the app starts from Bambu Studio after every slice, so it has to stay small and quick to open. The window draws its pictures on Tk canvases, so it needs no image library.
 
 ## Rules for G-code changes
 

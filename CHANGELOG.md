@@ -16,8 +16,11 @@ All notable changes to this project are documented here. The format is based on
 
 ### Changed
 
-- The window fits on small screens: the header and the buttons stay in place, and the content between them scrolls (mouse wheel, scroll bar, and fields reached with Tab scroll into view) when it is taller than the screen. The window can be resized.
-- Insert tab: the advanced settings moved from under the top view into a folded section under the steps, in two columns; the legend is in two columns. The wall-only settings are greyed out when the holding wall is off.
+- New window, built with CustomTkinter: a sidebar with a card for each situation (**It stopped**, **Power cut or restart**, **Part came off**) instead of tabs and a "was the printer restarted?" step, numbered step cards, folded options, light and dark themes (Auto follows the system) and sharp text with Windows display scaling. Each mode shows a small side-view animation of what will happen (amber = already printed, green = what Layer Rescue prints), and so do the experimental reheat pass and the wall-less insert; they are drawn on Tk canvases, so the app needs no image files or Pillow. The language and theme switches are at the bottom left and are remembered. The window fits on small screens (the steps scroll, the sidebar and buttons stay) and can be resized. In insert mode the wall-only settings are greyed out when the holding wall is off.
+- Steps open one after another as they are completed: the number turns into a check mark with a short animation and the next step slides open (and scrolls into view). Any step can be opened or closed by clicking its title; a closed step shows a one-line summary. In insert mode a valid part height previews the job by itself.
+- Resume: the last good layer can also be given as the part's measured height; the nearest layer is used (like the part's last layer in insert mode).
+- The mode animations print every new layer in the direction the nozzle moves (the second green layer used to grow the wrong way).
+- New dependency: `customtkinter` (about 300 kB, with `darkdetect` and `packaging`); the PyInstaller builds collect its data files.
 
 ## [1.1.0] - 2026-10-08
 

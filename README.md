@@ -127,41 +127,41 @@ Tip: save the process preset with the script in it, so it's there the next time 
 
 ## The window
 
-After slicing, Layer Rescue opens a small window. At the top it shows the file it got (printer, filament, layer count), and below that there's a tab for each situation:
+After slicing, Layer Rescue opens its window. On the left, under **What happened to the print?**, there is a card for each situation:
 
-- **Part is still on the plate**: resume an interrupted print (below).
-- **Part came off / print on a finished part**: insert mode (further below).
+- **It stopped**: the part is still on the plate and the printer stayed on. Resume the print (below).
+- **Power cut or restart**: the part is still on the plate but the printer lost its Z position. Resume the print after lowering the nozzle onto it by hand (below).
+- **Part came off**: seat the part in a printed wall, or print on a finished part (insert mode, further below).
 
-<p align="center"><img src="https://raw.githubusercontent.com/EmirhanSyl/layer-rescue/main/images/readme/ui-resume.png" alt="The Layer Rescue window on the resume tab" width="400"></p>
+<p align="center"><img src="https://raw.githubusercontent.com/EmirhanSyl/layer-rescue/main/images/readme/ui-resume.png" alt="The Layer Rescue window: the three cards on the left, the steps of the chosen one on the right" width="720"></p>
 
-Each tab is a short list of numbered steps. On the resume tab you enter where the print stopped, say whether the printer was turned off, and confirm a few things Layer Rescue can't see for itself under **Safety checks**. **Create G-code** stays disabled until everything required is filled in, and the line at the bottom left says what is still missing. **Leave G-code unchanged** closes the window without touching the file; use it for normal prints.
+At the top of the chosen card's page, a small drawing shows what will happen: amber layers are what is already printed, green layers are what Layer Rescue prints. It plays twice; click it to play it again. Below it are a few numbered steps: where the print stopped (or how tall the part is) and the **Safety checks**, the things Layer Rescue can't see for itself. The steps open one after another: when a step is complete, its number turns into a check mark and the next one slides open. Click a step's title to open or close any step at any time; a closed step shows what you entered. Settings most people never touch are folded away under **Options** / **Advanced settings** and **Experimental features**.
 
-If the job is for a printer or filament setup that hasn't been tested yet, an extra **Untested setup** box appears above the tabs. It explains why and asks you to accept the risks before you can continue.
+**Create G-code** stays disabled until everything required is filled in, and the line at the bottom says what is still missing. **Leave G-code unchanged** closes the window without touching the file; use it for normal prints.
 
-The window fits on small screens: the header and the buttons stay in place and the part in between scrolls (mouse wheel or scroll bar) when it is taller than the screen. The window can also be resized.
+If the job is for a printer or filament setup that hasn't been tested yet, an **Untested setup** box appears at the top. It explains why and asks you to accept the risks before you can continue.
 
-**Language:** use the **English / Türkçe** buttons at the top right. The change applies immediately and is remembered for next time. On first start the language follows your system language. (Command-line output stays in English.)
+The window fits on small screens: the sidebar and the buttons stay in place and the steps scroll when they are taller than the screen. The window can be resized and follows the display scaling of Windows and macOS.
+
+**Language and theme:** at the bottom left, switch between **English / Türkçe** and between **Auto / Light / Dark** (Auto follows the system). Both apply immediately and are remembered. On first start the language follows your system language. (Command-line output stays in English.)
 
 ## Resume a print
 
 ![Resuming a plane part after a filament jam](https://raw.githubusercontent.com/EmirhanSyl/layer-rescue/main/images/readme/plane.gif)
 
 1. Find the last layer that actually got filament (see [Picking the layer](#picking-the-layer) below).
-2. Slice the original project again, without changing anything. The Layer Rescue window opens on **Part is still on the plate**.
-3. **Step 1 – Where did the print stop?** Enter the last good layer. The window shows the layer and Z height that printing restarts at.
-4. **Step 2 – Was the printer turned off or restarted?**
-   - **No, it stayed on the whole time** (`retained`): the printer kept its Z position. Nothing else to do.
-   - **Yes, it was turned off or restarted** (`manual`): after a power cycle Z is not homed. Heat the bed back up, clean the nozzle, move it over a flat printed area of the last good layer and lower it until it just touches the surface. If the printer offers to home Z, don't accept. Do not move the part or the plate. ([Test 2](https://github.com/EmirhanSyl/layer-rescue/blob/main/docs/tests/02-power-loss-dragon.md) shows this step by step.)
-5. **Step 3 – Safety checks.** Layer Rescue cannot see the printer, so you confirm what it has to assume. Tick each box only if it is true:
+2. Slice the original project again, without changing anything. The Layer Rescue window opens on **It stopped**. Pick the card that matches what happened:
+   - **It stopped** (`retained`): the printer stayed on and kept its Z position. Nothing else to do.
+   - **Power cut or restart** (`manual`): after a power cycle Z is not homed. Heat the bed back up, clean the nozzle, move it over a flat printed area of the last good layer and lower it until it just touches the surface. If the printer offers to home Z, don't accept. Do not move the part or the plate. ([Test 2](https://github.com/EmirhanSyl/layer-rescue/blob/main/docs/tests/02-power-loss-dragon.md) shows this step by step.)
+3. **Step 1 – Where did the print stop?** Enter the last good layer, or measure the part with calipers and enter its height (the nearest layer is used). The window shows the layer and Z height that printing restarts at.
+4. **Step 2 – Safety checks.** Layer Rescue cannot see the printer, so you confirm what it has to assume. Tick each box only if it is true:
    - the part is still firmly stuck to the same plate and the plate was not moved;
-   - with _No, it stayed on_: the printer never lost power and the Z axis was not moved;
-   - with _Yes, it was restarted_: you will lower the clean nozzle onto the last good layer before starting the job.
+   - with _It stopped_: the printer never lost power and the Z axis was not moved;
+   - with _Power cut or restart_: you will lower the clean nozzle onto the last good layer before starting the job.
 
-   Only the check for the selected answer in step 2 is shown.
-
-6. **Options** can usually stay as they are: nozzle and bed temperature (blank = taken from the file) and homing X/Y before continuing (always on after a restart; Z is never homed).
-7. **Experimental features** (folded, off by default): **Reheat pass** (CLI `--reheat`). After the resume sequence, and before the next layer is printed, the hot nozzle traces that layer once without extruding, 0.2 mm above the last good layer (`--reheat-gap`, 0.05–1 mm), at 20 mm/s (`--reheat-speed`), once (`--reheat-passes`), at the print temperature unless `--reheat-temp` is given. The aim is a warmer old surface and a stronger seam. It works in both modes: after a restart, its Z moves are relative to the aligned nozzle like the rest of the job. The nozzle never goes below the last good layer + 0.05 mm, and the filament is retracted during the pass. Not yet tried on a real print.
-8. Click **Create G-code**, check the preview in Bambu Studio and send the job.
+5. **Options** can usually stay as they are: nozzle and bed temperature (blank = taken from the file) and homing X/Y before continuing (always on after a restart; Z is never homed).
+6. **Experimental features** (folded, off by default): **Reheat pass** (CLI `--reheat`). After the resume sequence, and before the next layer is printed, the hot nozzle traces that layer once without extruding, 0.2 mm above the last good layer (`--reheat-gap`, 0.05–1 mm), at 20 mm/s (`--reheat-speed`), once (`--reheat-passes`), at the print temperature unless `--reheat-temp` is given. The aim is a warmer old surface and a stronger seam. It works in both modes: after a restart, its Z moves are relative to the aligned nozzle like the rest of the job. The nozzle never goes below the last good layer + 0.05 mm, and the filament is retracted during the pass. Not yet tried on a real print.
+7. Click **Create G-code**, check the preview in Bambu Studio and send the job.
 
 ### Picking the layer
 
@@ -185,15 +185,15 @@ If some parts on a crowded plate came loose, take them off, delete them in Bambu
 For a part that came off the plate halfway, a finished part that broke, or a finished part that gets an addition. You slice the complete model (the old part plus what goes on top, one object). Layer Rescue replaces the layers below the part's top with a holding wall that follows the part's outline, pauses, and prints the rest on top of the part you put into the wall.
 
 1. Prepare the part: remove brim and strings. A broken part must be cut or sanded flat first. Measure its height with calipers.
-2. Slice the complete model. In the Layer Rescue window open **Part came off / print on a finished part**.
+2. Slice the complete model. In the Layer Rescue window click **Part came off** on the left.
 3. Enter the **part height** (or the last layer the part contains) and optionally the **wall height** (blank = recommended: half the part, 3–15 mm, always at least 1 mm below the top). Press **Preview** to see the wall from above and, under **Result**, where printing continues and any warnings.
 4. Tick the **Safety check** (you will stay at the printer, seat the part when it pauses and watch the first layers), click **Create G-code** and send the job. The printer levels the empty bed, prints the wall, lifts to 15 mm above the part height, parks at the back and pauses (`M400 U1`).
 5. Without removing or shifting the plate, press the part into the wall the same way round as in Bambu Studio (front of the model to the front of the plate), then press **Resume**.
 6. The printer reheats, purges, travels above the part and prints the rest. The first 2 layers on the part are 10 °C hotter, half speed and without part cooling for adhesion.
 
-<p align="center"><img src="https://raw.githubusercontent.com/EmirhanSyl/layer-rescue/main/images/readme/ui-insert.png" alt="The insert tab after pressing Preview" width="400"></p>
+<p align="center"><img src="https://raw.githubusercontent.com/EmirhanSyl/layer-rescue/main/images/readme/ui-insert.png" alt="Part came off, after pressing Preview" width="720"></p>
 
-After **Preview**, the right side shows the plate from above: the part (beige), the bottom and the rim of the wall (grey and red), the first layer that will be printed on the part (blue) and the supports that will be reprinted (green). **Result** on the left says which layers become the wall, where printing continues after the pause and how thick the first layer on the part will be, followed by any warnings. Under the steps there are two folded sections, **Advanced settings** and **Experimental features**; click a title to open it.
+After **Preview**, the top view next to **Result** shows the plate from above: the part (amber), the bottom and the rim of the wall (grey and dark), the first layer that will be printed on the part (green) and the supports that will be reprinted (purple). **Result** says which layers become the wall, where printing continues after the pause and how thick the first layer on the part will be, followed by any warnings. Under the steps there are two folded sections, **Advanced settings** and **Experimental features**; click a title to open it.
 
 How the wall is made: the part's own outline is read from the sliced layers below the wall height. The opening at every height lets all sections below it pass (the part is lowered from above), with 0.25 mm clearance, a 4-line wall, a 5 mm brim and a small lead-in chamfer at the rim. All of these can be changed in **Advanced settings** (click the title under the steps).
 

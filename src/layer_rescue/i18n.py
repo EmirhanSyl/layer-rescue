@@ -23,16 +23,33 @@ STRINGS: dict[str, dict[str, str]] = {
         # Window and header
         "app.title": "Layer Rescue",
         "header.version": "version {version}",
-        "header.language": "Language:",
-        "file.frame": "Sliced file",
-        "file.name": "File",
         "file.printer": "Printer",
         "file.filament": "Filament",
         "file.layers": "Layers",
         "file.layers_value": "{first}–{last} (of {total})",
-        "choose_mode": "What happened to the print? Choose the matching tab:",
-        "tab.resume": "Part is still on the plate",
-        "tab.insert": "Part came off / print on a finished part",
+        # Sidebar: mode cards, file, language and theme
+        "mode.heading": "What happened to the print?",
+        "mode.retained": "It stopped",
+        "mode.retained_desc": "Part still on the plate; the printer stayed on",
+        "mode.manual": "Power cut or restart",
+        "mode.manual_desc": "Part still on the plate; Z position lost",
+        "mode.insert": "Part came off",
+        "mode.insert_desc": "Seat it in a wall, or print on a finished part",
+        "mode.retained_title": "Continue a stopped print",
+        "mode.retained_lead": (
+            "The print stopped (filament ran out, a clog…) and the printer stayed on. The part is still on the "
+            "plate, so printing continues on top of it from the next layer."
+        ),
+        "mode.manual_title": "Continue after a power cut",
+        "mode.manual_lead": (
+            "The power went out or the printer was restarted, so it no longer knows its Z position. You lower "
+            "the nozzle onto the last good layer by hand and printing continues from there."
+        ),
+        "mode.insert_title": "Print on a loose part",
+        "mode.replay": "Click the drawing to play it again.",
+        "theme.system": "Auto",
+        "theme.light": "Light",
+        "theme.dark": "Dark",
         "untested.frame": "Untested setup",
         "untested.intro": (
             "Layer Rescue hasn't been tested with this kind of job yet. It may work, but the moves it adds "
@@ -47,26 +64,28 @@ STRINGS: dict[str, dict[str, str]] = {
         "button.leave": "Leave G-code unchanged",
         "button.create": "Create G-code",
         "status.ready": "Ready. Check the preview in Bambu Studio after creating the G-code.",
-        "status.resume_layer": "Enter the last good layer (step 1).",
-        "status.resume_checks": "Tick the safety checks (step 3) to continue.",
+        "status.resume_layer": "Enter the last good layer or the part's height (step 1).",
+        "status.resume_checks": "Tick the safety checks (step 2) to continue.",
         "status.insert_height": "Enter the part height (step 1).",
         "status.insert_check": "Tick the safety check to continue.",
         # Resume tab
-        "resume.intro": (
-            "The print stopped (filament ran out, clog, power cut…) but the part is still stuck to the plate. "
-            "The new G-code continues printing on top of it from the next layer."
-        ),
         "resume.step1": "1. Where did the print stop?",
         "resume.last_layer": "Last layer that printed correctly:",
         "resume.last_layer_hint": (
             "The last layer that really got filament. If the filament ran out at layer 462 but the printer "
-            "kept going until 490, enter 461."
+            "kept going until 490, enter 461. Or measure the part's height with calipers: the nearest layer "
+            "is used."
         ),
+        "resume.part_height": "or the part's height (mm, measured):",
+        "resume.nearest_layer": "Nearest layer to {height:g} mm: {layer} (Z = {z:g} mm).",
+        "resume.height_range": "Enter a height between {low:g} and {high:g} mm.",
+        "resume.step1_summary": "Layer {last}, restarts at {layer}",
+        "insert.step1_summary": "Part {part:g} mm",
+        "insert.step2_summary": "Restarts at layer {layer}",
+        "step.checked": "All ticked",
         "resume.next_layer": "Printing restarts at layer {layer} of {total} (Z = {z:g} mm).",
         "resume.layer_range": "Enter a whole number between {first} and {last}.",
         "resume.step2": "2. Was the printer turned off or restarted?",
-        "resume.mode_retained": "No, it stayed on the whole time (Z position is kept)",
-        "resume.mode_manual": "Yes, it was turned off or restarted (Z position is lost)",
         "resume.help_retained": (
             "The job uses the Z position the printer still knows. Choose this only if the printer stayed "
             "powered on and nobody moved the Z axis. The job never homes Z or levels the bed."
@@ -108,7 +127,6 @@ STRINGS: dict[str, dict[str, str]] = {
         "resume.err_retained": "Safety check: confirm that the printer never lost power or its Z position.",
         "resume.err_manual": "Safety check: confirm that you will align the nozzle to the last good layer.",
         "resume.err_temperature": "{field}: enter a whole number in °C, or leave it blank.",
-        "resume.done_title": "Recovery G-code created",
         "resume.done": (
             "Recovery G-code created.\n\n"
             "Starts at layer {layer}/{total}\n"
@@ -239,16 +257,32 @@ STRINGS: dict[str, dict[str, str]] = {
     "tr": {
         "app.title": "Layer Rescue",
         "header.version": "sürüm {version}",
-        "header.language": "Dil:",
-        "file.frame": "Dilimlenen dosya",
-        "file.name": "Dosya",
         "file.printer": "Yazıcı",
         "file.filament": "Filament",
         "file.layers": "Katmanlar",
         "file.layers_value": "{first}–{last} (toplam {total})",
-        "choose_mode": "Baskıya ne oldu? Uygun sekmeyi seçin:",
-        "tab.resume": "Parça hâlâ plakada",
-        "tab.insert": "Parça ayrıldı / bitmiş parçanın üstüne bas",
+        "mode.heading": "Baskıya ne oldu?",
+        "mode.retained": "Baskı durdu",
+        "mode.retained_desc": "Parça hâlâ plakada; yazıcı açık kaldı",
+        "mode.manual": "Elektrik kesildi",
+        "mode.manual_desc": "Parça hâlâ plakada; Z konumu kayboldu",
+        "mode.insert": "Parça koptu",
+        "mode.insert_desc": "Bir duvara oturtun ya da bitmiş parçanın üstüne basın",
+        "mode.retained_title": "Duran bir baskıya devam",
+        "mode.retained_lead": (
+            "Baskı durdu (filament bitti, nozzle tıkandı…) ve yazıcı açık kaldı. Parça hâlâ plakada; baskı bir "
+            "sonraki katmandan parçanın üstüne devam eder."
+        ),
+        "mode.manual_title": "Elektrik kesintisinden sonra devam",
+        "mode.manual_lead": (
+            "Elektrik kesildi ya da yazıcı yeniden başlatıldı; yazıcı Z konumunu artık bilmiyor. Nozzle'ı son "
+            "düzgün katmana elle indirirsiniz ve baskı oradan devam eder."
+        ),
+        "mode.insert_title": "Ayrılan bir parçanın üstüne bas",
+        "mode.replay": "Tekrar oynatmak için çizime tıklayın.",
+        "theme.system": "Otomatik",
+        "theme.light": "Açık",
+        "theme.dark": "Koyu",
         "untested.frame": "Test edilmemiş kurulum",
         "untested.intro": (
             "Layer Rescue bu tür bir işle henüz test edilmedi. Çalışabilir, ama eklediği hareketler (park, "
@@ -262,25 +296,27 @@ STRINGS: dict[str, dict[str, str]] = {
         "button.leave": "G-code'u değiştirme",
         "button.create": "G-code oluştur",
         "status.ready": "Hazır. G-code oluşturduktan sonra Bambu Studio önizlemesini kontrol edin.",
-        "status.resume_layer": "Son düzgün katmanı girin (adım 1).",
-        "status.resume_checks": "Devam etmek için güvenlik kontrollerini işaretleyin (adım 3).",
+        "status.resume_layer": "Son düzgün katmanı ya da parçanın yüksekliğini girin (adım 1).",
+        "status.resume_checks": "Devam etmek için güvenlik kontrollerini işaretleyin (adım 2).",
         "status.insert_height": "Parça yüksekliğini girin (adım 1).",
         "status.insert_check": "Devam etmek için güvenlik kontrolünü işaretleyin.",
-        "resume.intro": (
-            "Baskı durdu (filament bitti, nozzle tıkandı, elektrik kesildi…) ama parça hâlâ plakaya yapışık. "
-            "Yeni G-code, bir sonraki katmandan parçanın üstüne basmaya devam eder."
-        ),
         "resume.step1": "1. Baskı nerede durdu?",
         "resume.last_layer": "Düzgün basılan son katman:",
         "resume.last_layer_hint": (
             "Gerçekten filament basılmış son katman. Filament 462. katmanda bittiyse ama yazıcı 490'a kadar "
-            "devam ettiyse 461 girin."
+            "devam ettiyse 461 girin. Ya da parçanın yüksekliğini kumpasla ölçüp girin: en yakın katman "
+            "kullanılır."
         ),
+        "resume.part_height": "ya da parçanın yüksekliği (mm, ölçülen):",
+        "resume.nearest_layer": "{height:g} mm'ye en yakın katman: {layer} (Z = {z:g} mm).",
+        "resume.height_range": "{low:g} ile {high:g} mm arasında bir yükseklik girin.",
+        "resume.step1_summary": "{last}. katman, {layer}. katmandan devam",
+        "insert.step1_summary": "Parça {part:g} mm",
+        "insert.step2_summary": "{layer}. katmandan devam",
+        "step.checked": "Hepsi işaretli",
         "resume.next_layer": "Baskı {layer}. katmandan devam eder (toplam {total} katman, Z = {z:g} mm).",
         "resume.layer_range": "{first} ile {last} arasında bir tam sayı girin.",
         "resume.step2": "2. Yazıcı kapatıldı ya da yeniden başlatıldı mı?",
-        "resume.mode_retained": "Hayır, hep açık kaldı (Z konumu korundu)",
-        "resume.mode_manual": "Evet, kapatıldı ya da yeniden başlatıldı (Z konumu kayboldu)",
         "resume.help_retained": (
             "İş, yazıcının hâlâ bildiği Z konumunu kullanır. Bunu yalnızca yazıcı hiç kapanmadıysa ve Z eksenini "
             "kimse oynatmadıysa seçin. İş hiçbir zaman Z'yi home etmez ve tabla seviyelemesi yapmaz."
@@ -319,7 +355,6 @@ STRINGS: dict[str, dict[str, str]] = {
         "resume.err_retained": "Güvenlik kontrolü: yazıcının elektriğinin ve Z konumunun hiç kaybolmadığını onaylayın.",
         "resume.err_manual": "Güvenlik kontrolü: nozzle'ı son düzgün katmana hizalayacağınızı onaylayın.",
         "resume.err_temperature": "{field}: °C cinsinden bir tam sayı girin ya da boş bırakın.",
-        "resume.done_title": "Kurtarma G-code'u oluşturuldu",
         "resume.done": (
             "Kurtarma G-code'u oluşturuldu.\n\n"
             "Başlangıç katmanı: {layer}/{total}\n"
@@ -845,17 +880,30 @@ def load_language(path: Path | None = None) -> str:
     return _system_language()
 
 
-def save_language(language: str, path: Path | None = None) -> None:
+def load_setting(name: str, path: Path | None = None) -> object:
+    """A saved window setting (``None`` when it was never saved or the file is unreadable)."""
+    try:
+        data = json.loads((path or _settings_path()).read_text(encoding="utf-8"))
+        return data.get(name) if isinstance(data, dict) else None
+    except (OSError, ValueError):
+        return None
+
+
+def save_setting(name: str, value: object, path: Path | None = None) -> None:
     target = path or _settings_path()
     try:
         data = json.loads(target.read_text(encoding="utf-8")) if target.exists() else {}
         if not isinstance(data, dict):
             data = {}
-        data["language"] = language
+        data[name] = value
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text(json.dumps(data, indent=2), encoding="utf-8")
     except (OSError, ValueError):
         pass  # The choice still applies to this window; it is just not remembered.
+
+
+def save_language(language: str, path: Path | None = None) -> None:
+    save_setting("language", language, path)
 
 
 class Translator:

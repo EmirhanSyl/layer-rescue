@@ -127,43 +127,42 @@ Post-processing script'ler çalıştırılabilir dosya olduğu için Studio uyar
 
 ## Pencere
 
-Dilimlemeden sonra Layer Rescue küçük bir pencere açar. En üstte aldığı dosyayı (yazıcı, filament, katman sayısı) gösterir, altında da her durum için bir sekme vardır:
+Dilimlemeden sonra Layer Rescue penceresini açar. Solda, **Baskıya ne oldu?** başlığının altında her durum için bir kart vardır:
 
-- **Parça hâlâ plakada**: yarım kalan baskıya devam etmek için (aşağıda).
-- **Parça ayrıldı / bitmiş parçanın üstüne bas**: yerleştirme modu (daha aşağıda).
+- **Baskı durdu**: parça hâlâ plakada ve yazıcı açık kaldı. Baskıya devam edin (aşağıda).
+- **Elektrik kesildi**: parça hâlâ plakada ama yazıcı Z konumunu kaybetti. Nozzle'ı elle parçaya indirdikten sonra baskıya devam edin (aşağıda).
+- **Parça koptu**: parçayı basılan bir duvara oturtun ya da bitmiş bir parçanın üstüne basın (yerleştirme modu, daha aşağıda).
 
-<p align="center"><img src="images/readme/ui-resume.png" alt="Layer Rescue penceresi, devam sekmesi" width="560"></p>
+<p align="center"><img src="images/readme/ui-resume.png" alt="Layer Rescue penceresi: solda üç kart, sağda seçilen kartın adımları" width="720"></p>
 
-_Ekran görüntüleri İngilizce arayüzden; pencerenin sağ üstünden Türkçeye geçebilirsiniz._
+_Ekran görüntüleri İngilizce arayüzden; pencerenin sol altından Türkçeye geçebilirsiniz._
 
-Her sekme kısa, numaralı adımlardan oluşur. Devam sekmesinde baskının nerede durduğunu girer, yazıcının kapatılıp kapatılmadığını seçer ve Layer Rescue'nun kendi göremediği birkaç şeyi **Güvenlik kontrolleri** altında onaylarsınız. Gerekli her şey doldurulana kadar **G-code oluştur** düğmesi pasif kalır; sol alttaki satır neyin eksik olduğunu yazar. **G-code'u değiştirme** pencereyi dosyaya dokunmadan kapatır; normal baskılarda bunu kullanın.
+Seçilen kartın sayfasının en üstünde küçük bir çizim ne olacağını gösterir: amber katmanlar zaten basılmış olanlar, yeşil katmanlar Layer Rescue'nun basacakları. Çizim iki kez oynar; tekrar oynatmak için üstüne tıklayın. Altında birkaç numaralı adım vardır: baskının nerede durduğu (ya da parçanın ne kadar yüksek olduğu) ve Layer Rescue'nun kendi göremediği şeyler için **Güvenlik kontrolleri**. Adımlar sırayla açılır: bir adım tamamlanınca numarası onay işaretine dönüşür ve sıradaki adım açılır. Başlığına tıklayarak istediğiniz adımı istediğiniz zaman açıp kapatabilirsiniz; kapalı bir adım girdiğiniz değeri gösterir. Çoğu kişinin hiç dokunmadığı ayarlar **Seçenekler** / **Gelişmiş ayarlar** ve **Deneysel özellikler** altında katlanmış durur.
 
-İş henüz test edilmemiş bir yazıcı ya da filament kurulumu içinse, sekmelerin üstünde ek olarak bir **Test edilmemiş kurulum** kutusu çıkar. Sebebini açıklar ve devam edebilmeniz için riskleri kabul etmenizi ister.
+Gerekli her şey doldurulana kadar **G-code oluştur** düğmesi pasif kalır; alttaki satır neyin eksik olduğunu yazar. **G-code'u değiştirme** pencereyi dosyaya dokunmadan kapatır; normal baskılarda bunu kullanın.
 
-Pencere küçük ekranlara da sığar: başlık ve düğmeler yerinde kalır, aradaki bölüm ekrandan uzunsa kaydırılır (fare tekerleği ya da kaydırma çubuğu). Pencere ayrıca yeniden boyutlandırılabilir.
+İş henüz test edilmemiş bir yazıcı ya da filament kurulumu içinse, en üstte bir **Test edilmemiş kurulum** kutusu çıkar. Sebebini açıklar ve devam edebilmeniz için riskleri kabul etmenizi ister.
 
-**Dil:** sağ üstteki **English / Türkçe** düğmelerini kullanın. Değişiklik hemen uygulanır ve bir sonraki açılış için hatırlanır. İlk açılışta sistem dilinize göre seçilir. (Komut satırı çıktısı İngilizce kalır.)
+Pencere küçük ekranlara da sığar: kenar çubuğu ve düğmeler yerinde kalır, adımlar ekrandan uzunsa kaydırılır. Pencere yeniden boyutlandırılabilir ve Windows ile macOS'un ekran ölçeğine uyar.
+
+**Dil ve tema:** sol altta **English / Türkçe** ile **Otomatik / Açık / Koyu** arasında geçiş yapın (Otomatik sistemi izler). İkisi de hemen uygulanır ve hatırlanır. İlk açılışta dil, sistem dilinize göre seçilir. (Komut satırı çıktısı İngilizce kalır.)
 
 ## Baskıya devam etme
 
 ![Filament sıkışmasından sonra devam ettirilen uçak parçası](images/readme/plane.gif)
 
 1. Gerçekten filament basılmış son katmanı bulun (aşağıdaki [Katmanı seçmek](#katmanı-seçmek) bölümüne bakın).
-2. Orijinal projeyi hiçbir şeyini değiştirmeden yeniden dilimleyin. Layer Rescue penceresi **Parça hâlâ plakada** sekmesiyle açılır.
-3. **Adım 1 – Baskı nerede durdu?** Düzgün basılan son katmanı girin. Pencere, baskının hangi katmandan ve hangi Z yüksekliğinden devam edeceğini gösterir.
-4. **Adım 2 – Yazıcı kapatıldı ya da yeniden başlatıldı mı?**
-   - **Hayır, hep açık kaldı** (`retained`): yazıcı Z konumunu korudu. Başka bir şey yapmanız gerekmez.
-   - **Evet, kapatıldı ya da yeniden başlatıldı** (`manual`): yazıcı kapatılıp açıldıysa Z home edilmemiştir. Tablayı yeniden ısıtın, nozzle'ı temizleyin, son düzgün katmanın düz bir bölgesinin üstüne getirin ve yüzeye hafifçe değene kadar indirin. Yazıcı Z'yi home etmeyi teklif ederse kabul etmeyin. Parçayı ve plakayı oynatmayın. ([Test 2](docs/tests/02-power-loss-dragon.tr.md) bunu adım adım gösteriyor.)
-5. **Adım 3 – Güvenlik kontrolleri.** Layer Rescue yazıcıyı göremediği için varsaydığı şeyleri sizin onaylamanız gerekir. Her kutuyu yalnızca doğruysa işaretleyin:
+2. Orijinal projeyi hiçbir şeyini değiştirmeden yeniden dilimleyin. Layer Rescue penceresi **Baskı durdu** kartıyla açılır. Olana uyan kartı seçin:
+   - **Baskı durdu** (`retained`): yazıcı açık kaldı ve Z konumunu korudu. Başka bir şey yapmanız gerekmez.
+   - **Elektrik kesildi** (`manual`): yazıcı kapatılıp açıldıysa Z home edilmemiştir. Tablayı yeniden ısıtın, nozzle'ı temizleyin, son düzgün katmanın düz bir bölgesinin üstüne getirin ve yüzeye hafifçe değene kadar indirin. Yazıcı Z'yi home etmeyi teklif ederse kabul etmeyin. Parçayı ve plakayı oynatmayın. ([Test 2](docs/tests/02-power-loss-dragon.tr.md) bunu adım adım gösteriyor.)
+3. **Adım 1 – Baskı nerede durdu?** Düzgün basılan son katmanı girin ya da parçanın yüksekliğini kumpasla ölçüp girin (en yakın katman kullanılır). Pencere, baskının hangi katmandan ve hangi Z yüksekliğinden devam edeceğini gösterir.
+4. **Adım 2 – Güvenlik kontrolleri.** Layer Rescue yazıcıyı göremediği için varsaydığı şeyleri sizin onaylamanız gerekir. Her kutuyu yalnızca doğruysa işaretleyin:
    - parça hâlâ aynı plakaya sağlam yapışık ve plaka yerinden oynatılmadı;
-   - _Hayır, hep açık kaldı_ seçiliyse: yazıcının elektriği hiç kesilmedi ve Z ekseni oynatılmadı;
-   - _Evet, yeniden başlatıldı_ seçiliyse: işi başlatmadan önce temiz nozzle'ı son düzgün katmana indireceksiniz.
-
-   Yalnızca 2. adımdaki seçime ait kontrol gösterilir.
-
-6. **Seçenekler** genelde olduğu gibi kalabilir: nozzle ve tabla sıcaklığı (boş = dosyadaki değer) ve devam etmeden önce X/Y'yi home etmek (yeniden başlatmadan sonra her zaman açık; Z hiçbir zaman home edilmez).
-7. **Deneysel özellikler** (katlanmış, varsayılan olarak kapalı): **Yeniden ısıtma geçişi** (CLI `--reheat`). Devam dizisinden sonra, sıradaki katman basılmadan önce sıcak nozzle o katmanı filament akıtmadan, son düzgün katmanın 0,2 mm üstünden (`--reheat-gap`, 0,05–1 mm), 20 mm/s hızla (`--reheat-speed`), bir kez (`--reheat-passes`) tarar; `--reheat-temp` verilmezse baskı sıcaklığında. Amaç eski yüzeyi ısıtıp dikişi güçlendirmek. İki modda da çalışır: yeniden başlatmadan sonra Z hareketleri, işin geri kalanı gibi hizalanmış nozzle'a göredir. Nozzle hiçbir zaman son düzgün katman + 0,05 mm'nin altına inmez, geçiş sırasında filament geri çekilir. Henüz gerçek bir baskıda denenmedi.
-8. **G-code oluştur**'a basın, Bambu Studio önizlemesini kontrol edin ve işi gönderin.
+   - _Baskı durdu_ seçiliyse: yazıcının elektriği hiç kesilmedi ve Z ekseni oynatılmadı;
+   - _Elektrik kesildi_ seçiliyse: işi başlatmadan önce temiz nozzle'ı son düzgün katmana indireceksiniz.
+5. **Seçenekler** genelde olduğu gibi kalabilir: nozzle ve tabla sıcaklığı (boş = dosyadaki değer) ve devam etmeden önce X/Y'yi home etmek (yeniden başlatmadan sonra her zaman açık; Z hiçbir zaman home edilmez).
+6. **Deneysel özellikler** (katlanmış, varsayılan olarak kapalı): **Yeniden ısıtma geçişi** (CLI `--reheat`). Devam dizisinden sonra, sıradaki katman basılmadan önce sıcak nozzle o katmanı filament akıtmadan, son düzgün katmanın 0,2 mm üstünden (`--reheat-gap`, 0,05–1 mm), 20 mm/s hızla (`--reheat-speed`), bir kez (`--reheat-passes`) tarar; `--reheat-temp` verilmezse baskı sıcaklığında. Amaç eski yüzeyi ısıtıp dikişi güçlendirmek. İki modda da çalışır: yeniden başlatmadan sonra Z hareketleri, işin geri kalanı gibi hizalanmış nozzle'a göredir. Nozzle hiçbir zaman son düzgün katman + 0,05 mm'nin altına inmez, geçiş sırasında filament geri çekilir. Henüz gerçek bir baskıda denenmedi.
+7. **G-code oluştur**'a basın, Bambu Studio önizlemesini kontrol edin ve işi gönderin.
 
 ### Katmanı seçmek
 
@@ -187,15 +186,15 @@ Kalabalık bir plakada bazı parçalar koptuysa onları alın, Bambu Studio'da s
 Yarıda plakadan kopmuş, sonradan kırılmış ya da üstüne ekleme yapılacak bitmiş bir parça için. Tam modeli (eski parça + üstüne gelecek kısım, tek obje) dilimlersiniz. Layer Rescue parçanın üst yüzeyinin altındaki katmanları, parçanın dış hattını takip eden bir tutucu duvarla değiştirir, duraklar ve duvara yerleştirdiğiniz parçanın üstüne kalanını basar.
 
 1. Parçayı hazırlayın: brim'i ve ipleri temizleyin. Kırık bir parçayı önce düz kesin ya da zımparalayın. Yüksekliğini kumpasla ölçün.
-2. Tam modeli dilimleyin. Layer Rescue penceresinde **Parça ayrıldı / bitmiş parçanın üstüne bas** sekmesini açın.
+2. Tam modeli dilimleyin. Layer Rescue penceresinde soldaki **Parça koptu** kartına tıklayın.
 3. **Parça yüksekliğini** (ya da parçanın içerdiği son katmanı) ve isterseniz **duvar yüksekliğini** girin (boş = önerilen: parçanın yarısı, 3–15 mm, her zaman tepeden en az 1 mm aşağıda). **Önizle**'ye basınca duvarı üstten görürsünüz; **Sonuç** bölümünde de baskının nereden devam edeceği ve varsa uyarılar yazar.
 4. **Güvenlik kontrolü** kutusunu işaretleyin (yazıcının başında kalacak, duraklayınca parçayı yerleştirecek ve ilk katmanları izleyeceksiniz), **G-code oluştur**'a basın ve işi gönderin. Yazıcı boş tablayı seviyeler, duvarı basar, parça yüksekliğinin 15 mm üstüne çıkar, arkaya park eder ve duraklar (`M400 U1`).
 5. Plakayı çıkarmadan ve oynatmadan parçayı duvara Bambu Studio'daki yönüyle (modelin önü plakanın önüne gelecek şekilde) bastırın, sonra yazıcıda **Resume**'a basın.
 6. Yazıcı yeniden ısınır, purge yapar, parçanın üstüne gelir ve kalanını basar. Parçaya değen ilk 2 katman, iyi yapışması için 10 °C daha sıcak, yarı hızda ve parça fanı kapalı basılır.
 
-<p align="center"><img src="images/readme/ui-insert.png" alt="Önizle'ye basıldıktan sonra yerleştirme sekmesi" width="560"></p>
+<p align="center"><img src="images/readme/ui-insert.png" alt="Parça koptu, Önizle'ye basıldıktan sonra" width="720"></p>
 
-**Önizle**'ye bastıktan sonra sağ tarafta plaka üstten görünür: parça (bej), duvarın tabanı ve ağzı (gri ve kırmızı), parçanın üstüne basılacak ilk katman (mavi) ve yeniden basılacak destekler (yeşil). Soldaki **Sonuç** bölümü hangi katmanların duvar olacağını, duraklamadan sonra baskının nereden devam edeceğini ve parçanın üstündeki ilk katmanın ne kalınlıkta olacağını yazar; ardından varsa uyarılar gelir. Adımların altında iki katlanmış bölüm vardır: **Gelişmiş ayarlar** ve **Deneysel özellikler**; açmak için başlığa tıklayın.
+**Önizle**'ye bastıktan sonra **Sonuç**'un yanındaki üstten görünümde plaka görünür: parça (amber), duvarın tabanı ve ağzı (gri ve koyu), parçanın üstüne basılacak ilk katman (yeşil) ve yeniden basılacak destekler (mor). **Sonuç** bölümü hangi katmanların duvar olacağını, duraklamadan sonra baskının nereden devam edeceğini ve parçanın üstündeki ilk katmanın ne kalınlıkta olacağını yazar; ardından varsa uyarılar gelir. Adımların altında iki katlanmış bölüm vardır: **Gelişmiş ayarlar** ve **Deneysel özellikler**; açmak için başlığa tıklayın.
 
 Duvar nasıl oluşur: parçanın kendi dış hattı, dilimlenmiş katmanlardan duvar yüksekliğine kadar okunur. Parça yukarıdan indirildiği için her yükseklikteki açıklık, altındaki bütün kesitlerin geçmesine izin verir. Varsayılan olarak 0,25 mm boşluk, 4 çizgi kalınlığında duvar, 5 mm brim ve ağızda küçük bir giriş pahı vardır. Hepsi **Gelişmiş ayarlar** bölümünde (adımların altındaki başlığa tıklayın) değiştirilebilir.
 
