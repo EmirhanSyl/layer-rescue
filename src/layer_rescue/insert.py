@@ -36,7 +36,8 @@ from .gcode import (
 )
 from .machine_state import _scan_machine_state, _validate_supported_source
 from .printers import extruder_suffix, park_position
-from .resume import ResumeOptions, ZReferenceMode, _resume_preamble
+from .reheat import REHEAT_END, REHEAT_START, check_reheat_options, path_length_mm, reheat_block, reheat_paths
+from .resume import ResumeOptions, ZReferenceMode, _resume_preamble, _retraction_length
 from .toolpath import LayerToolpaths, read_toolpaths
 from .supports import SupportPlan, emit_support_layer, plan_supports
 from .wall import EmitState, WallOptions, WallPlan, emit_wall_layer, footprint, plan_wall, section
@@ -54,6 +55,8 @@ OVERHANG_WARN_AREA_MM2 = 1.0
 PAUSE_BLOCK_START = "; LAYER_RESCUE_INSERT_PAUSE_START"
 PAUSE_BLOCK_END = "; LAYER_RESCUE_INSERT_PAUSE_END"
 INSERT_MARKER = "; LAYER_RESCUE_INSERT_MODE"
+NO_WALL_MARKER = "; LAYER_RESCUE_NO_WALL (experimental): no holding wall, the part is placed by hand"
+WALL_MARKER = "; LAYER_RESCUE_WALL"
 
 
 @dataclass(frozen=True)
@@ -77,6 +80,13 @@ class InsertOptions:
     bed_temperature: int | None = None
     reprint_supports: bool = True  # print the supports below the part height before the pause
     allow_untested: bool = False  # accept the risks of a printer / filament setup that has not been tested
+    # Experimental features (off by default):
+    holding_wall: bool = True  # False: no wall; the operator places the part by hand at its sliced position
+    reheat_pass: bool = False  # trace the first repair layer without extruding before printing it
+    reheat_gap_mm: float = 0.20  # nozzle above the part top during the reheat pass
+    reheat_speed_mm_s: float = 20.0
+    reheat_passes: int = 1
+    reheat_temperature: int | None = None  # nozzle °C during the pass; None = the adhesion-layer temperature
 
 
 @dataclass(frozen=True)
@@ -103,6 +113,10 @@ class InsertReport:
     output_sha256: str
     backup_path: Path | None = None
     warnings: tuple[str, ...] = field(default_factory=tuple)
+    holding_wall: bool = True
+    reheat_hover_z: float | None = None  # None: no reheat pass
+    reheat_path_mm: float = 0.0
+    reheat_seconds: float = 0.0
 
 
 @dataclass
@@ -126,6 +140,13 @@ class InsertPlan:
     warnings: list[str]
     supports: SupportPlan | None = None
     printed_layers: list[LayerInfo] = field(default_factory=list)  # layers printed before the pause
+    reheat_paths: list[list[tuple[float, float]]] = field(default_factory=list)  # experimental reheat pass
+    reheat_path_mm: float = 0.0
+
+    @property
+    def reheat_seconds(self) -> float:
+        o = self.options
+        return self.reheat_path_mm * o.reheat_passes / o.reheat_speed_mm_s if o.reheat_pass else 0.0
 
 
 def recommended_wall_height(part_height_mm: float) -> float:
@@ -162,6 +183,10 @@ def _check_options(options: InsertOptions, wall_height: float) -> None:
         raise ResumeError("The adhesion temperature boost must be between 0 and 30°C.")
     if not 20 <= options.adhesion_speed_percent <= 100:
         raise ResumeError("The adhesion speed must be between 20 and 100 %.")
+    if options.reheat_pass:
+        check_reheat_options(
+            options.reheat_gap_mm, options.reheat_speed_mm_s, options.reheat_passes, options.reheat_temperature
+        )
 
 
 def _nearest_layer(analysis: Analysis, z: float) -> LayerInfo:
@@ -266,7 +291,13 @@ def plan_insert(text_or_analysis: str | Analysis, options: InsertOptions) -> Ins
     if options.part_height_mm < RECOMMENDED_PART_HEIGHT_MM:
         warnings.append("The part is shorter than 5 mm; the wall can only grip a small area.")
 
-    _check_bed(analysis, wall)
+    if options.holding_wall:
+        _check_bed(analysis, wall)
+    else:
+        warnings.append(
+            "Experimental: no holding wall. Place the part by hand exactly where it was sliced and fix it to the "
+            "plate; nothing guides its position."
+        )
 
     top_section = section(toolpaths[part_layer.number])
     addition_section = section(toolpaths[resume_layer.number])
@@ -278,7 +309,7 @@ def plan_insert(text_or_analysis: str | Analysis, options: InsertOptions) -> Ins
         )
 
     symmetric = geo.symmetric_under_rotation(wall.silhouette)
-    if symmetric:
+    if symmetric and options.holding_wall:  # without a wall the operator places it by hand anyway
         warnings.append(
             "The part looks the same when turned, so the wall cannot fix its orientation. Seat it facing the "
             "same way as in Bambu Studio (the plate's front edge is the front)."
@@ -290,6 +321,18 @@ def plan_insert(text_or_analysis: str | Analysis, options: InsertOptions) -> Ins
         raise ResumeError("The part is too tall to park the toolhead safely above it.")
     center_x = (min_x + max_x) / 2
     park_xy = park_position(analysis, center_x)
+
+    paths: list[list[tuple[float, float]]] = []
+    paths_mm = 0.0
+    if options.reheat_pass:
+        paths = reheat_paths(toolpaths[resume_layer.number])
+        if not paths:
+            raise ResumeError("The first layer on top has no part toolpaths to trace for the reheat pass.")
+        paths_mm = path_length_mm(paths)
+        warnings.append(
+            f"Experimental: reheat pass of about {paths_mm * options.reheat_passes / options.reheat_speed_mm_s:.0f} s "
+            f"over the part, {options.reheat_gap_mm:g} mm above it, before the first layer on top."
+        )
 
     return InsertPlan(
         analysis=analysis,
@@ -309,6 +352,8 @@ def plan_insert(text_or_analysis: str | Analysis, options: InsertOptions) -> Ins
         warnings=warnings,
         supports=supports,
         printed_layers=printed_layers,
+        reheat_paths=paths,
+        reheat_path_mm=paths_mm,
     )
 
 
@@ -522,20 +567,23 @@ def build_insert_gcode(
     boost_nozzle = min(nozzle + (options.adhesion_temp_boost if options.adhesion_layers else 0), max(max_nozzle, nozzle))
 
     output: list[str] = list(lines[: plan.wall_layers[0].change_line])
+    what = f"holding wall to {_format_number(plan.wall.top_z)} mm" if options.holding_wall else "no holding wall"
     output.extend(
         [
             INSERT_MARKER,
-            f"; Generated by Layer Rescue {__version__}: holding wall to {_format_number(plan.wall.top_z)} mm, "
+            f"; Generated by Layer Rescue {__version__}: {what}, "
             f"pause, then print from layer {plan.resume_layer.number} on a {_format_number(options.part_height_mm)} mm part",
         ]
     )
+    if not options.holding_wall:
+        output.append(NO_WALL_MARKER)
 
     emit = EmitState(retracted=_pending_retraction(analysis, plan.wall_layers[0].change_line))
     walls = {wall_layer.layer.number: wall_layer for wall_layer in plan.wall.layers}
     support_layers = 0
     for layer in plan.printed_layers:
         output.extend(_layer_frame(analysis, layer))
-        if layer.number in walls:
+        if options.holding_wall and layer.number in walls:
             output.extend(emit_wall_layer(walls[layer.number], flow, emit))
         if plan.supports and plan.supports.layers[layer.number].pieces:
             output.extend(emit_support_layer(plan.supports.layers[layer.number], flow, emit))
@@ -552,8 +600,14 @@ def build_insert_gcode(
     output.extend(
         [
             PAUSE_BLOCK_START,
-            f"; Wall and supports are done. Park above {_format_number(plan.park_z)} mm and wait for the operator to seat "
-            f"the part (height {_format_number(options.part_height_mm)} mm), then press Resume.",
+            (
+                f"; Wall and supports are done. Park above {_format_number(plan.park_z)} mm and wait for the operator "
+                f"to seat the part (height {_format_number(options.part_height_mm)} mm), then press Resume."
+                if options.holding_wall
+                else f"; No holding wall (experimental). Park above {_format_number(plan.park_z)} mm and wait for the "
+                f"operator to place the part (height {_format_number(options.part_height_mm)} mm) by hand, then "
+                "press Resume."
+            ),
             "M400",
             "G90",
             "M83",
@@ -585,6 +639,10 @@ def build_insert_gcode(
         ),
     )
     output.extend(preamble)
+    hover_z: float | None = None
+    if options.reheat_pass:
+        block, hover_z = reheat_block(plan, preamble, _retraction_length(analysis), extruder)
+        output.extend(block)
     speed_restore = state.speed_factor_command or "M220 S100"
     fallback_fan = next((cmd for cmd in state.fan_commands if _is_part_fan(cmd)), None)
     if options.adhesion_layers:
@@ -625,6 +683,10 @@ def build_insert_gcode(
         source_sha256=analysis.source_sha256,
         output_sha256=hashlib.sha256(text_out.encode("utf-8")).hexdigest(),
         warnings=tuple(plan.warnings),
+        holding_wall=options.holding_wall,
+        reheat_hover_z=hover_z,
+        reheat_path_mm=round(plan.reheat_path_mm, 1) if options.reheat_pass else 0.0,
+        reheat_seconds=round(plan.reheat_seconds, 1),
     )
     return text_out, report
 
@@ -654,6 +716,17 @@ def validate_insert_output(text: str, plan: InsertPlan) -> None:
     pause_start, _, preamble_end = starts[0], ends[0], resume_end[0]
 
     first_wall = next(i for i, line in enumerate(out_lines) if line.strip() == INSERT_MARKER)
+    has_wall = any(line.strip().startswith(WALL_MARKER) for line in out_lines)
+    if has_wall != options.holding_wall:
+        raise ResumeError("Internal validation failed: the holding wall does not match the chosen options.")
+    reheat_starts = [i for i, line in enumerate(out_lines) if line.strip() == REHEAT_START]
+    reheat_ends = [i for i, line in enumerate(out_lines) if line.strip() == REHEAT_END]
+    if options.reheat_pass:
+        if len(reheat_starts) != 1 or len(reheat_ends) != 1 or not preamble_end < reheat_starts[0] < reheat_ends[0]:
+            raise ResumeError("Internal validation failed: expected one reheat pass right after the resume block.")
+    elif reheat_starts or reheat_ends:
+        raise ResumeError("Internal validation failed: a reheat pass that was not asked for.")
+    reheat_span = (reheat_starts[0], reheat_ends[0]) if reheat_starts else None
     safe_z = options.part_height_mm + 1.0
     clearance_rings = {
         wall_layer.layer.z: geo.offset(
@@ -718,6 +791,8 @@ def validate_insert_output(text: str, plan: InsertPlan) -> None:
             y = py if py is not None else y
 
         prints = moves_xy and pe is not None and pe > 0
+        if reheat_span and reheat_span[0] < index < reheat_span[1] and prints:
+            raise ResumeError(f"Internal validation failed: extrusion during the reheat pass (line {index + 1}).")
         if first_wall < index < pause_start and prints and section_kind is None:
             raise ResumeError(f"Internal validation failed: a source toolpath is left before the pause (line {index + 1}).")
         if first_wall < index < pause_start and prints and section_kind == "support":

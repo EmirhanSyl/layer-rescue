@@ -138,6 +138,8 @@ Each tab is a short list of numbered steps. On the resume tab you enter where th
 
 If the job is for a printer or filament setup that hasn't been tested yet, an extra **Untested setup** box appears above the tabs. It explains why and asks you to accept the risks before you can continue.
 
+The window fits on small screens: the header and the buttons stay in place and the part in between scrolls (mouse wheel or scroll bar) when it is taller than the screen. The window can also be resized.
+
 **Language:** use the **English / Türkçe** buttons at the top right. The change applies immediately and is remembered for next time. On first start the language follows your system language. (Command-line output stays in English.)
 
 ## Resume a print
@@ -158,7 +160,8 @@ If the job is for a printer or filament setup that hasn't been tested yet, an ex
    Only the check for the selected answer in step 2 is shown.
 
 6. **Options** can usually stay as they are: nozzle and bed temperature (blank = taken from the file) and homing X/Y before continuing (always on after a restart; Z is never homed).
-7. Click **Create G-code**, check the preview in Bambu Studio and send the job.
+7. **Experimental features** (folded, off by default): **Reheat pass** (CLI `--reheat`). After the resume sequence, and before the next layer is printed, the hot nozzle traces that layer once without extruding, 0.2 mm above the last good layer (`--reheat-gap`, 0.05–1 mm), at 20 mm/s (`--reheat-speed`), once (`--reheat-passes`), at the print temperature unless `--reheat-temp` is given. The aim is a warmer old surface and a stronger seam. It works in both modes: after a restart, its Z moves are relative to the aligned nozzle like the rest of the job. The nozzle never goes below the last good layer + 0.05 mm, and the filament is retracted during the pass. Not yet tried on a real print.
+8. Click **Create G-code**, check the preview in Bambu Studio and send the job.
 
 ### Picking the layer
 
@@ -190,9 +193,9 @@ For a part that came off the plate halfway, a finished part that broke, or a fin
 
 <p align="center"><img src="https://raw.githubusercontent.com/EmirhanSyl/layer-rescue/main/images/readme/ui-insert.png" alt="The insert tab after pressing Preview" width="400"></p>
 
-After **Preview**, the right side shows the plate from above: the part (beige), the bottom and the rim of the wall (grey and red), the first layer that will be printed on the part (blue) and the supports that will be reprinted (green). **Result** on the left says which layers become the wall, where printing continues after the pause and how thick the first layer on the part will be, followed by any warnings. The advanced settings open under the preview.
+After **Preview**, the right side shows the plate from above: the part (beige), the bottom and the rim of the wall (grey and red), the first layer that will be printed on the part (blue) and the supports that will be reprinted (green). **Result** on the left says which layers become the wall, where printing continues after the pause and how thick the first layer on the part will be, followed by any warnings. Under the steps there are two folded sections, **Advanced settings** and **Experimental features**; click a title to open it.
 
-How the wall is made: the part's own outline is read from the sliced layers below the wall height. The opening at every height lets all sections below it pass (the part is lowered from above), with 0.25 mm clearance, a 4-line wall, a 5 mm brim and a small lead-in chamfer at the rim. All of these can be changed after ticking **Show advanced settings** (next to the preview).
+How the wall is made: the part's own outline is read from the sliced layers below the wall height. The opening at every height lets all sections below it pass (the part is lowered from above), with 0.25 mm clearance, a 4-line wall, a 5 mm brim and a small lead-in chamfer at the rim. All of these can be changed in **Advanced settings** (click the title under the steps).
 
 **Supports.** If the model has supports that reach above the part height (for example tree supports inside a hollow part, or next to it), their lower part is printed again before the pause, wherever the part will not hit them when it is lowered in. Remove the old supports from the part before seating it. Supports that only held the part's own overhangs are left out. Turn this off with **Reprint the supports below the part height** in the advanced settings (CLI `--no-reprint-supports`). [Test 4](https://github.com/EmirhanSyl/layer-rescue/blob/main/docs/tests/04-broken-rocket-drone.md) shows this on a hollow rocket body.
 
@@ -201,6 +204,11 @@ How the wall is made: the part's own outline is read from the sliced layers belo
 - If the part sits loose in the wall, lower the clearance. On a round part, the default 0.25 mm was clearly too loose and 0.12 mm gave a much tighter fit.
 - **Parts that widen upwards** (like a boat hull) touch the wall only on sloped surfaces, so the nozzle can drag them up and out. Fix such a part with a few dots of hot glue over the seam, squeezed onto the wall rather than the part: it comes off the part cleanly afterwards. ([Test 3](https://github.com/EmirhanSyl/layer-rescue/blob/main/docs/tests/03-detached-benchy.md))
 - Seat the part level all around. Even 0.2 mm higher on one side shows up as layer lines on the other.
+
+**Experimental features** (off by default, new and still being tested on real prints; the section title shows how many are on):
+
+- **No holding wall** (CLI `--no-wall`): the printer skips the wall, prints only the reprinted supports (if any) and pauses on an empty plate. You place the part by hand exactly where Bambu Studio shows it and tape it down; nothing guides its position. Useful when the wall does not fit on the bed, and for comparing hand placement with the wall.
+- **Reheat pass** (CLI `--reheat`): after the resume sequence, the hot nozzle traces the first layer on top once without extruding, 0.2 mm above the part (`--reheat-gap`, 0.05–1 mm), at 20 mm/s (`--reheat-speed`), once (`--reheat-passes`), at the adhesion-layer temperature unless `--reheat-temp` is given. The aim is a warmer old surface and a stronger bond. The nozzle never goes below the part top + gap, and the filament is retracted during the pass.
 
 Limits: one object on the plate, no prime tower, part at least 3 mm tall and 5 mm wide. The Z of everything printed on top is shifted by the difference between the measured height and the nearest model layer, so the first layer sits on the real part. If the top surface is a cut (infill exposed), add a height range modifier in Bambu Studio from the part height to about 0.6 mm above it with 100 % sparse infill density, so the first layers are solid.
 
@@ -258,6 +266,7 @@ Layer Rescue gets better with every real print it sees. If something didn't work
 layer-rescue --analyze print.gcode
 layer-rescue --last-layer 461 --z-mode retained print.gcode
 layer-rescue --last-layer 461 --z-mode manual --confirm-manual-z-aligned print.gcode
+layer-rescue --last-layer 461 --z-mode retained --reheat print.gcode   # experimental reheat pass
 ```
 
 Insert mode:
@@ -267,7 +276,7 @@ layer-rescue --part-height 23.4 --wall-height 10 --confirm-attended print.gcode
 layer-rescue --part-layer 117 --confirm-attended --preview-svg wall.svg print.gcode
 ```
 
-Insert options: `--clearance`, `--wall-lines`, `--brim`, `--no-chamfer`, `--z-fine`, `--standby-temp`, `--adhesion-layers`, `--no-reprint-supports`.
+Insert options: `--clearance`, `--wall-lines`, `--brim`, `--no-chamfer`, `--z-fine`, `--standby-temp`, `--adhesion-layers`, `--no-reprint-supports`. Experimental: `--no-wall` (insert mode only), `--reheat` (resume and insert mode, with `--reheat-gap`, `--reheat-speed`, `--reheat-passes`, `--reheat-temp`).
 
 `--allow-untested` accepts the risks of an untested printer or multi-filament job. `--nozzle-temp` and `--bed-temp` override the detected temperatures. Run `layer-rescue --help` for all options.
 

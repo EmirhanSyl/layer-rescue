@@ -140,6 +140,8 @@ Her sekme kısa, numaralı adımlardan oluşur. Devam sekmesinde baskının nere
 
 İş henüz test edilmemiş bir yazıcı ya da filament kurulumu içinse, sekmelerin üstünde ek olarak bir **Test edilmemiş kurulum** kutusu çıkar. Sebebini açıklar ve devam edebilmeniz için riskleri kabul etmenizi ister.
 
+Pencere küçük ekranlara da sığar: başlık ve düğmeler yerinde kalır, aradaki bölüm ekrandan uzunsa kaydırılır (fare tekerleği ya da kaydırma çubuğu). Pencere ayrıca yeniden boyutlandırılabilir.
+
 **Dil:** sağ üstteki **English / Türkçe** düğmelerini kullanın. Değişiklik hemen uygulanır ve bir sonraki açılış için hatırlanır. İlk açılışta sistem dilinize göre seçilir. (Komut satırı çıktısı İngilizce kalır.)
 
 ## Baskıya devam etme
@@ -160,7 +162,8 @@ Her sekme kısa, numaralı adımlardan oluşur. Devam sekmesinde baskının nere
    Yalnızca 2. adımdaki seçime ait kontrol gösterilir.
 
 6. **Seçenekler** genelde olduğu gibi kalabilir: nozzle ve tabla sıcaklığı (boş = dosyadaki değer) ve devam etmeden önce X/Y'yi home etmek (yeniden başlatmadan sonra her zaman açık; Z hiçbir zaman home edilmez).
-7. **G-code oluştur**'a basın, Bambu Studio önizlemesini kontrol edin ve işi gönderin.
+7. **Deneysel özellikler** (katlanmış, varsayılan olarak kapalı): **Yeniden ısıtma geçişi** (CLI `--reheat`). Devam dizisinden sonra, sıradaki katman basılmadan önce sıcak nozzle o katmanı filament akıtmadan, son düzgün katmanın 0,2 mm üstünden (`--reheat-gap`, 0,05–1 mm), 20 mm/s hızla (`--reheat-speed`), bir kez (`--reheat-passes`) tarar; `--reheat-temp` verilmezse baskı sıcaklığında. Amaç eski yüzeyi ısıtıp dikişi güçlendirmek. İki modda da çalışır: yeniden başlatmadan sonra Z hareketleri, işin geri kalanı gibi hizalanmış nozzle'a göredir. Nozzle hiçbir zaman son düzgün katman + 0,05 mm'nin altına inmez, geçiş sırasında filament geri çekilir. Henüz gerçek bir baskıda denenmedi.
+8. **G-code oluştur**'a basın, Bambu Studio önizlemesini kontrol edin ve işi gönderin.
 
 ### Katmanı seçmek
 
@@ -192,9 +195,9 @@ Yarıda plakadan kopmuş, sonradan kırılmış ya da üstüne ekleme yapılacak
 
 <p align="center"><img src="images/readme/ui-insert.png" alt="Önizle'ye basıldıktan sonra yerleştirme sekmesi" width="560"></p>
 
-**Önizle**'ye bastıktan sonra sağ tarafta plaka üstten görünür: parça (bej), duvarın tabanı ve ağzı (gri ve kırmızı), parçanın üstüne basılacak ilk katman (mavi) ve yeniden basılacak destekler (yeşil). Soldaki **Sonuç** bölümü hangi katmanların duvar olacağını, duraklamadan sonra baskının nereden devam edeceğini ve parçanın üstündeki ilk katmanın ne kalınlıkta olacağını yazar; ardından varsa uyarılar gelir. Gelişmiş ayarlar önizlemenin altında açılır.
+**Önizle**'ye bastıktan sonra sağ tarafta plaka üstten görünür: parça (bej), duvarın tabanı ve ağzı (gri ve kırmızı), parçanın üstüne basılacak ilk katman (mavi) ve yeniden basılacak destekler (yeşil). Soldaki **Sonuç** bölümü hangi katmanların duvar olacağını, duraklamadan sonra baskının nereden devam edeceğini ve parçanın üstündeki ilk katmanın ne kalınlıkta olacağını yazar; ardından varsa uyarılar gelir. Adımların altında iki katlanmış bölüm vardır: **Gelişmiş ayarlar** ve **Deneysel özellikler**; açmak için başlığa tıklayın.
 
-Duvar nasıl oluşur: parçanın kendi dış hattı, dilimlenmiş katmanlardan duvar yüksekliğine kadar okunur. Parça yukarıdan indirildiği için her yükseklikteki açıklık, altındaki bütün kesitlerin geçmesine izin verir. Varsayılan olarak 0,25 mm boşluk, 4 çizgi kalınlığında duvar, 5 mm brim ve ağızda küçük bir giriş pahı vardır. Hepsi **Gelişmiş ayarları göster** işaretlendiğinde (önizlemenin yanında) değiştirilebilir.
+Duvar nasıl oluşur: parçanın kendi dış hattı, dilimlenmiş katmanlardan duvar yüksekliğine kadar okunur. Parça yukarıdan indirildiği için her yükseklikteki açıklık, altındaki bütün kesitlerin geçmesine izin verir. Varsayılan olarak 0,25 mm boşluk, 4 çizgi kalınlığında duvar, 5 mm brim ve ağızda küçük bir giriş pahı vardır. Hepsi **Gelişmiş ayarlar** bölümünde (adımların altındaki başlığa tıklayın) değiştirilebilir.
 
 **Destekler.** Modelde parça yüksekliğinin üstüne uzanan destekler varsa (örneğin içi boş bir parçanın içindeki ya da yanındaki ağaç destekler), bunların alt kısmı, parça indirilirken çarpmayacağı her yerde duraklamadan önce yeniden basılır. Parçayı yerleştirmeden önce üzerindeki eski destekleri temizleyin. Yalnızca parçanın kendi çıkıntılarını taşıyan destekler basılmaz. Bunu gelişmiş ayarlardaki **Parça yüksekliğinin altındaki destekleri yeniden bas** ile kapatabilirsiniz (CLI `--no-reprint-supports`). [Test 4](docs/tests/04-broken-rocket-drone.tr.md) bunu içi boş bir roket gövdesinde gösteriyor.
 
@@ -203,6 +206,11 @@ Duvar nasıl oluşur: parçanın kendi dış hattı, dilimlenmiş katmanlardan d
 - Parça duvarın içinde boşta kalıyorsa boşluğu küçültün. Yuvarlak bir parçada varsayılan 0,25 mm açıkça fazla gevşek kalmıştı, 0,12 mm ise çok daha sıkı oturdu.
 - **Yukarı doğru genişleyen parçalar** (tekne gövdesi gibi) duvara yalnızca eğimli yüzeylerden değer, bu yüzden nozzle onları sürükleyip yukarı kaldırabilir. Böyle bir parçayı birleşim çizgisine birkaç damla sıcak silikonla sabitleyin; silikonu parçaya değil duvara sıkın, sonrasında parçadan temiz çıkar. ([Test 3](docs/tests/03-detached-benchy.tr.md))
 - Parçayı her yerden düz oturtun. Bir tarafın sadece 0,2 mm yukarıda kalması bile diğer tarafta katman izi olarak görünür.
+
+**Deneysel özellikler** (varsayılan olarak kapalı, yeni ve hâlâ gerçek baskılarda test ediliyor; bölüm başlığı kaçının açık olduğunu gösterir):
+
+- **Tutucu duvar yok** (CLI `--no-wall`): yazıcı duvarı atlar, yalnızca (varsa) yeniden basılan destekleri basar ve boş plakada duraklar. Parçayı Bambu Studio'da göründüğü yere elle tam olarak koyup bantlarsınız; konumunu hiçbir şey yönlendirmez. Duvar plakaya sığmadığında ve elle yerleştirmeyi duvarla karşılaştırmak için işe yarar.
+- **Yeniden ısıtma geçişi** (CLI `--reheat`): devam dizisinden sonra sıcak nozzle, üstteki ilk katmanı filament akıtmadan, parçanın 0,2 mm üstünden (`--reheat-gap`, 0,05–1 mm), 20 mm/s hızla (`--reheat-speed`), bir kez (`--reheat-passes`) tarar; `--reheat-temp` verilmezse yapışma katmanlarının sıcaklığında. Amaç eski yüzeyi ısıtıp bağı güçlendirmek. Nozzle hiçbir zaman parça üstü + boşluğun altına inmez, geçiş sırasında filament geri çekilir.
 
 Sınırlar: plakada tek obje, prime tower kapalı, parça en az 3 mm yüksek ve 5 mm geniş. Üste basılan her şeyin Z'si, ölçülen yükseklik ile en yakın model katmanı arasındaki fark kadar kaydırılır; böylece ilk katman gerçek parçanın üstüne oturur. Üst yüzey kesilmiş bir yüzeyse (dolgu açıkta), Bambu Studio'da parça yüksekliğinden yaklaşık 0,6 mm yukarıya kadar %100 dolgulu bir height range modifier ekleyin, böylece ilk katmanlar dolu basılır.
 
@@ -260,6 +268,7 @@ Layer Rescue gördüğü her gerçek baskıyla daha iyi hale geliyor. Bir şey �
 layer-rescue --analyze print.gcode
 layer-rescue --last-layer 461 --z-mode retained print.gcode
 layer-rescue --last-layer 461 --z-mode manual --confirm-manual-z-aligned print.gcode
+layer-rescue --last-layer 461 --z-mode retained --reheat print.gcode   # deneysel yeniden ısıtma geçişi
 ```
 
 Yerleştirme modu:
@@ -269,7 +278,7 @@ layer-rescue --part-height 23.4 --wall-height 10 --confirm-attended print.gcode
 layer-rescue --part-layer 117 --confirm-attended --preview-svg wall.svg print.gcode
 ```
 
-Yerleştirme seçenekleri: `--clearance`, `--wall-lines`, `--brim`, `--no-chamfer`, `--z-fine`, `--standby-temp`, `--adhesion-layers`, `--no-reprint-supports`.
+Yerleştirme seçenekleri: `--clearance`, `--wall-lines`, `--brim`, `--no-chamfer`, `--z-fine`, `--standby-temp`, `--adhesion-layers`, `--no-reprint-supports`. Deneysel: `--no-wall` (yalnızca yerleştirme modu), `--reheat` (devam ve yerleştirme modu; `--reheat-gap`, `--reheat-speed`, `--reheat-passes`, `--reheat-temp` ile).
 
 `--allow-untested`, test edilmemiş bir yazıcının ya da çok filamentli bir işin risklerini kabul eder. `--nozzle-temp` ve `--bed-temp` algılanan sıcaklıkları değiştirir. Bütün seçenekler için `layer-rescue --help`.
 

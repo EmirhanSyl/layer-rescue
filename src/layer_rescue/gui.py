@@ -8,9 +8,11 @@ from .core import ResumeError, ResumeOptions, ZReferenceMode, analyze_gcode, rew
 from .gui_insert import build_insert_tab
 from .gui_widgets import (
     HINT_COLOR,
+    Collapsible,
     NOTE_COLOR,
     OK_COLOR,
     WRAP,
+    ScrollArea,
     language_switch,
     set_window_icon,
     text_label,
@@ -23,6 +25,21 @@ from .machine_state import untested_setup
 def _bring_to_front(root: Any) -> None:
     root.after(100, lambda: (root.lift(), root.attributes("-topmost", True), root.focus_force()))
     root.after(700, lambda: root.attributes("-topmost", False))
+
+
+# Room kept free on screen for the title bar and the taskbar/dock.
+SCREEN_MARGIN = 120
+
+
+def _fit_to_screen(root: Any, area: ScrollArea) -> None:
+    """Cap the scrolling part so the whole window fits on the screen; the window can still be resized."""
+    root.update_idletasks()
+    chrome = root.winfo_reqheight() - area.canvas.winfo_reqheight()
+    area.max_height = max(220, root.winfo_screenheight() - SCREEN_MARGIN - chrome)
+    area.refresh()
+    root.update_idletasks()
+    root.minsize(min(root.winfo_reqwidth(), root.winfo_screenwidth() - 40), min(root.winfo_reqheight(), 360))
+    root.geometry("+{}+{}".format(max(0, (root.winfo_screenwidth() - root.winfo_reqwidth()) // 2), 20))
 
 
 def launch(path: Path, translator: Translator | None = None) -> int:
@@ -48,12 +65,15 @@ def launch(path: Path, translator: Translator | None = None) -> int:
         return 2
 
     root.title("Layer Rescue")
-    root.resizable(False, False)
     result = {"code": 0}
 
-    outer = ttk.Frame(root, padding=16)
+    # Header and buttons stay put; everything between them scrolls when the window is taller than the screen.
+    root.columnconfigure(0, weight=1)
+    root.rowconfigure(0, weight=1)
+    outer = ttk.Frame(root, padding=(16, 14, 16, 12))
     outer.grid(row=0, column=0, sticky="nsew")
     outer.columnconfigure(0, weight=1)
+    outer.rowconfigure(1, weight=1)
 
     # ---------------------------------------------------------------- header
     header = ttk.Frame(outer)
@@ -65,9 +85,14 @@ def launch(path: Path, translator: Translator | None = None) -> int:
     tr.on_change(lambda: version.configure(text=tr("header.version", version=__version__)))
     language_switch(tr, header).grid(row=0, column=2, sticky="e")
 
-    info = ttk.LabelFrame(outer, padding=(10, 6))
+    area = ScrollArea(outer)
+    area.frame.grid(row=1, column=0, sticky="nsew")
+    content = area.inner
+    content.columnconfigure(0, weight=1)
+
+    info = ttk.LabelFrame(content, padding=(10, 6))
     tr.on_change(lambda: info.configure(text=tr("file.frame")))
-    info.grid(row=1, column=0, sticky="ew", pady=(0, 10))
+    info.grid(row=1, column=0, sticky="ew", pady=(0, 10), padx=(0, 4))
     file_rows = [
         ("file.name", lambda: path.name),
         ("file.printer", lambda: analysis.printer_model),
@@ -93,20 +118,20 @@ def launch(path: Path, translator: Translator | None = None) -> int:
     untested = untested_setup(analysis)
     untested_var = tk.BooleanVar(value=False)
     if untested:
-        risk = ttk.LabelFrame(outer, padding=(10, 6))
+        risk = ttk.LabelFrame(content, padding=(10, 6))
         tr.on_change(lambda: risk.configure(text=tr("untested.frame")))
-        risk.grid(row=2, column=0, sticky="ew", pady=(0, 10))
+        risk.grid(row=2, column=0, sticky="ew", pady=(0, 10), padx=(0, 4))
         text_label(tr, risk, "untested.intro", wraplength=WRAP, justify="left").grid(row=0, column=0, sticky="w")
         reasons = ttk.Label(risk, wraplength=WRAP, justify="left", foreground=NOTE_COLOR)
         reasons.grid(row=1, column=0, sticky="w", pady=(4, 4))
         tr.on_change(lambda: reasons.configure(text="\n".join("• " + tr.message(reason) for reason in untested)))
         wrapped_check(tr, risk, untested_var, "untested.check", WRAP - 20).grid(row=2, column=0, sticky="w")
 
-    text_label(tr, outer, "choose_mode", font=("TkDefaultFont", 10, "bold")).grid(
+    text_label(tr, content, "choose_mode", font=("TkDefaultFont", 10, "bold")).grid(
         row=3, column=0, sticky="w", pady=(0, 4)
     )
-    notebook = ttk.Notebook(outer)
-    notebook.grid(row=4, column=0, sticky="nsew")
+    notebook = ttk.Notebook(content)
+    notebook.grid(row=4, column=0, sticky="nsew", padx=(0, 4))
 
     # ------------------------------------------------------------ resume tab
     tab = ttk.Frame(notebook, padding=12)
@@ -214,6 +239,76 @@ def launch(path: Path, translator: Translator | None = None) -> int:
     home_check = ttk.Checkbutton(options, variable=home_var)
     home_check.grid(row=2, column=0, columnspan=3, sticky="w", pady=(4, 0))
 
+    # Experimental features: folded and off by default; the title says how many are on.
+    reheat_var = tk.BooleanVar(value=False)
+    reheat_values = {
+        "gap": tk.StringVar(value="0.2"),
+        "speed": tk.StringVar(value="20"),
+        "passes": tk.StringVar(value="1"),
+        "temp": tk.StringVar(value=""),
+    }
+    experimental = Collapsible(
+        tr, tab, "insert.experimental", suffix=lambda: tr("insert.experimental_on", n=1) if reheat_var.get() else ""
+    )
+    experimental.frame.grid(row=5, column=0, sticky="ew", pady=(2, 0))
+    experimental.header._lr_action = "resume_experimental"  # type: ignore[attr-defined]
+    text_label(
+        tr, experimental.body, "insert.experimental_intro", wraplength=WRAP - 20, justify="left", foreground=NOTE_COLOR
+    ).grid(row=0, column=0, sticky="w", pady=(0, 6))
+    reheat_check = wrapped_check(tr, experimental.body, reheat_var, "resume.reheat", WRAP - 40)
+    reheat_check.grid(row=1, column=0, sticky="w")
+    reheat_check.check._lr_action = "resume_reheat"  # type: ignore[attr-defined]
+    text_label(
+        tr, experimental.body, "resume.reheat_hint", wraplength=WRAP - 50, justify="left", foreground=HINT_COLOR
+    ).grid(row=2, column=0, sticky="w", padx=(24, 0))
+    reheat_fields = ttk.Frame(experimental.body)
+    reheat_fields.grid(row=3, column=0, sticky="w", padx=(24, 0), pady=(4, 0))
+    reheat_entries = []
+    for index, (name, key) in enumerate(
+        [
+            ("gap", "resume.reheat_gap"),
+            ("speed", "insert.reheat_speed"),
+            ("passes", "insert.reheat_passes"),
+            ("temp", "resume.reheat_temp"),
+        ]
+    ):
+        text_label(tr, reheat_fields, key).grid(row=index, column=0, sticky="w", pady=2)
+        entry = ttk.Entry(reheat_fields, width=7, textvariable=reheat_values[name])
+        entry.grid(row=index, column=1, sticky="w", pady=2, padx=(8, 0))
+        entry.state(["disabled"])
+        reheat_entries.append(entry)
+
+    def reheat_changed(*_: object) -> None:
+        for entry in reheat_entries:
+            entry.state(["!disabled"] if reheat_var.get() else ["disabled"])
+        experimental.update_title()
+
+    reheat_var.trace_add("write", reheat_changed)
+
+    def reheat_options() -> dict[str, Any]:
+        if not reheat_var.get():
+            return {}
+
+        def number(name: str, key: str) -> float:
+            try:
+                return float(reheat_values[name].get().strip().replace(",", "."))
+            except ValueError:
+                raise ResumeError(tr("resume.err_number", field=tr(key).rstrip(":"))) from None
+
+        def whole(name: str, key: str) -> int:
+            value = number(name, key)
+            if value != int(value):
+                raise ResumeError(tr("resume.err_whole", field=tr(key).rstrip(":")))
+            return int(value)
+
+        return {
+            "reheat_pass": True,
+            "reheat_gap_mm": number("gap", "resume.reheat_gap"),
+            "reheat_speed_mm_s": number("speed", "insert.reheat_speed"),
+            "reheat_passes": whole("passes", "insert.reheat_passes"),
+            "reheat_temperature": whole("temp", "resume.reheat_temp") if reheat_values["temp"].get().strip() else None,
+        }
+
     def update_mode(*_: object) -> None:
         manual = z_mode_var.get() == ZReferenceMode.MANUAL.value
         # Show only the check that belongs to the chosen mode, so no box is left greyed out without reason.
@@ -273,6 +368,7 @@ def launch(path: Path, translator: Translator | None = None) -> int:
                 except ValueError:
                     raise ResumeError(tr("resume.err_temperature", field=tr(key).rstrip(":"))) from None
 
+            reheat = reheat_options()
             report = rewrite_gcode_file(
                 path,
                 ResumeOptions(
@@ -282,6 +378,7 @@ def launch(path: Path, translator: Translator | None = None) -> int:
                     home_corexy=home_var.get(),
                     nozzle_temperature=temperature(nozzle_var, "resume.nozzle"),
                     bed_temperature=temperature(bed_var, "resume.bed"),
+                    **reheat,
                 ),
             )
             manual = report.z_reference_mode is ZReferenceMode.MANUAL
@@ -298,6 +395,16 @@ def launch(path: Path, translator: Translator | None = None) -> int:
                     bed=report.bed_temperature,
                 )
                 + (tr("resume.done_manual_reminder") if manual else "")
+                + (
+                    tr(
+                        "resume.done_reheat",
+                        seconds=report.reheat_seconds,
+                        gap=reheat["reheat_gap_mm"],
+                        layer=report.start_layer,
+                    )
+                    if report.reheat_hover_z is not None
+                    else ""
+                )
                 + (
                     "\n\n" + tr("warnings") + "\n- " + "\n- ".join(tr.message(w) for w in report.warnings)
                     if report.warnings
@@ -322,7 +429,7 @@ def launch(path: Path, translator: Translator | None = None) -> int:
 
     # --------------------------------------------------------------- buttons
     bottom = ttk.Frame(outer)
-    bottom.grid(row=5, column=0, sticky="ew", pady=(12, 0))
+    bottom.grid(row=2, column=0, sticky="ew", pady=(10, 0))
     bottom.columnconfigure(0, weight=1)
     status = ttk.Label(bottom, wraplength=440, justify="left")
     status.grid(row=0, column=0, sticky="w", padx=(0, 12))
@@ -362,6 +469,7 @@ def launch(path: Path, translator: Translator | None = None) -> int:
     tr.on_change(update_status)
 
     root.protocol("WM_DELETE_WINDOW", leave_unchanged)
+    _fit_to_screen(root, area)
     _bring_to_front(root)
     last_entry.focus_set()
     root.mainloop()

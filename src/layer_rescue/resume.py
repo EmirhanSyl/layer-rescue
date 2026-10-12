@@ -28,6 +28,7 @@ from .printers import (
     CLEARANCE_LIMITED,
     POWER_CUT_HEIGHT_MARGIN_MM,
     StationContext,
+    extruder_suffix,
     job_extruder,
     heat_commands,
     home_command,
@@ -35,6 +36,16 @@ from .printers import (
     printer_profile,
     station_block,
 )
+from .reheat import (
+    MIN_GAP_MM,
+    REHEAT_START,
+    check_reheat_block,
+    check_reheat_options,
+    path_length_mm,
+    reheat_lines,
+    reheat_paths,
+)
+from .toolpath import read_toolpaths
 
 
 class ZReferenceMode(str, Enum):
@@ -55,6 +66,12 @@ class ResumeOptions:
     nozzle_temperature: int | None = None
     bed_temperature: int | None = None
     allow_untested: bool = False  # accept the risks of a printer / filament setup that has not been tested
+    # Experimental: trace the resumed layer once without extruding, just above the last printed layer.
+    reheat_pass: bool = False
+    reheat_gap_mm: float = 0.20  # nozzle above the last printed layer during the pass
+    reheat_speed_mm_s: float = 20.0
+    reheat_passes: int = 1
+    reheat_temperature: int | None = None  # nozzle °C during the pass; None = the print temperature
 
 
 @dataclass(frozen=True)
@@ -71,6 +88,9 @@ class ResumeReport:
     output_sha256: str
     backup_path: Path | None = None
     warnings: tuple[str, ...] = field(default_factory=tuple)
+    reheat_hover_z: float | None = None  # None: no reheat pass
+    reheat_path_mm: float = 0.0
+    reheat_seconds: float = 0.0
 
 
 def _z_reference_mode(value: ZReferenceMode | str) -> ZReferenceMode:
@@ -458,7 +478,11 @@ def _validate_output(
     last_layer: int,
     z_reference_mode: ZReferenceMode,
     reference_z: float | None,
+    reheat_floor_z: float | None = None,
+    start_z: float | None = None,
 ) -> None:
+    """Check the recovery job. ``reheat_floor_z``: a reheat pass must follow the resume block and stay
+    at or above this nominal Z (None: there must be no reheat pass)."""
     layers = layer_numbers(text.splitlines())
     if not layers or layers[0] != start_layer:
         raise ResumeError("Internal validation failed: the first retained layer is incorrect.")
@@ -472,6 +496,13 @@ def _validate_output(
     if preamble_end < 0:
         raise ResumeError("Internal validation failed: resume block terminator is missing.")
     preamble = text[:preamble_end]
+    all_lines = text.splitlines()
+    block_end = next(i for i, line in enumerate(all_lines) if line.strip() == "; LAYER_RESCUE_BLOCK_END")
+    if reheat_floor_z is not None:
+        assert start_z is not None
+        check_reheat_block(all_lines, block_end + 1, reheat_floor_z, start_z)
+    elif any(line.strip() == REHEAT_START for line in all_lines):
+        raise ResumeError("Internal validation failed: a reheat pass was emitted although it is off.")
     # The last tool selection (T1000 on the P1 series, T<n> H<h> on the H2) can change the nozzle
     # temperature, so the print temperature must be waited for again after it.
     preamble_codes = [_code(line) for line in preamble.splitlines()]
@@ -546,10 +577,44 @@ def build_resume_gcode(text: str, options: ResumeOptions) -> tuple[str, ResumeRe
     if options.start_layer > analysis.last_layer:
         raise ResumeError("The selected start layer is beyond the end of the print.")
 
+    if options.reheat_pass:
+        check_reheat_options(
+            options.reheat_gap_mm, options.reheat_speed_mm_s, options.reheat_passes, options.reheat_temperature
+        )
+
     state = _scan_machine_state(analysis, layer.change_line)
     accepted_risks = _validate_supported_source(analysis, state, options.allow_untested)
     mode = _z_reference_mode(options.z_reference_mode)
     preamble, nozzle, bed, reference_z = _resume_preamble(analysis, layer, state, options)
+
+    reheat: list[str] = []
+    hover_z: float | None = None
+    reheat_floor_z: float | None = None
+    paths_mm = 0.0
+    if options.reheat_pass:
+        # The old surface is the top of the layer before the resumed one (in restarted mode, the aligned surface).
+        surface_z = analysis.layers[analysis.layers.index(layer) - 1].z
+        paths = reheat_paths(read_toolpaths(analysis, [layer.number])[layer.number])
+        paths_mm = path_length_mm(paths)
+        hover_z = round(surface_z + options.reheat_gap_mm, 3)
+        reheat_floor_z = round(surface_z + MIN_GAP_MM, 4)
+        reheat = reheat_lines(
+            paths=paths,
+            hover_z=hover_z,
+            layer_z=layer.z,
+            layer_number=layer.number,
+            surface="the last printed layer",
+            gap_mm=options.reheat_gap_mm,
+            speed_mm_s=options.reheat_speed_mm_s,
+            passes=options.reheat_passes,
+            temperature=options.reheat_temperature,
+            preamble=preamble,
+            retract_mm=_retraction_length(analysis),
+            extruder=extruder_suffix(analysis, state.active_extruder, state.active_tool or 0),
+        )
+        if mode is ZReferenceMode.MANUAL:
+            # Restarted mode: every Z move is relative to the aligned nozzle position.
+            reheat = _relativize_z(reheat, layer.z)
 
     prefix = list(analysis.lines[: analysis.config_end_line + 1])
     body = list(analysis.lines[layer.change_line :])
@@ -557,9 +622,11 @@ def build_resume_gcode(text: str, options: ResumeOptions) -> tuple[str, ResumeRe
         if printer_profile(analysis).power_cut_clearance_mm > 0:
             body, _ = _lower_bed_before_end_macros(body, analysis)
         body = _relativize_z(body, layer.z)
-    output_lines = prefix + ["", "; EXECUTABLE_BLOCK_START"] + preamble + body
+    output_lines = prefix + ["", "; EXECUTABLE_BLOCK_START"] + preamble + reheat + body
     output = analysis.newline.join(output_lines) + analysis.newline
-    _validate_output(output, options.start_layer, analysis.last_layer, mode, reference_z)
+    _validate_output(
+        output, options.start_layer, analysis.last_layer, mode, reference_z, reheat_floor_z, start_z=layer.z
+    )
 
     warnings = list(analysis.warnings) + accepted_risks
     if mode is ZReferenceMode.MANUAL:
@@ -570,6 +637,12 @@ def build_resume_gcode(text: str, options: ResumeOptions) -> tuple[str, ResumeRe
         clearance = power_cut_clearance(analysis, profile, mode, reference_z, options.z_lift_mm)
         if 0 < profile.power_cut_clearance_mm and clearance < profile.power_cut_clearance_mm:
             warnings.append(CLEARANCE_LIMITED.format(short=profile.short, clearance=_format_number(clearance)))
+    reheat_seconds = paths_mm * options.reheat_passes / options.reheat_speed_mm_s if options.reheat_pass else 0.0
+    if options.reheat_pass:
+        warnings.append(
+            f"Experimental: reheat pass of about {reheat_seconds:.0f} s over the last printed layer, "
+            f"{options.reheat_gap_mm:g} mm above it, before the print resumes."
+        )
 
     report = ResumeReport(
         start_layer=options.start_layer,
@@ -583,6 +656,9 @@ def build_resume_gcode(text: str, options: ResumeOptions) -> tuple[str, ResumeRe
         source_sha256=analysis.source_sha256,
         output_sha256=hashlib.sha256(output.encode("utf-8")).hexdigest(),
         warnings=tuple(warnings),
+        reheat_hover_z=hover_z,
+        reheat_path_mm=round(paths_mm, 1),
+        reheat_seconds=round(reheat_seconds, 1),
     )
     return output, report
 

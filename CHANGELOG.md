@@ -6,6 +6,19 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+### Added
+
+- Experimental insert-mode features, off by default and shown in a folded **Experimental features** section of the insert tab:
+  - **No holding wall** (`--no-wall`): the job prints only the reprinted supports (if any) and pauses on an empty plate; the part is placed by hand at its sliced position. The bed check for the wall is skipped, since no wall is printed.
+  - **Reheat pass** (`--reheat`, `--reheat-gap`, `--reheat-speed`, `--reheat-passes`, `--reheat-temp`): before the first layer on top, the nozzle traces that layer once without extruding, a small gap above the part, to warm the old surface. The output validator checks that the pass sits right after the resume block, never extrudes and never goes below the part top + 0.05 mm.
+  - Both were first used as study-only transformations in `benchmark/`; they now come from the library itself, with tests (`tests/test_experimental.py`) and Turkish messages.
+- Experimental **reheat pass for resumed prints**, in both Z modes (printer stayed on / restarted after a power cut): `--reheat` (and the same `--reheat-*` options) now also works with `--last-layer` / `--start-layer`, and the resume tab has its own folded **Experimental features** section. The nozzle traces the resumed layer once without extruding, `--reheat-gap` above the last printed layer, right after the resume block. In restarted mode its Z moves are relative, like the rest of the job. The resume validator checks that the pass is there only when asked for, never extrudes, never goes below the last printed layer + 0.05 mm and ends at the resumed layer's height. Checked on all printer profiles (P1/X1, A1, A1 mini, H2C, H2D, H2D Pro, H2S, P2S, X2D, A2L).
+
+### Changed
+
+- The window fits on small screens: the header and the buttons stay in place, and the content between them scrolls (mouse wheel, scroll bar, and fields reached with Tab scroll into view) when it is taller than the screen. The window can be resized.
+- Insert tab: the advanced settings moved from under the top view into a folded section under the steps, in two columns; the legend is in two columns. The wall-only settings are greyed out when the holding wall is off.
+
 ## [1.1.0] - 2026-10-08
 
 ### Added
