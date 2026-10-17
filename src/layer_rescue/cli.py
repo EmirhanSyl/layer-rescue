@@ -72,6 +72,32 @@ def _parser() -> argparse.ArgumentParser:
         help="do not print the supports below the part height before the pause",
     )
     insert.add_argument("--preview-svg", help="insert mode: also write a top-view SVG of the wall to this path")
+    experimental = parser.add_argument_group("experimental")
+    experimental.add_argument(
+        "--no-wall",
+        action="store_true",
+        help="insert mode: do not print the holding wall; place the part by hand at its sliced position and fix it "
+        "to the plate",
+    )
+    experimental.add_argument(
+        "--reheat",
+        action="store_true",
+        help="resume and insert mode: before the first new layer, trace it once without extruding to warm the "
+        "old surface",
+    )
+    experimental.add_argument(
+        "--reheat-gap",
+        type=float,
+        default=0.20,
+        help="nozzle above the old surface (last printed layer / part top) in mm (0.05-1.0, default: 0.2)",
+    )
+    experimental.add_argument("--reheat-speed", type=float, default=20.0, help="reheat pass speed in mm/s (2-150, default: 20)")
+    experimental.add_argument("--reheat-passes", type=int, default=1, help="number of reheat passes (1-10, default: 1)")
+    experimental.add_argument(
+        "--reheat-temp",
+        type=int,
+        help="nozzle °C during the pass (default: the print temperature; insert mode: the adhesion-layer temperature)",
+    )
     parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
     return parser
 
@@ -125,6 +151,12 @@ def _run_insert(args: argparse.Namespace, path: Path) -> int:
         z_lift_mm=args.z_lift,
         nozzle_temperature=args.nozzle_temp,
         bed_temperature=args.bed_temp,
+        holding_wall=not args.no_wall,
+        reheat_pass=args.reheat,
+        reheat_gap_mm=args.reheat_gap,
+        reheat_speed_mm_s=args.reheat_speed,
+        reheat_passes=args.reheat_passes,
+        reheat_temperature=args.reheat_temp,
     )
     if args.preview_svg:
         from .preview import plan_svg
@@ -153,6 +185,9 @@ def _run_insert(args: argparse.Namespace, path: Path) -> int:
                 "last_printed_layer": report.last_printed_layer,
                 "nozzle_temperature": report.nozzle_temperature,
                 "bed_temperature": report.bed_temperature,
+                "holding_wall": report.holding_wall,
+                "reheat_hover_z": report.reheat_hover_z,
+                "reheat_seconds": report.reheat_seconds,
                 "backup": str(backup) if backup else None,
                 "output_sha256": report.output_sha256,
                 "warnings": report.warnings,
@@ -188,8 +223,15 @@ def main(argv: list[str] | None = None) -> int:
 
         if args.part_height is not None or args.part_layer is not None:
             return _run_insert(args, path)
+        if args.no_wall:
+            raise ResumeError("--no-wall only applies to insert mode (--part-height or --part-layer).")
 
         if args.gui or (args.start_layer is None and args.last_layer is None):
+            if args.reheat:
+                raise ResumeError(
+                    "--reheat needs --last-layer / --start-layer or insert mode; in the window, turn it on under "
+                    "Experimental features."
+                )
             from .gui import launch
 
             return launch(path)
@@ -218,6 +260,11 @@ def main(argv: list[str] | None = None) -> int:
                 nozzle_temperature=args.nozzle_temp,
                 bed_temperature=args.bed_temp,
                 allow_untested=args.allow_untested,
+                reheat_pass=args.reheat,
+                reheat_gap_mm=args.reheat_gap,
+                reheat_speed_mm_s=args.reheat_speed,
+                reheat_passes=args.reheat_passes,
+                reheat_temperature=args.reheat_temp,
             ),
             create_backup=not args.no_backup,
         )
@@ -232,6 +279,8 @@ def main(argv: list[str] | None = None) -> int:
                     "bed_temperature": report.bed_temperature,
                     "z_reference_mode": report.z_reference_mode.value,
                     "reference_z": report.reference_z,
+                    "reheat_hover_z": report.reheat_hover_z,
+                    "reheat_seconds": report.reheat_seconds,
                     "backup": str(report.backup_path) if report.backup_path else None,
                     "output_sha256": report.output_sha256,
                     "warnings": report.warnings,

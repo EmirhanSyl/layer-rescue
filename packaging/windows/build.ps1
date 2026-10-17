@@ -16,7 +16,7 @@ if (-not $Version) {
 }
 Write-Host "Building Layer Rescue $Version"
 
-# Runtime dependencies (pyclipper) must be importable for PyInstaller to bundle them.
+# Runtime dependencies (pyclipper, customtkinter) must be importable for PyInstaller to bundle them.
 python -m pip install .
 Assert-LastExitCode "Installing Layer Rescue and its dependencies"
 
@@ -26,7 +26,9 @@ $assets = Join-Path $src "layer_rescue\assets"
 $icon = Join-Path $assets "icon.ico"
 $common = @(
     "--noconfirm", "--clean", "--paths", $src, "--specpath", "build", "--workpath", "build\pyinstaller",
-    "--icon", $icon, "--add-data", "$assets;layer_rescue\assets"
+    "--icon", $icon, "--add-data", "$assets;layer_rescue\assets",
+    # CustomTkinter's themes and fonts are data files next to its modules.
+    "--collect-data", "customtkinter"
 )
 
 python -m PyInstaller @common --windowed --name LayerRescue $launcher

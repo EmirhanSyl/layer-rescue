@@ -23,16 +23,33 @@ STRINGS: dict[str, dict[str, str]] = {
         # Window and header
         "app.title": "Layer Rescue",
         "header.version": "version {version}",
-        "header.language": "Language:",
-        "file.frame": "Sliced file",
-        "file.name": "File",
         "file.printer": "Printer",
         "file.filament": "Filament",
         "file.layers": "Layers",
         "file.layers_value": "{first}–{last} (of {total})",
-        "choose_mode": "What happened to the print? Choose the matching tab:",
-        "tab.resume": "Part is still on the plate",
-        "tab.insert": "Part came off / print on a finished part",
+        # Sidebar: mode cards, file, language and theme
+        "mode.heading": "What happened to the print?",
+        "mode.retained": "It stopped",
+        "mode.retained_desc": "Part still on the plate; the printer stayed on",
+        "mode.manual": "Power cut or restart",
+        "mode.manual_desc": "Part still on the plate; Z position lost",
+        "mode.insert": "Part came off",
+        "mode.insert_desc": "Seat it in a wall, or print on a finished part",
+        "mode.retained_title": "Continue a stopped print",
+        "mode.retained_lead": (
+            "The print stopped (filament ran out, a clog…) and the printer stayed on. The part is still on the "
+            "plate, so printing continues on top of it from the next layer."
+        ),
+        "mode.manual_title": "Continue after a power cut",
+        "mode.manual_lead": (
+            "The power went out or the printer was restarted, so it no longer knows its Z position. You lower "
+            "the nozzle onto the last good layer by hand and printing continues from there."
+        ),
+        "mode.insert_title": "Print on a loose part",
+        "mode.replay": "Click the drawing to play it again.",
+        "theme.system": "Auto",
+        "theme.light": "Light",
+        "theme.dark": "Dark",
         "untested.frame": "Untested setup",
         "untested.intro": (
             "Layer Rescue hasn't been tested with this kind of job yet. It may work, but the moves it adds "
@@ -47,26 +64,28 @@ STRINGS: dict[str, dict[str, str]] = {
         "button.leave": "Leave G-code unchanged",
         "button.create": "Create G-code",
         "status.ready": "Ready. Check the preview in Bambu Studio after creating the G-code.",
-        "status.resume_layer": "Enter the last good layer (step 1).",
-        "status.resume_checks": "Tick the safety checks (step 3) to continue.",
+        "status.resume_layer": "Enter the last good layer or the part's height (step 1).",
+        "status.resume_checks": "Tick the safety checks (step 2) to continue.",
         "status.insert_height": "Enter the part height (step 1).",
         "status.insert_check": "Tick the safety check to continue.",
         # Resume tab
-        "resume.intro": (
-            "The print stopped (filament ran out, clog, power cut…) but the part is still stuck to the plate. "
-            "The new G-code continues printing on top of it from the next layer."
-        ),
         "resume.step1": "1. Where did the print stop?",
         "resume.last_layer": "Last layer that printed correctly:",
         "resume.last_layer_hint": (
             "The last layer that really got filament. If the filament ran out at layer 462 but the printer "
-            "kept going until 490, enter 461."
+            "kept going until 490, enter 461. Or measure the part's height with calipers: the nearest layer "
+            "is used."
         ),
+        "resume.part_height": "or the part's height (mm, measured):",
+        "resume.nearest_layer": "Nearest layer to {height:g} mm: {layer} (Z = {z:g} mm).",
+        "resume.height_range": "Enter a height between {low:g} and {high:g} mm.",
+        "resume.step1_summary": "Layer {last}, restarts at {layer}",
+        "insert.step1_summary": "Part {part:g} mm",
+        "insert.step2_summary": "Restarts at layer {layer}",
+        "step.checked": "All ticked",
         "resume.next_layer": "Printing restarts at layer {layer} of {total} (Z = {z:g} mm).",
         "resume.layer_range": "Enter a whole number between {first} and {last}.",
         "resume.step2": "2. Was the printer turned off or restarted?",
-        "resume.mode_retained": "No, it stayed on the whole time (Z position is kept)",
-        "resume.mode_manual": "Yes, it was turned off or restarted (Z position is lost)",
         "resume.help_retained": (
             "The job uses the Z position the printer still knows. Choose this only if the printer stayed "
             "powered on and nobody moved the Z axis. The job never homes Z or levels the bed."
@@ -93,13 +112,21 @@ STRINGS: dict[str, dict[str, str]] = {
         "resume.temp_hint": "blank = from the file",
         "resume.home": "Home X and Y before continuing (G28 X, never Z)",
         "resume.home_forced": "Home X and Y before continuing (G28 X, never Z) — required after a restart",
+        "resume.reheat": "Reheat pass before the print continues",
+        "resume.reheat_hint": (
+            "The hot nozzle traces the next layer once without extruding, just above the last good layer, to warm "
+            "it for a stronger bond at the restart line. Works in both modes."
+        ),
+        "resume.reheat_gap": "Gap above the last layer (mm)",
+        "resume.reheat_temp": "Nozzle (°C, blank = print temperature)",
+        "resume.err_number": "{field}: enter a number.",
+        "resume.err_whole": "{field}: enter a whole number.",
         # Resume errors and result
         "resume.err_layer": "Step 1: enter the last good layer as a whole number.",
         "resume.err_attached": "Safety check: confirm that the part is still firmly attached to the plate.",
         "resume.err_retained": "Safety check: confirm that the printer never lost power or its Z position.",
         "resume.err_manual": "Safety check: confirm that you will align the nozzle to the last good layer.",
         "resume.err_temperature": "{field}: enter a whole number in °C, or leave it blank.",
-        "resume.done_title": "Recovery G-code created",
         "resume.done": (
             "Recovery G-code created.\n\n"
             "Starts at layer {layer}/{total}\n"
@@ -115,6 +142,10 @@ STRINGS: dict[str, dict[str, str]] = {
             "\n\nBefore sending: align the clean nozzle so it just touches the top of the last good layer. "
             "Do not start unless this is exact."
         ),
+        "resume.done_reheat": (
+            "\n\nExperimental reheat pass: about {seconds:.0f} s, {gap:g} mm above the last good layer, "
+            "before layer {layer}."
+        ),
         # Insert tab
         "insert.intro": (
             "For a part that came off the plate, broke (cut the break flat first) or is finished and gets an "
@@ -127,8 +158,27 @@ STRINGS: dict[str, dict[str, str]] = {
         "insert.wall_height": "Wall height (mm):",
         "insert.wall_hint": "blank = recommended",
         "insert.preview": "Preview",
-        "insert.show_advanced": "Show advanced settings",
         "insert.advanced": "Advanced settings",
+        "insert.experimental": "Experimental features",
+        "insert.experimental_on": " ({n} on)",
+        "insert.experimental_intro": (
+            "New and still being tested on real prints. Turn one on only if you know what it does, and check "
+            "the preview and the first layers closely."
+        ),
+        "insert.no_wall": "No holding wall: I will place the part by hand",
+        "insert.no_wall_hint": (
+            "The printer prints only the reprinted supports (if any) and pauses on an empty plate. Put the part "
+            "exactly where Bambu Studio shows it and tape it down; nothing guides its position."
+        ),
+        "insert.reheat": "Reheat pass before the first layer on top",
+        "insert.reheat_hint": (
+            "The hot nozzle traces the first new layer once without extruding, just above the part, to warm its "
+            "surface for a stronger bond."
+        ),
+        "insert.reheat_gap": "Gap above the part (mm)",
+        "insert.reheat_speed": "Speed (mm/s)",
+        "insert.reheat_passes": "Passes",
+        "insert.reheat_temp": "Nozzle (°C, blank = as adhesion)",
         "insert.clearance": "Gap between part and wall (mm)",
         "insert.lines": "Wall thickness (lines)",
         "insert.brim": "Brim (mm)",
@@ -145,6 +195,12 @@ STRINGS: dict[str, dict[str, str]] = {
             "(offset {offset:+.2f} mm), first layer on top {first:.2f} mm."
         ),
         "insert.info_supports": "\nSupports: reprinted up to layer {layer} before the pause (green).",
+        "insert.info_bare": (
+            "No wall: layers 1–{wall_last} run empty, then the printer pauses.\n"
+            "Then print from layer {resume}/{total}. Model Z {model_z:g} mm → measured {part:g} mm "
+            "(offset {offset:+.2f} mm), first layer on top {first:.2f} mm."
+        ),
+        "insert.canvas_no_wall": "no wall (experimental)",
         "insert.step3": "3. Safety check",
         "insert.check_intro": "The job pauses halfway and waits for you. Tick the box only if it is true.",
         "insert.check_attended": "I will stay at the printer, seat the part when it pauses and watch the first layers.",
@@ -171,6 +227,17 @@ STRINGS: dict[str, dict[str, str]] = {
             "Inspect Bambu Studio Preview before sending."
         ),
         "insert.done_supports": " and the supports up to layer {layer}",
+        "insert.done_no_wall": (
+            "Insert G-code created (experimental: no holding wall).\n\n"
+            "1. The printer runs layers 1–{wall_layers} without a wall{supports}.\n"
+            "2. It lifts to {park_z:g} mm, parks at the back and pauses.\n"
+            "3. Clean the part's bottom and top, place it exactly where Bambu Studio shows it, facing the same way, "
+            "and tape it to the plate, then press Resume.\n"
+            "{supports_hint}"
+            "4. It reheats, purges and prints from layer {resume} on top (first layer {first:.2f} mm).\n\n"
+            "Inspect Bambu Studio Preview before sending."
+        ),
+        "insert.done_reheat": "\n\nExperimental reheat pass: about {seconds:.0f} s, {gap:g} mm above the part, before layer {resume}.",
         "insert.done_supports_hint": (
             "   Remove the old supports from the part first and lower it slowly over the new ones.\n"
         ),
@@ -190,16 +257,32 @@ STRINGS: dict[str, dict[str, str]] = {
     "tr": {
         "app.title": "Layer Rescue",
         "header.version": "sürüm {version}",
-        "header.language": "Dil:",
-        "file.frame": "Dilimlenen dosya",
-        "file.name": "Dosya",
         "file.printer": "Yazıcı",
         "file.filament": "Filament",
         "file.layers": "Katmanlar",
         "file.layers_value": "{first}–{last} (toplam {total})",
-        "choose_mode": "Baskıya ne oldu? Uygun sekmeyi seçin:",
-        "tab.resume": "Parça hâlâ plakada",
-        "tab.insert": "Parça ayrıldı / bitmiş parçanın üstüne bas",
+        "mode.heading": "Baskıya ne oldu?",
+        "mode.retained": "Baskı durdu",
+        "mode.retained_desc": "Parça hâlâ plakada; yazıcı açık kaldı",
+        "mode.manual": "Elektrik kesildi",
+        "mode.manual_desc": "Parça hâlâ plakada; Z konumu kayboldu",
+        "mode.insert": "Parça koptu",
+        "mode.insert_desc": "Bir duvara oturtun ya da bitmiş parçanın üstüne basın",
+        "mode.retained_title": "Duran bir baskıya devam",
+        "mode.retained_lead": (
+            "Baskı durdu (filament bitti, nozzle tıkandı…) ve yazıcı açık kaldı. Parça hâlâ plakada; baskı bir "
+            "sonraki katmandan parçanın üstüne devam eder."
+        ),
+        "mode.manual_title": "Elektrik kesintisinden sonra devam",
+        "mode.manual_lead": (
+            "Elektrik kesildi ya da yazıcı yeniden başlatıldı; yazıcı Z konumunu artık bilmiyor. Nozzle'ı son "
+            "düzgün katmana elle indirirsiniz ve baskı oradan devam eder."
+        ),
+        "mode.insert_title": "Ayrılan bir parçanın üstüne bas",
+        "mode.replay": "Tekrar oynatmak için çizime tıklayın.",
+        "theme.system": "Otomatik",
+        "theme.light": "Açık",
+        "theme.dark": "Koyu",
         "untested.frame": "Test edilmemiş kurulum",
         "untested.intro": (
             "Layer Rescue bu tür bir işle henüz test edilmedi. Çalışabilir, ama eklediği hareketler (park, "
@@ -213,25 +296,27 @@ STRINGS: dict[str, dict[str, str]] = {
         "button.leave": "G-code'u değiştirme",
         "button.create": "G-code oluştur",
         "status.ready": "Hazır. G-code oluşturduktan sonra Bambu Studio önizlemesini kontrol edin.",
-        "status.resume_layer": "Son düzgün katmanı girin (adım 1).",
-        "status.resume_checks": "Devam etmek için güvenlik kontrollerini işaretleyin (adım 3).",
+        "status.resume_layer": "Son düzgün katmanı ya da parçanın yüksekliğini girin (adım 1).",
+        "status.resume_checks": "Devam etmek için güvenlik kontrollerini işaretleyin (adım 2).",
         "status.insert_height": "Parça yüksekliğini girin (adım 1).",
         "status.insert_check": "Devam etmek için güvenlik kontrolünü işaretleyin.",
-        "resume.intro": (
-            "Baskı durdu (filament bitti, nozzle tıkandı, elektrik kesildi…) ama parça hâlâ plakaya yapışık. "
-            "Yeni G-code, bir sonraki katmandan parçanın üstüne basmaya devam eder."
-        ),
         "resume.step1": "1. Baskı nerede durdu?",
         "resume.last_layer": "Düzgün basılan son katman:",
         "resume.last_layer_hint": (
             "Gerçekten filament basılmış son katman. Filament 462. katmanda bittiyse ama yazıcı 490'a kadar "
-            "devam ettiyse 461 girin."
+            "devam ettiyse 461 girin. Ya da parçanın yüksekliğini kumpasla ölçüp girin: en yakın katman "
+            "kullanılır."
         ),
+        "resume.part_height": "ya da parçanın yüksekliği (mm, ölçülen):",
+        "resume.nearest_layer": "{height:g} mm'ye en yakın katman: {layer} (Z = {z:g} mm).",
+        "resume.height_range": "{low:g} ile {high:g} mm arasında bir yükseklik girin.",
+        "resume.step1_summary": "{last}. katman, {layer}. katmandan devam",
+        "insert.step1_summary": "Parça {part:g} mm",
+        "insert.step2_summary": "{layer}. katmandan devam",
+        "step.checked": "Hepsi işaretli",
         "resume.next_layer": "Baskı {layer}. katmandan devam eder (toplam {total} katman, Z = {z:g} mm).",
         "resume.layer_range": "{first} ile {last} arasında bir tam sayı girin.",
         "resume.step2": "2. Yazıcı kapatıldı ya da yeniden başlatıldı mı?",
-        "resume.mode_retained": "Hayır, hep açık kaldı (Z konumu korundu)",
-        "resume.mode_manual": "Evet, kapatıldı ya da yeniden başlatıldı (Z konumu kayboldu)",
         "resume.help_retained": (
             "İş, yazıcının hâlâ bildiği Z konumunu kullanır. Bunu yalnızca yazıcı hiç kapanmadıysa ve Z eksenini "
             "kimse oynatmadıysa seçin. İş hiçbir zaman Z'yi home etmez ve tabla seviyelemesi yapmaz."
@@ -256,12 +341,20 @@ STRINGS: dict[str, dict[str, str]] = {
         "resume.temp_hint": "boş = dosyadaki değer",
         "resume.home": "Devam etmeden önce X ve Y'yi home et (G28 X, Z asla)",
         "resume.home_forced": "Devam etmeden önce X ve Y'yi home et (G28 X, Z asla) — yeniden başlatmadan sonra zorunlu",
+        "resume.reheat": "Baskı devam etmeden önce yeniden ısıtma geçişi",
+        "resume.reheat_hint": (
+            "Sıcak nozzle, bir sonraki katmanın yolunu son düzgün katmanın hemen üstünden ekstrüzyon yapmadan bir kez "
+            "izler; yüzeyi ısıtarak devam çizgisinde daha sağlam bir bağ sağlamayı amaçlar. İki modda da çalışır."
+        ),
+        "resume.reheat_gap": "Son katmanın üstündeki boşluk (mm)",
+        "resume.reheat_temp": "Nozzle (°C, boş = baskı sıcaklığı)",
+        "resume.err_number": "{field}: bir sayı girin.",
+        "resume.err_whole": "{field}: tam sayı girin.",
         "resume.err_layer": "Adım 1: son düzgün katmanı tam sayı olarak girin.",
         "resume.err_attached": "Güvenlik kontrolü: parçanın hâlâ plakaya sağlam yapışık olduğunu onaylayın.",
         "resume.err_retained": "Güvenlik kontrolü: yazıcının elektriğinin ve Z konumunun hiç kaybolmadığını onaylayın.",
         "resume.err_manual": "Güvenlik kontrolü: nozzle'ı son düzgün katmana hizalayacağınızı onaylayın.",
         "resume.err_temperature": "{field}: °C cinsinden bir tam sayı girin ya da boş bırakın.",
-        "resume.done_title": "Kurtarma G-code'u oluşturuldu",
         "resume.done": (
             "Kurtarma G-code'u oluşturuldu.\n\n"
             "Başlangıç katmanı: {layer}/{total}\n"
@@ -277,6 +370,10 @@ STRINGS: dict[str, dict[str, str]] = {
             "\n\nGöndermeden önce: temiz nozzle'ı son düzgün katmanın üstüne hafifçe değecek şekilde hizalayın. "
             "Tam olarak hizalanmadıysa başlatmayın."
         ),
+        "resume.done_reheat": (
+            "\n\nDeneysel yeniden ısıtma geçişi: {layer}. katmandan önce, son düzgün katmanın {gap:g} mm üstünde, "
+            "yaklaşık {seconds:.0f} sn."
+        ),
         "insert.intro": (
             "Plakadan kopmuş, kırılmış (kırık yeri önce düz kesin) ya da bitmiş ve üstüne ekleme yapılacak bir "
             "parça için. Tam modeli dilimleyin. Yazıcı parçayı tutan bir duvar basar, parçayı içine koymanız "
@@ -288,8 +385,27 @@ STRINGS: dict[str, dict[str, str]] = {
         "insert.wall_height": "Duvar yüksekliği (mm):",
         "insert.wall_hint": "boş = önerilen",
         "insert.preview": "Önizle",
-        "insert.show_advanced": "Gelişmiş ayarları göster",
         "insert.advanced": "Gelişmiş ayarlar",
+        "insert.experimental": "Deneysel özellikler",
+        "insert.experimental_on": " ({n} açık)",
+        "insert.experimental_intro": (
+            "Yeni ve hâlâ gerçek baskılarda test ediliyor. Yalnızca ne yaptığını biliyorsanız açın; önizlemeyi ve "
+            "ilk katmanları yakından kontrol edin."
+        ),
+        "insert.no_wall": "Tutucu duvar basılmasın: parçayı elle yerleştireceğim",
+        "insert.no_wall_hint": (
+            "Yazıcı yalnızca (varsa) yeniden basılan destekleri basar ve boş plakada duraklar. Parçayı Bambu "
+            "Studio'da göründüğü yere tam olarak koyup bantlayın; konumunu hiçbir şey yönlendirmez."
+        ),
+        "insert.reheat": "Üstteki ilk katmandan önce yeniden ısıtma geçişi",
+        "insert.reheat_hint": (
+            "Sıcak nozzle, daha sıkı bir bağ için yüzeyi ısıtmak üzere ilk yeni katmanı filament akıtmadan, "
+            "parçanın hemen üstünden bir kez tarar."
+        ),
+        "insert.reheat_gap": "Parçanın üstündeki boşluk (mm)",
+        "insert.reheat_speed": "Hız (mm/s)",
+        "insert.reheat_passes": "Geçiş sayısı",
+        "insert.reheat_temp": "Nozzle (°C, boş = yapışma ile aynı)",
         "insert.clearance": "Parça ile duvar arası boşluk (mm)",
         "insert.lines": "Duvar kalınlığı (çizgi)",
         "insert.brim": "Brim (mm)",
@@ -306,6 +422,12 @@ STRINGS: dict[str, dict[str, str]] = {
             "{part:g} mm (fark {offset:+.2f} mm), parçanın üstündeki ilk katman {first:.2f} mm."
         ),
         "insert.info_supports": "\nDestekler: duraklamadan önce {layer}. katmana kadar yeniden basılır (yeşil).",
+        "insert.info_bare": (
+            "Duvar yok: 1–{wall_last}. katmanlar boş geçilir, ardından yazıcı duraklar.\n"
+            "Sonra {resume}. katmandan devam (toplam {total}). Model Z {model_z:g} mm → ölçülen {part:g} mm "
+            "(fark {offset:+.2f} mm), parçanın üstündeki ilk katman {first:.2f} mm."
+        ),
+        "insert.canvas_no_wall": "duvar yok (deneysel)",
         "insert.step3": "3. Güvenlik kontrolü",
         "insert.check_intro": "İş yarıda duraklar ve sizi bekler. Kutuyu yalnızca doğruysa işaretleyin.",
         "insert.check_attended": (
@@ -336,6 +458,18 @@ STRINGS: dict[str, dict[str, str]] = {
             "Göndermeden önce Bambu Studio önizlemesini kontrol edin."
         ),
         "insert.done_supports": " ve {layer}. katmana kadar destekleri",
+        "insert.done_no_wall": (
+            "Yerleştirme G-code'u oluşturuldu (deneysel: tutucu duvar yok).\n\n"
+            "1. Yazıcı 1–{wall_layers}. katmanları duvarsız çalıştırır{supports}.\n"
+            "2. {park_z:g} mm'ye yükselir, arkaya park eder ve duraklar.\n"
+            "3. Parçanın altını ve üstünü temizleyin, parçayı Bambu Studio'da göründüğü yere aynı yönle tam olarak "
+            "koyun ve plakaya bantlayın, sonra Resume'a (Devam) basın.\n"
+            "{supports_hint}"
+            "4. Yazıcı ısınır, purge yapar ve {resume}. katmandan itibaren parçanın üstüne basar "
+            "(ilk katman {first:.2f} mm).\n\n"
+            "Göndermeden önce Bambu Studio önizlemesini kontrol edin."
+        ),
+        "insert.done_reheat": "\n\nDeneysel yeniden ısıtma geçişi: {resume}. katmandan önce, parçanın {gap:g} mm üstünde, yaklaşık {seconds:.0f} sn.",
         "insert.done_supports_hint": (
             "   Önce eski destekleri parçadan temizleyin ve parçayı yeni desteklerin üzerine yavaşça indirin.\n"
         ),
@@ -533,6 +667,45 @@ MESSAGE_PATTERNS: list[tuple[re.Pattern[str], str]] = [
             "Yapışma sıcaklık artışı 0 ile 30°C arasında olmalı.",
         ),
         (r"The adhesion speed must be between 20 and 100 %\.", "Yapışma hızı %20 ile %100 arasında olmalı."),
+        # reheat.py (experimental)
+        (
+            r"The reheat gap must be between (?P<a>[\d.]+) and (?P<b>[\d.]+) mm\.",
+            "Yeniden ısıtma boşluğu {a} ile {b} mm arasında olmalı.",
+        ),
+        (
+            r"The reheat speed must be between (?P<a>[\d.]+) and (?P<b>[\d.]+) mm/s\.",
+            "Yeniden ısıtma hızı {a} ile {b} mm/s arasında olmalı.",
+        ),
+        (r"Reheat passes must be between 1 and (?P<n>\d+)\.", "Yeniden ısıtma geçiş sayısı 1 ile {n} arasında olmalı."),
+        (
+            r"The reheat temperature must be between 150 and 300°C\.",
+            "Yeniden ısıtma sıcaklığı 150 ile 300°C arasında olmalı.",
+        ),
+        (
+            r"The first layer on top has no part toolpaths to trace for the reheat pass\.",
+            "Üstteki ilk katmanda, yeniden ısıtma geçişinin izleyeceği parça yolu yok.",
+        ),
+        (
+            r"The resumed layer has no part toolpaths to trace for the reheat pass\.",
+            "Devam edilen katmanda, yeniden ısıtma geçişinin izleyeceği parça yolu yok.",
+        ),
+        (
+            r"Experimental: reheat pass of about (?P<s>\d+) s over the last printed layer, (?P<g>[\d.]+) mm above it, "
+            r"before the print resumes\.",
+            "Deneysel: baskı devam etmeden önce son basılan katmanın {g} mm üstünde yaklaşık {s} sn'lik yeniden "
+            "ısıtma geçişi.",
+        ),
+        (
+            r"Experimental: no holding wall\. Place the part by hand exactly where it was sliced and fix it to the "
+            r"plate; nothing guides its position\.",
+            "Deneysel: tutucu duvar yok. Parçayı dilimlendiği yere elle tam olarak koyup plakaya sabitleyin; "
+            "konumunu hiçbir şey yönlendirmez.",
+        ),
+        (
+            r"Experimental: reheat pass of about (?P<s>\d+) s over the part, (?P<g>[\d.]+) mm above it, before the "
+            r"first layer on top\.",
+            "Deneysel: üstteki ilk katmandan önce parçanın {g} mm üstünde yaklaşık {s} sn'lik yeniden ısıtma geçişi.",
+        ),
         (
             r"Insert mode needs the complete job starting at layer 1\.",
             "Yerleştirme modu, 1. katmandan başlayan tam işi gerektirir.",
@@ -707,17 +880,30 @@ def load_language(path: Path | None = None) -> str:
     return _system_language()
 
 
-def save_language(language: str, path: Path | None = None) -> None:
+def load_setting(name: str, path: Path | None = None) -> object:
+    """A saved window setting (``None`` when it was never saved or the file is unreadable)."""
+    try:
+        data = json.loads((path or _settings_path()).read_text(encoding="utf-8"))
+        return data.get(name) if isinstance(data, dict) else None
+    except (OSError, ValueError):
+        return None
+
+
+def save_setting(name: str, value: object, path: Path | None = None) -> None:
     target = path or _settings_path()
     try:
         data = json.loads(target.read_text(encoding="utf-8")) if target.exists() else {}
         if not isinstance(data, dict):
             data = {}
-        data["language"] = language
+        data[name] = value
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text(json.dumps(data, indent=2), encoding="utf-8")
     except (OSError, ValueError):
         pass  # The choice still applies to this window; it is just not remembered.
+
+
+def save_language(language: str, path: Path | None = None) -> None:
+    save_setting("language", language, path)
 
 
 class Translator:

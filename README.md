@@ -23,6 +23,18 @@ _A rocket drone body, broken on purpose, put back on the plate and reprinted wit
 > [!CAUTION]
 > Resuming a print can drive the nozzle into the existing part. Stay at the printer during startup and be ready to stop it. See [SECURITY.md](https://github.com/EmirhanSyl/layer-rescue/blob/main/SECURITY.md).
 
+## What's new in 1.2
+
+<p align="center"><img src="https://raw.githubusercontent.com/EmirhanSyl/layer-rescue/main/images/readme/whats-new-1.2.gif" alt="The new Layer Rescue window: pick what happened, enter the layer or the part's height, tick the checks" width="720"></p>
+
+- **A new window.** Pick what happened on the left (it stopped, power cut, part came off) and a small animation shows what Layer Rescue will do. The steps open one after another and tick themselves off as you fill them in. Light and dark theme, and sharp text with Windows display scaling.
+- **The part's height instead of the layer number.** Measure the part with calipers and enter its height; the nearest layer is used.
+- **Experimental: reheat pass**, in every mode. Before the first new layer, the hot nozzle passes once over the old surface without extruding, to warm it for a stronger seam.
+- **Experimental: insert without the holding wall.** Place the part by hand where Bambu Studio shows it.
+- **First print on an X2D**, a two-colour job across both nozzles, by [martinhanes](https://github.com/martinhanes). Thanks!
+
+All changes are in the [changelog](https://github.com/EmirhanSyl/layer-rescue/blob/main/CHANGELOG.md).
+
 ## What it can do
 
 - **Continue a print that stopped.** Filament ran out, the nozzle clogged, you hit stop: tell Layer Rescue the last layer that printed properly, and the job continues from the next one, right on top of the part that is still on the plate. ([Test 1](https://github.com/EmirhanSyl/layer-rescue/blob/main/docs/tests/01-lw-pla-plane-part.md))
@@ -32,7 +44,8 @@ _A rocket drone body, broken on purpose, put back on the plate and reprinted wit
 - **Save what's left of a full plate.** If a few parts on a crowded plate came loose, delete them in Bambu Studio and finish the rest. ([Test 5](https://github.com/EmirhanSyl/layer-rescue/blob/main/docs/tests/05-multi-object-spiders.md))
 - **No G-code editing by hand.** Bambu Studio keeps its filament mapping and `.gcode.3mf` data, and the preview shows exactly what will be printed.
 - **Careful by default.** It never homes Z or levels the bed over a part, checks its own output before saving it, refuses files it can't handle safely instead of guessing, and keeps a backup of the original G-code. The window asks you to confirm what it can't see for itself.
-- **English and Turkish**, switchable in the window at any time.
+- **English and Turkish, light and dark**, switchable in the window at any time.
+- **Experimental extras you can switch on**: a reheat pass that warms the old surface before the first new layer, and insert mode without the holding wall. See [Experimental features](#experimental-features).
 
 ## Real-world tests
 
@@ -52,9 +65,10 @@ I tested every feature on my own P1S with real prints and wrote down each one st
 
 ## Tested on
 
-Printed with Layer Rescue (the [real-world tests](#real-world-tests) above):
+Printed with Layer Rescue (the [real-world tests](#real-world-tests) above, and a user's report):
 
 - Bambu Lab P1S, single filament
+- Bambu Lab X2D, a two-colour job across both nozzles (printed by [martinhanes](https://github.com/martinhanes))
 - Windows and macOS (Linux from source)
 - Bambu Studio G-code, by-layer printing, relative extrusion
 - The part is still firmly attached to the same plate (resume mode), or it came off / is finished and fits back into a wall printed around it (insert mode, beta)
@@ -78,14 +92,14 @@ Each of the 14 printers in Bambu Studio 2.08 (02.08.02.61) was checked the same 
 | A1 mini | Off-bed purge at X-13.5 | ✓ | |
 | H2D, H2D Pro, H2S, H2C | Firmware macros (`G150.x`), experimental | ✓ | |
 | P2S | Firmware macros, experimental | ✓ | |
-| X2D | Firmware macros, two nozzles, experimental | ✓ | |
+| X2D | Firmware macros, two nozzles, experimental | ✓ | ✓ (by [martinhanes](https://github.com/martinhanes)) |
 | A2L | Firmware macros on a bed slinger, experimental | ✓ | |
 
 A checked G-code is not a printed part. On every printer except the P1S, Layer Rescue still asks you to accept the risks first (CLI: `--allow-untested`), and the sequences marked experimental rely on firmware commands that Bambu doesn't document. Watch the start of the job, and if you print with it on one of these printers, please [share your results](#share-your-results): a real print is what moves a printer from the middle column to the right one.
 
 Printers from other brands get the P1/X1 moves after you accept the risks.
 
-Not tested yet: AMS / multi-filament jobs and jobs that use both nozzles of an H2D or X2D. With several filaments Layer Rescue loads the filament that was active at the layer you continue from. By-object printing and spiral vase don't fit the way Layer Rescue works yet, so those jobs are still turned down.
+Not tested yet: AMS / multi-filament jobs on a single nozzle, and jobs that use both nozzles of an H2D. A two-colour job across both nozzles of an X2D has been printed once (thanks to [martinhanes](https://github.com/martinhanes)); more reports are welcome. With several filaments Layer Rescue loads the filament that was active at the layer you continue from. By-object printing and spiral vase don't fit the way Layer Rescue works yet, so those jobs are still turned down.
 
 ## Install
 
@@ -127,37 +141,42 @@ Tip: save the process preset with the script in it, so it's there the next time 
 
 ## The window
 
-After slicing, Layer Rescue opens a small window. At the top it shows the file it got (printer, filament, layer count), and below that there's a tab for each situation:
+After slicing, Layer Rescue opens its window. On the left, under **What happened to the print?**, there is a card for each situation:
 
-- **Part is still on the plate**: resume an interrupted print (below).
-- **Part came off / print on a finished part**: insert mode (further below).
+- **It stopped**: the part is still on the plate and the printer stayed on. Resume the print (below).
+- **Power cut or restart**: the part is still on the plate but the printer lost its Z position. Resume the print after lowering the nozzle onto it by hand (below).
+- **Part came off**: seat the part in a printed wall, or print on a finished part (insert mode, further below).
 
-<p align="center"><img src="https://raw.githubusercontent.com/EmirhanSyl/layer-rescue/main/images/readme/ui-resume.png" alt="The Layer Rescue window on the resume tab" width="400"></p>
+<p align="center"><img src="https://raw.githubusercontent.com/EmirhanSyl/layer-rescue/main/images/readme/modes.gif" alt="The animations of the three situations: it stopped, power cut or restart, part came off" width="720"></p>
 
-Each tab is a short list of numbered steps. On the resume tab you enter where the print stopped, say whether the printer was turned off, and confirm a few things Layer Rescue can't see for itself under **Safety checks**. **Create G-code** stays disabled until everything required is filled in, and the line at the bottom left says what is still missing. **Leave G-code unchanged** closes the window without touching the file; use it for normal prints.
+<p align="center"><img src="https://raw.githubusercontent.com/EmirhanSyl/layer-rescue/main/images/readme/ui-resume.png" alt="The Layer Rescue window: the three cards on the left, the steps of the chosen one on the right" width="720"></p>
 
-If the job is for a printer or filament setup that hasn't been tested yet, an extra **Untested setup** box appears above the tabs. It explains why and asks you to accept the risks before you can continue.
+At the top of the chosen card's page, a small drawing shows what will happen: amber layers are what is already printed, green layers are what Layer Rescue prints. It plays twice; click it to play it again. Below it are a few numbered steps: where the print stopped (or how tall the part is) and the **Safety checks**, the things Layer Rescue can't see for itself. The steps open one after another: when a step is complete, its number turns into a check mark and the next one slides open. Click a step's title to open or close any step at any time; a closed step shows what you entered. Settings most people never touch are folded away under **Options** / **Advanced settings** and **Experimental features**.
 
-**Language:** use the **English / Türkçe** buttons at the top right. The change applies immediately and is remembered for next time. On first start the language follows your system language. (Command-line output stays in English.)
+**Create G-code** stays disabled until everything required is filled in, and the line at the bottom says what is still missing. **Leave G-code unchanged** closes the window without touching the file; use it for normal prints.
+
+If the job is for a printer or filament setup that hasn't been tested yet, an **Untested setup** box appears at the top. It explains why and asks you to accept the risks before you can continue.
+
+The window fits on small screens: the sidebar and the buttons stay in place and the steps scroll when they are taller than the screen. The window can be resized and follows the display scaling of Windows and macOS.
+
+**Language and theme:** at the bottom left, switch between **English / Türkçe** and between **Auto / Light / Dark** (Auto follows the system). Both apply immediately and are remembered. On first start the language follows your system language. (Command-line output stays in English.)
 
 ## Resume a print
 
 ![Resuming a plane part after a filament jam](https://raw.githubusercontent.com/EmirhanSyl/layer-rescue/main/images/readme/plane.gif)
 
 1. Find the last layer that actually got filament (see [Picking the layer](#picking-the-layer) below).
-2. Slice the original project again, without changing anything. The Layer Rescue window opens on **Part is still on the plate**.
-3. **Step 1 – Where did the print stop?** Enter the last good layer. The window shows the layer and Z height that printing restarts at.
-4. **Step 2 – Was the printer turned off or restarted?**
-   - **No, it stayed on the whole time** (`retained`): the printer kept its Z position. Nothing else to do.
-   - **Yes, it was turned off or restarted** (`manual`): after a power cycle Z is not homed. Heat the bed back up, clean the nozzle, move it over a flat printed area of the last good layer and lower it until it just touches the surface. If the printer offers to home Z, don't accept. Do not move the part or the plate. ([Test 2](https://github.com/EmirhanSyl/layer-rescue/blob/main/docs/tests/02-power-loss-dragon.md) shows this step by step.)
-5. **Step 3 – Safety checks.** Layer Rescue cannot see the printer, so you confirm what it has to assume. Tick each box only if it is true:
+2. Slice the original project again, without changing anything. The Layer Rescue window opens on **It stopped**. Pick the card that matches what happened:
+   - **It stopped** (`retained`): the printer stayed on and kept its Z position. Nothing else to do.
+   - **Power cut or restart** (`manual`): after a power cycle Z is not homed. Heat the bed back up, clean the nozzle, move it over a flat printed area of the last good layer and lower it until it just touches the surface. If the printer offers to home Z, don't accept. Do not move the part or the plate. ([Test 2](https://github.com/EmirhanSyl/layer-rescue/blob/main/docs/tests/02-power-loss-dragon.md) shows this step by step.)
+3. **Step 1 – Where did the print stop?** Enter the last good layer, or measure the part with calipers and enter its height (the nearest layer is used). The window shows the layer and Z height that printing restarts at.
+4. **Step 2 – Safety checks.** Layer Rescue cannot see the printer, so you confirm what it has to assume. Tick each box only if it is true:
    - the part is still firmly stuck to the same plate and the plate was not moved;
-   - with _No, it stayed on_: the printer never lost power and the Z axis was not moved;
-   - with _Yes, it was restarted_: you will lower the clean nozzle onto the last good layer before starting the job.
+   - with _It stopped_: the printer never lost power and the Z axis was not moved;
+   - with _Power cut or restart_: you will lower the clean nozzle onto the last good layer before starting the job.
 
-   Only the check for the selected answer in step 2 is shown.
-
-6. **Options** can usually stay as they are: nozzle and bed temperature (blank = taken from the file) and homing X/Y before continuing (always on after a restart; Z is never homed).
+5. **Options** can usually stay as they are: nozzle and bed temperature (blank = taken from the file) and homing X/Y before continuing (always on after a restart; Z is never homed).
+6. **Experimental features** (folded, off by default): the **reheat pass**, see [Experimental features](#experimental-features).
 7. Click **Create G-code**, check the preview in Bambu Studio and send the job.
 
 ### Picking the layer
@@ -182,17 +201,17 @@ If some parts on a crowded plate came loose, take them off, delete them in Bambu
 For a part that came off the plate halfway, a finished part that broke, or a finished part that gets an addition. You slice the complete model (the old part plus what goes on top, one object). Layer Rescue replaces the layers below the part's top with a holding wall that follows the part's outline, pauses, and prints the rest on top of the part you put into the wall.
 
 1. Prepare the part: remove brim and strings. A broken part must be cut or sanded flat first. Measure its height with calipers.
-2. Slice the complete model. In the Layer Rescue window open **Part came off / print on a finished part**.
+2. Slice the complete model. In the Layer Rescue window click **Part came off** on the left.
 3. Enter the **part height** (or the last layer the part contains) and optionally the **wall height** (blank = recommended: half the part, 3–15 mm, always at least 1 mm below the top). Press **Preview** to see the wall from above and, under **Result**, where printing continues and any warnings.
 4. Tick the **Safety check** (you will stay at the printer, seat the part when it pauses and watch the first layers), click **Create G-code** and send the job. The printer levels the empty bed, prints the wall, lifts to 15 mm above the part height, parks at the back and pauses (`M400 U1`).
 5. Without removing or shifting the plate, press the part into the wall the same way round as in Bambu Studio (front of the model to the front of the plate), then press **Resume**.
 6. The printer reheats, purges, travels above the part and prints the rest. The first 2 layers on the part are 10 °C hotter, half speed and without part cooling for adhesion.
 
-<p align="center"><img src="https://raw.githubusercontent.com/EmirhanSyl/layer-rescue/main/images/readme/ui-insert.png" alt="The insert tab after pressing Preview" width="400"></p>
+<p align="center"><img src="https://raw.githubusercontent.com/EmirhanSyl/layer-rescue/main/images/readme/ui-insert.png" alt="Part came off, after pressing Preview" width="720"></p>
 
-After **Preview**, the right side shows the plate from above: the part (beige), the bottom and the rim of the wall (grey and red), the first layer that will be printed on the part (blue) and the supports that will be reprinted (green). **Result** on the left says which layers become the wall, where printing continues after the pause and how thick the first layer on the part will be, followed by any warnings. The advanced settings open under the preview.
+After **Preview**, the top view next to **Result** shows the plate from above: the part (amber), the bottom and the rim of the wall (grey and dark), the first layer that will be printed on the part (green) and the supports that will be reprinted (purple). **Result** says which layers become the wall, where printing continues after the pause and how thick the first layer on the part will be, followed by any warnings. Under the steps there are two folded sections, **Advanced settings** and **Experimental features**; click a title to open it.
 
-How the wall is made: the part's own outline is read from the sliced layers below the wall height. The opening at every height lets all sections below it pass (the part is lowered from above), with 0.25 mm clearance, a 4-line wall, a 5 mm brim and a small lead-in chamfer at the rim. All of these can be changed after ticking **Show advanced settings** (next to the preview).
+How the wall is made: the part's own outline is read from the sliced layers below the wall height. The opening at every height lets all sections below it pass (the part is lowered from above), with 0.25 mm clearance, a 4-line wall, a 5 mm brim and a small lead-in chamfer at the rim. All of these can be changed in **Advanced settings** (click the title under the steps).
 
 **Supports.** If the model has supports that reach above the part height (for example tree supports inside a hollow part, or next to it), their lower part is printed again before the pause, wherever the part will not hit them when it is lowered in. Remove the old supports from the part before seating it. Supports that only held the part's own overhangs are left out. Turn this off with **Reprint the supports below the part height** in the advanced settings (CLI `--no-reprint-supports`). [Test 4](https://github.com/EmirhanSyl/layer-rescue/blob/main/docs/tests/04-broken-rocket-drone.md) shows this on a hollow rocket body.
 
@@ -202,11 +221,34 @@ How the wall is made: the part's own outline is read from the sliced layers belo
 - **Parts that widen upwards** (like a boat hull) touch the wall only on sloped surfaces, so the nozzle can drag them up and out. Fix such a part with a few dots of hot glue over the seam, squeezed onto the wall rather than the part: it comes off the part cleanly afterwards. ([Test 3](https://github.com/EmirhanSyl/layer-rescue/blob/main/docs/tests/03-detached-benchy.md))
 - Seat the part level all around. Even 0.2 mm higher on one side shows up as layer lines on the other.
 
+Two experimental options, insert without the holding wall and the reheat pass, are described in [Experimental features](#experimental-features).
+
 Limits: one object on the plate, no prime tower, part at least 3 mm tall and 5 mm wide. The Z of everything printed on top is shifted by the difference between the measured height and the nearest model layer, so the first layer sits on the real part. If the top surface is a cut (infill exposed), add a height range modifier in Bambu Studio from the part height to about 0.6 mm above it with 100 % sparse infill density, so the first layers are solid.
+
+## Experimental features
+
+These are new, off by default and still being tested on real prints. In the window they are in the folded **Experimental features** section of each mode (its title shows how many are on); every warning they add starts with "Experimental:". Watch the first layers when you use them.
+
+<table>
+<tr>
+<td width="50%"><img src="https://raw.githubusercontent.com/EmirhanSyl/layer-rescue/main/images/readme/reheat.gif" alt="Reheat pass: the hot nozzle passes over the old surface without extruding, then prints" width="100%"></td>
+<td width="50%"><img src="https://raw.githubusercontent.com/EmirhanSyl/layer-rescue/main/images/readme/no-wall.gif" alt="No holding wall: the part is placed and taped down by hand, then printed on" width="100%"></td>
+</tr>
+<tr>
+<td><b>Reheat pass</b> (all modes)</td>
+<td><b>No holding wall</b> (insert mode)</td>
+</tr>
+</table>
+
+**Reheat pass** (CLI `--reheat`). After the resume sequence and before the first new layer, the hot nozzle traces that layer once without extruding, just above the old surface: the last good layer when you resume, the part's top in insert mode. The aim is a warmer old surface and a stronger seam. Defaults: 0.2 mm above the surface (`--reheat-gap`, 0.05–1 mm), 20 mm/s (`--reheat-speed`), one pass (`--reheat-passes`), at the print temperature (insert mode: the adhesion-layer temperature) unless `--reheat-temp` is given. The filament is retracted during the pass and the part fan is off. After a power cut its Z moves are relative to the aligned nozzle, like the rest of the job. Layer Rescue checks the output: the pass is only there when asked for, never extrudes and never goes below the old surface + 0.05 mm.
+
+**No holding wall** (CLI `--no-wall`, insert mode). The printer skips the wall, prints only the reprinted supports (if any) and pauses on an empty plate. You place the part by hand exactly where Bambu Studio shows it, facing the same way, and tape it down; nothing guides its position. Useful when the wall doesn't fit on the bed, and for comparing hand placement with the wall.
 
 ## What the generated job does
 
 It keeps the original header and settings, drops the start sequence and the finished layers, restores temperatures, fans and motion limits, lifts the nozzle, homes X/Y only (`G28 X`), purges at the rear chute, moves above the first point of the layer, lowers onto it and continues with the original G-code to the end.
+
+If you switched on the reheat pass, it runs right after this, before the first new layer.
 
 It never homes Z and never runs bed leveling. In manual mode every Z move is relative to the position you aligned, so the job does not depend on the Z the printer thinks it is at after a restart.
 
@@ -220,7 +262,8 @@ Layer Rescue saves prints, but it can't make the repair invisible or do everythi
 - **You pick the layer, and mistakes show.** There's no automatic detection of where the print really stopped. See [Picking the layer](#picking-the-layer).
 - **After a restart, the result depends on your hands.** The nozzle is placed on the part by eye.
 - **Insert mode is still beta.** How well a part fits the wall depends a lot on its shape: some drop in and sit snugly, some can shift, some need glue, and some may not fit at all. Round parts can't be oriented by the wall, so you have to seat them facing the right way. It handles one object on the plate and no prime tower.
-- **Printed on one printer so far.** The real-world tests were printed on a Bambu Lab P1S with a single filament. The sequences for the other Bambu Lab printers were checked against their own sliced G-code and Bambu's templates (see [Tested on](#tested-on)), but not printed yet, so watch the start closely.
+- **Printed on two printers so far.** The real-world tests were printed on a Bambu Lab P1S with a single filament, and [martinhanes](https://github.com/martinhanes) printed a two-colour job on an X2D. The sequences for the other Bambu Lab printers were checked against their own sliced G-code and Bambu's templates (see [Tested on](#tested-on)), but not printed yet, so watch the start closely.
+- **The experimental features haven't been tried on real prints yet.** That is what they are there for: if you try the reheat pass or insert without the wall, please [share your results](#share-your-results).
 - **Power-cut mode on the H2 series, the P2S, the X2D and the A2L is experimental.** After a power cut Z is not homed, and the purge, wipe and X homing commands the H2 needs (`G150.3`, `G150.2`, `G150.1`, `G28 X T300`) are firmware macros whose Z behaviour on an unhomed axis isn't documented. Like the stock start G-code, Layer Rescue lowers the bed 30 mm before these commands (also before the end G-code's), but this hasn't been checked on a printer yet: watch the first moves and be ready to stop. On the A2L, also turn timelapse off: its timelapse moves to the purge bin with `G150.3` on every layer, 0.4 mm above the part.
 
 ### Roadmap
@@ -229,9 +272,7 @@ Layer Rescue saves prints, but it can't make the repair invisible or do everythi
 
 - Fixed test files from the real prints, so a new feature can't quietly break an old case.
 - A "copy report" button that puts the version, printer, settings and warnings into one text for bug reports.
-- Help with finding the last good layer, for example turning a caliper height into a layer number.
 - Dropping failed objects from a crowded plate without re-slicing.
-- A short guide in the window that asks what happened and picks the right mode.
 - Real prints on the printers that have only been checked against sliced files so far (X1 Carbon, A1, H2D and the rest of the table), plus an FAQ.
 
 **Mid term: insert mode for more shapes**
@@ -258,6 +299,7 @@ Layer Rescue gets better with every real print it sees. If something didn't work
 layer-rescue --analyze print.gcode
 layer-rescue --last-layer 461 --z-mode retained print.gcode
 layer-rescue --last-layer 461 --z-mode manual --confirm-manual-z-aligned print.gcode
+layer-rescue --last-layer 461 --z-mode retained --reheat print.gcode   # experimental reheat pass
 ```
 
 Insert mode:
@@ -267,7 +309,7 @@ layer-rescue --part-height 23.4 --wall-height 10 --confirm-attended print.gcode
 layer-rescue --part-layer 117 --confirm-attended --preview-svg wall.svg print.gcode
 ```
 
-Insert options: `--clearance`, `--wall-lines`, `--brim`, `--no-chamfer`, `--z-fine`, `--standby-temp`, `--adhesion-layers`, `--no-reprint-supports`.
+Insert options: `--clearance`, `--wall-lines`, `--brim`, `--no-chamfer`, `--z-fine`, `--standby-temp`, `--adhesion-layers`, `--no-reprint-supports`. Experimental: `--no-wall` (insert mode only), `--reheat` (resume and insert mode, with `--reheat-gap`, `--reheat-speed`, `--reheat-passes`, `--reheat-temp`).
 
 `--allow-untested` accepts the risks of an untested printer or multi-filament job. `--nozzle-temp` and `--bed-temp` override the detected temperatures. Run `layer-rescue --help` for all options.
 
@@ -282,6 +324,8 @@ Thanks also to the designers of the models I used in the tests:
 - Boat: the classic [3DBenchy](https://www.3dbenchy.com/)
 - Rocket drone: [Sub-250g SpeedDrone](https://makerworld.com/tr/models/2637662-sub-250g-speeddrone-320km-h-fast#profileId-2913683) by luisengineering on MakerWorld
 - Spiders: [The World's Smallest Spider](https://makerworld.com/tr/models/2864339-the-world-s-smallest-spider-nozzle-0-4#profileId-3196930) by formastampa on MakerWorld
+
+Thanks to [martinhanes](https://github.com/martinhanes) for the first print on an X2D, across both nozzles.
 
 The roadmap also has ideas from the community: thanks to [u/robiebab](https://www.reddit.com/r/BambuLab/comments/1wvchb4/comment/pdcqgs8/) for automatic Z after a power loss, and to [u/Thing1_Tokyo](https://www.reddit.com/r/3Dprinting/comments/1wvcdxq/comment/pdayrw4/) for placed-object supports.
 

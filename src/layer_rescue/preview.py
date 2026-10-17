@@ -20,13 +20,14 @@ def plan_shapes(plan: InsertPlan) -> list[Shape]:
         shapes.append(Shape("silhouette", tuple(geo.to_float(path))))
     for path in plan.addition_section:
         shapes.append(Shape("addition", tuple(geo.to_float(path))))
-    first, last = plan.wall.layers[0], plan.wall.layers[-1]
-    for path in first.brim:
-        shapes.append(Shape("brim", tuple(geo.to_float(path))))
-    for path in first.loops:
-        shapes.append(Shape("wall-bottom", tuple(geo.to_float(path))))
-    for path in last.loops:
-        shapes.append(Shape("wall-top", tuple(geo.to_float(path))))
+    if plan.options.holding_wall:
+        first, last = plan.wall.layers[0], plan.wall.layers[-1]
+        for path in first.brim:
+            shapes.append(Shape("brim", tuple(geo.to_float(path))))
+        for path in first.loops:
+            shapes.append(Shape("wall-bottom", tuple(geo.to_float(path))))
+        for path in last.loops:
+            shapes.append(Shape("wall-top", tuple(geo.to_float(path))))
     if plan.supports:
         for layer in plan.supports.layers.values():
             if layer.pieces:
@@ -64,10 +65,8 @@ def plan_svg(plan: InsertPlan) -> str:
             # SVG y grows downwards; the bed's Y grows away from the front edge.
             points = " ".join(f"{x - min_x:.3f},{max_y - y:.3f}" for x, y in shape.points)
             body.append(f'<polygon points="{points}" {STYLES[kind]}/>')
-    label = (
-        f"part {plan.options.part_height_mm:g} mm, wall to {plan.wall.top_z:g} mm, "
-        f"resume at layer {plan.resume_layer.number}"
-    )
+    wall = f"wall to {plan.wall.top_z:g} mm" if plan.options.holding_wall else "no wall (experimental)"
+    label = f"part {plan.options.part_height_mm:g} mm, {wall}, resume at layer {plan.resume_layer.number}"
     return (
         f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {width:.3f} {height + 4:.3f}" '
         f'width="{width * 20:.0f}" height="{(height + 4) * 20:.0f}">'

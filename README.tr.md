@@ -23,6 +23,18 @@ _Bilerek kırılan bir roket drone gövdesi, plakaya geri oturtuluyor ve destekl
 > [!CAUTION]
 > Baskıyı devam ettirirken nozzle mevcut parçaya çarpabilir. Başlangıç sırasında yazıcının başında durun ve gerekirse hemen durdurun. Ayrıntılar için [SECURITY.md](SECURITY.md).
 
+## 1.2'de neler yeni?
+
+<p align="center"><img src="images/readme/whats-new-1.2.gif" alt="Yeni Layer Rescue penceresi: ne olduğunu seçin, katmanı ya da parçanın yüksekliğini girin, kontrolleri işaretleyin" width="720"></p>
+
+- **Yeni pencere.** Solda ne olduğunu seçin (baskı durdu, elektrik kesildi, parça koptu); küçük bir animasyon Layer Rescue'nun ne yapacağını gösterir. Adımlar sırayla açılır ve doldurdukça kendiliğinden tamamlanır. Açık ve koyu tema, Windows ekran ölçeğinde de net yazılar.
+- **Katman numarası yerine parçanın yüksekliği.** Parçayı kumpasla ölçüp yüksekliğini girin; en yakın katman kullanılır.
+- **Deneysel: yeniden ısıtma geçişi**, bütün modlarda. İlk yeni katmandan önce sıcak nozzle, eski yüzeyin üstünden filament akıtmadan bir kez geçer; amaç yüzeyi ısıtıp dikişi güçlendirmek.
+- **Deneysel: tutucu duvar olmadan yerleştirme.** Parçayı Bambu Studio'da göründüğü yere elle koyarsınız.
+- **X2D'de ilk baskı**: iki nozulu da kullanan iki renkli bir iş, [martinhanes](https://github.com/martinhanes) tarafından. Teşekkürler!
+
+Bütün değişiklikler [değişiklik günlüğünde](CHANGELOG.md).
+
 ## Neler yapabiliyor?
 
 - **Duran bir baskıya devam eder.** Filament bitti, nozzle tıkandı ya da baskıyı siz durdurdunuz: düzgün basılan son katmanı söylemeniz yeterli. İş, plakada duran parçanın tam üstünden, bir sonraki katmandan devam eder. ([Test 1](docs/tests/01-lw-pla-plane-part.tr.md))
@@ -32,7 +44,8 @@ _Bilerek kırılan bir roket drone gövdesi, plakaya geri oturtuluyor ve destekl
 - **Dolu bir plakada kalanları kurtarır.** Kalabalık bir plakada birkaç parça koptuysa, onları Bambu Studio'da silip geri kalanları bitirebilirsiniz. ([Test 5](docs/tests/05-multi-object-spiders.tr.md))
 - **Elle G-code düzenlemek yok.** Bambu Studio filament eşlemesini ve `.gcode.3mf` bilgilerini korur, önizleme de neyin basılacağını aynen gösterir.
 - **Varsayılan olarak temkinli.** Parçanın üstündeyken Z'yi asla home etmez ve tabla seviyelemesi yapmaz, kaydetmeden önce kendi çıktısını kontrol eder, güvenle işleyemeyeceği dosyalarda tahmin yürütmek yerine işi reddeder ve orijinal G-code'un yedeğini tutar. Kendi göremediği şeyleri de pencerede size onaylatır.
-- **Türkçe ve İngilizce**; dil, pencereden istediğiniz an değiştirilebilir.
+- **Türkçe ve İngilizce, açık ve koyu tema**; pencereden istediğiniz an değiştirilebilir.
+- **İsterseniz açabileceğiniz deneysel özellikler**: ilk yeni katmandan önce eski yüzeyi ısıtan bir geçiş ve tutucu duvarsız yerleştirme modu. Bkz. [Deneysel özellikler](#deneysel-özellikler).
 
 ## Gerçek testler
 
@@ -52,9 +65,10 @@ Her özelliği kendi P1S'imde gerçek baskılarla denedim ve hepsini videoları,
 
 ## Test edilenler
 
-Layer Rescue ile basılanlar (yukarıdaki [gerçek testler](#gerçek-testler)):
+Layer Rescue ile basılanlar (yukarıdaki [gerçek testler](#gerçek-testler) ve bir kullanıcının bildirdiği baskı):
 
 - Bambu Lab P1S, tek filament
+- Bambu Lab X2D, iki nozulu da kullanan iki renkli bir iş ([martinhanes](https://github.com/martinhanes) bastı)
 - Windows ve macOS (Linux kaynaktan kurulumla)
 - Bambu Studio G-code'u, katman bazlı baskı, göreli ekstrüzyon
 - Parça aynı plakada sağlam duruyor (devam modu) ya da plakadan ayrılmış / bitmiş ve etrafına basılan duvara geri oturabiliyor (yerleştirme modu, beta)
@@ -78,14 +92,14 @@ Bambu Studio 2.08'deki (02.08.02.61) 14 yazıcının her biri aynı şekilde kon
 | A1 mini | Tabla dışında, X-13.5'te purge | ✓ | |
 | H2D, H2D Pro, H2S, H2C | Firmware makroları (`G150.x`), deneysel | ✓ | |
 | P2S | Firmware makroları, deneysel | ✓ | |
-| X2D | Firmware makroları, iki nozul, deneysel | ✓ | |
+| X2D | Firmware makroları, iki nozul, deneysel | ✓ | ✓ ([martinhanes](https://github.com/martinhanes)) |
 | A2L | Tabla kaydıran yazıcıda firmware makroları, deneysel | ✓ | |
 
 Kontrol edilmiş bir G-code, basılmış bir parça demek değil. P1S dışındaki her yazıcıda Layer Rescue önce riskleri kabul etmenizi istiyor (CLI: `--allow-untested`); deneysel olarak işaretlenen diziler ise Bambu'nun belgelemediği firmware komutlarına dayanıyor. İşin başlangıcını izleyin; bu yazıcılardan birinde Layer Rescue ile baskı yaparsanız lütfen [sonuçlarınızı paylaşın](#sonuçlarınızı-paylaşın): bir yazıcıyı ortadaki sütundan sağdakine taşıyan şey gerçek bir baskı.
 
 Başka markaların yazıcıları, riskleri kabul ettikten sonra P1/X1 hareketlerini kullanır.
 
-Henüz test edilmeyenler: AMS / çok filamentli işler ve bir H2D'nin ya da X2D'nin iki nozulunu da kullanan işler. Birden fazla filament varsa Layer Rescue, devam edilen katmanda kullanılan filamenti yükler. Nesne bazlı baskı ve spiral vazo, Layer Rescue'nun çalışma şekline henüz uymuyor; bu yüzden bu işler hâlâ reddediliyor.
+Henüz test edilmeyenler: tek nozullu AMS / çok filamentli işler ve bir H2D'nin iki nozulunu da kullanan işler. Bir X2D'nin iki nozulunu kullanan iki renkli bir iş bir kez basıldı ([martinhanes](https://github.com/martinhanes)'e teşekkürler); başka sonuçlar da çok işe yarar. Birden fazla filament varsa Layer Rescue, devam edilen katmanda kullanılan filamenti yükler. Nesne bazlı baskı ve spiral vazo, Layer Rescue'nun çalışma şekline henüz uymuyor; bu yüzden bu işler hâlâ reddediliyor.
 
 ## Kurulum
 
@@ -127,39 +141,43 @@ Post-processing script'ler çalıştırılabilir dosya olduğu için Studio uyar
 
 ## Pencere
 
-Dilimlemeden sonra Layer Rescue küçük bir pencere açar. En üstte aldığı dosyayı (yazıcı, filament, katman sayısı) gösterir, altında da her durum için bir sekme vardır:
+Dilimlemeden sonra Layer Rescue penceresini açar. Solda, **Baskıya ne oldu?** başlığının altında her durum için bir kart vardır:
 
-- **Parça hâlâ plakada**: yarım kalan baskıya devam etmek için (aşağıda).
-- **Parça ayrıldı / bitmiş parçanın üstüne bas**: yerleştirme modu (daha aşağıda).
+- **Baskı durdu**: parça hâlâ plakada ve yazıcı açık kaldı. Baskıya devam edin (aşağıda).
+- **Elektrik kesildi**: parça hâlâ plakada ama yazıcı Z konumunu kaybetti. Nozzle'ı elle parçaya indirdikten sonra baskıya devam edin (aşağıda).
+- **Parça koptu**: parçayı basılan bir duvara oturtun ya da bitmiş bir parçanın üstüne basın (yerleştirme modu, daha aşağıda).
 
-<p align="center"><img src="images/readme/ui-resume.png" alt="Layer Rescue penceresi, devam sekmesi" width="560"></p>
+<p align="center"><img src="images/readme/modes.gif" alt="Üç durumun animasyonları: baskı durdu, elektrik kesildi, parça koptu" width="720"></p>
 
-_Ekran görüntüleri İngilizce arayüzden; pencerenin sağ üstünden Türkçeye geçebilirsiniz._
+<p align="center"><img src="images/readme/ui-resume.png" alt="Layer Rescue penceresi: solda üç kart, sağda seçilen kartın adımları" width="720"></p>
 
-Her sekme kısa, numaralı adımlardan oluşur. Devam sekmesinde baskının nerede durduğunu girer, yazıcının kapatılıp kapatılmadığını seçer ve Layer Rescue'nun kendi göremediği birkaç şeyi **Güvenlik kontrolleri** altında onaylarsınız. Gerekli her şey doldurulana kadar **G-code oluştur** düğmesi pasif kalır; sol alttaki satır neyin eksik olduğunu yazar. **G-code'u değiştirme** pencereyi dosyaya dokunmadan kapatır; normal baskılarda bunu kullanın.
+_Ekran görüntüleri İngilizce arayüzden; pencerenin sol altından Türkçeye geçebilirsiniz._
 
-İş henüz test edilmemiş bir yazıcı ya da filament kurulumu içinse, sekmelerin üstünde ek olarak bir **Test edilmemiş kurulum** kutusu çıkar. Sebebini açıklar ve devam edebilmeniz için riskleri kabul etmenizi ister.
+Seçilen kartın sayfasının en üstünde küçük bir çizim ne olacağını gösterir: amber katmanlar zaten basılmış olanlar, yeşil katmanlar Layer Rescue'nun basacakları. Çizim iki kez oynar; tekrar oynatmak için üstüne tıklayın. Altında birkaç numaralı adım vardır: baskının nerede durduğu (ya da parçanın ne kadar yüksek olduğu) ve Layer Rescue'nun kendi göremediği şeyler için **Güvenlik kontrolleri**. Adımlar sırayla açılır: bir adım tamamlanınca numarası onay işaretine dönüşür ve sıradaki adım açılır. Başlığına tıklayarak istediğiniz adımı istediğiniz zaman açıp kapatabilirsiniz; kapalı bir adım girdiğiniz değeri gösterir. Çoğu kişinin hiç dokunmadığı ayarlar **Seçenekler** / **Gelişmiş ayarlar** ve **Deneysel özellikler** altında katlanmış durur.
 
-**Dil:** sağ üstteki **English / Türkçe** düğmelerini kullanın. Değişiklik hemen uygulanır ve bir sonraki açılış için hatırlanır. İlk açılışta sistem dilinize göre seçilir. (Komut satırı çıktısı İngilizce kalır.)
+Gerekli her şey doldurulana kadar **G-code oluştur** düğmesi pasif kalır; alttaki satır neyin eksik olduğunu yazar. **G-code'u değiştirme** pencereyi dosyaya dokunmadan kapatır; normal baskılarda bunu kullanın.
+
+İş henüz test edilmemiş bir yazıcı ya da filament kurulumu içinse, en üstte bir **Test edilmemiş kurulum** kutusu çıkar. Sebebini açıklar ve devam edebilmeniz için riskleri kabul etmenizi ister.
+
+Pencere küçük ekranlara da sığar: kenar çubuğu ve düğmeler yerinde kalır, adımlar ekrandan uzunsa kaydırılır. Pencere yeniden boyutlandırılabilir ve Windows ile macOS'un ekran ölçeğine uyar.
+
+**Dil ve tema:** sol altta **English / Türkçe** ile **Otomatik / Açık / Koyu** arasında geçiş yapın (Otomatik sistemi izler). İkisi de hemen uygulanır ve hatırlanır. İlk açılışta dil, sistem dilinize göre seçilir. (Komut satırı çıktısı İngilizce kalır.)
 
 ## Baskıya devam etme
 
 ![Filament sıkışmasından sonra devam ettirilen uçak parçası](images/readme/plane.gif)
 
 1. Gerçekten filament basılmış son katmanı bulun (aşağıdaki [Katmanı seçmek](#katmanı-seçmek) bölümüne bakın).
-2. Orijinal projeyi hiçbir şeyini değiştirmeden yeniden dilimleyin. Layer Rescue penceresi **Parça hâlâ plakada** sekmesiyle açılır.
-3. **Adım 1 – Baskı nerede durdu?** Düzgün basılan son katmanı girin. Pencere, baskının hangi katmandan ve hangi Z yüksekliğinden devam edeceğini gösterir.
-4. **Adım 2 – Yazıcı kapatıldı ya da yeniden başlatıldı mı?**
-   - **Hayır, hep açık kaldı** (`retained`): yazıcı Z konumunu korudu. Başka bir şey yapmanız gerekmez.
-   - **Evet, kapatıldı ya da yeniden başlatıldı** (`manual`): yazıcı kapatılıp açıldıysa Z home edilmemiştir. Tablayı yeniden ısıtın, nozzle'ı temizleyin, son düzgün katmanın düz bir bölgesinin üstüne getirin ve yüzeye hafifçe değene kadar indirin. Yazıcı Z'yi home etmeyi teklif ederse kabul etmeyin. Parçayı ve plakayı oynatmayın. ([Test 2](docs/tests/02-power-loss-dragon.tr.md) bunu adım adım gösteriyor.)
-5. **Adım 3 – Güvenlik kontrolleri.** Layer Rescue yazıcıyı göremediği için varsaydığı şeyleri sizin onaylamanız gerekir. Her kutuyu yalnızca doğruysa işaretleyin:
+2. Orijinal projeyi hiçbir şeyini değiştirmeden yeniden dilimleyin. Layer Rescue penceresi **Baskı durdu** kartıyla açılır. Olana uyan kartı seçin:
+   - **Baskı durdu** (`retained`): yazıcı açık kaldı ve Z konumunu korudu. Başka bir şey yapmanız gerekmez.
+   - **Elektrik kesildi** (`manual`): yazıcı kapatılıp açıldıysa Z home edilmemiştir. Tablayı yeniden ısıtın, nozzle'ı temizleyin, son düzgün katmanın düz bir bölgesinin üstüne getirin ve yüzeye hafifçe değene kadar indirin. Yazıcı Z'yi home etmeyi teklif ederse kabul etmeyin. Parçayı ve plakayı oynatmayın. ([Test 2](docs/tests/02-power-loss-dragon.tr.md) bunu adım adım gösteriyor.)
+3. **Adım 1 – Baskı nerede durdu?** Düzgün basılan son katmanı girin ya da parçanın yüksekliğini kumpasla ölçüp girin (en yakın katman kullanılır). Pencere, baskının hangi katmandan ve hangi Z yüksekliğinden devam edeceğini gösterir.
+4. **Adım 2 – Güvenlik kontrolleri.** Layer Rescue yazıcıyı göremediği için varsaydığı şeyleri sizin onaylamanız gerekir. Her kutuyu yalnızca doğruysa işaretleyin:
    - parça hâlâ aynı plakaya sağlam yapışık ve plaka yerinden oynatılmadı;
-   - _Hayır, hep açık kaldı_ seçiliyse: yazıcının elektriği hiç kesilmedi ve Z ekseni oynatılmadı;
-   - _Evet, yeniden başlatıldı_ seçiliyse: işi başlatmadan önce temiz nozzle'ı son düzgün katmana indireceksiniz.
-
-   Yalnızca 2. adımdaki seçime ait kontrol gösterilir.
-
-6. **Seçenekler** genelde olduğu gibi kalabilir: nozzle ve tabla sıcaklığı (boş = dosyadaki değer) ve devam etmeden önce X/Y'yi home etmek (yeniden başlatmadan sonra her zaman açık; Z hiçbir zaman home edilmez).
+   - _Baskı durdu_ seçiliyse: yazıcının elektriği hiç kesilmedi ve Z ekseni oynatılmadı;
+   - _Elektrik kesildi_ seçiliyse: işi başlatmadan önce temiz nozzle'ı son düzgün katmana indireceksiniz.
+5. **Seçenekler** genelde olduğu gibi kalabilir: nozzle ve tabla sıcaklığı (boş = dosyadaki değer) ve devam etmeden önce X/Y'yi home etmek (yeniden başlatmadan sonra her zaman açık; Z hiçbir zaman home edilmez).
+6. **Deneysel özellikler** (katlanmış, varsayılan olarak kapalı): **yeniden ısıtma geçişi**, bkz. [Deneysel özellikler](#deneysel-özellikler).
 7. **G-code oluştur**'a basın, Bambu Studio önizlemesini kontrol edin ve işi gönderin.
 
 ### Katmanı seçmek
@@ -184,17 +202,17 @@ Kalabalık bir plakada bazı parçalar koptuysa onları alın, Bambu Studio'da s
 Yarıda plakadan kopmuş, sonradan kırılmış ya da üstüne ekleme yapılacak bitmiş bir parça için. Tam modeli (eski parça + üstüne gelecek kısım, tek obje) dilimlersiniz. Layer Rescue parçanın üst yüzeyinin altındaki katmanları, parçanın dış hattını takip eden bir tutucu duvarla değiştirir, duraklar ve duvara yerleştirdiğiniz parçanın üstüne kalanını basar.
 
 1. Parçayı hazırlayın: brim'i ve ipleri temizleyin. Kırık bir parçayı önce düz kesin ya da zımparalayın. Yüksekliğini kumpasla ölçün.
-2. Tam modeli dilimleyin. Layer Rescue penceresinde **Parça ayrıldı / bitmiş parçanın üstüne bas** sekmesini açın.
+2. Tam modeli dilimleyin. Layer Rescue penceresinde soldaki **Parça koptu** kartına tıklayın.
 3. **Parça yüksekliğini** (ya da parçanın içerdiği son katmanı) ve isterseniz **duvar yüksekliğini** girin (boş = önerilen: parçanın yarısı, 3–15 mm, her zaman tepeden en az 1 mm aşağıda). **Önizle**'ye basınca duvarı üstten görürsünüz; **Sonuç** bölümünde de baskının nereden devam edeceği ve varsa uyarılar yazar.
 4. **Güvenlik kontrolü** kutusunu işaretleyin (yazıcının başında kalacak, duraklayınca parçayı yerleştirecek ve ilk katmanları izleyeceksiniz), **G-code oluştur**'a basın ve işi gönderin. Yazıcı boş tablayı seviyeler, duvarı basar, parça yüksekliğinin 15 mm üstüne çıkar, arkaya park eder ve duraklar (`M400 U1`).
 5. Plakayı çıkarmadan ve oynatmadan parçayı duvara Bambu Studio'daki yönüyle (modelin önü plakanın önüne gelecek şekilde) bastırın, sonra yazıcıda **Resume**'a basın.
 6. Yazıcı yeniden ısınır, purge yapar, parçanın üstüne gelir ve kalanını basar. Parçaya değen ilk 2 katman, iyi yapışması için 10 °C daha sıcak, yarı hızda ve parça fanı kapalı basılır.
 
-<p align="center"><img src="images/readme/ui-insert.png" alt="Önizle'ye basıldıktan sonra yerleştirme sekmesi" width="560"></p>
+<p align="center"><img src="images/readme/ui-insert.png" alt="Parça koptu, Önizle'ye basıldıktan sonra" width="720"></p>
 
-**Önizle**'ye bastıktan sonra sağ tarafta plaka üstten görünür: parça (bej), duvarın tabanı ve ağzı (gri ve kırmızı), parçanın üstüne basılacak ilk katman (mavi) ve yeniden basılacak destekler (yeşil). Soldaki **Sonuç** bölümü hangi katmanların duvar olacağını, duraklamadan sonra baskının nereden devam edeceğini ve parçanın üstündeki ilk katmanın ne kalınlıkta olacağını yazar; ardından varsa uyarılar gelir. Gelişmiş ayarlar önizlemenin altında açılır.
+**Önizle**'ye bastıktan sonra **Sonuç**'un yanındaki üstten görünümde plaka görünür: parça (amber), duvarın tabanı ve ağzı (gri ve koyu), parçanın üstüne basılacak ilk katman (yeşil) ve yeniden basılacak destekler (mor). **Sonuç** bölümü hangi katmanların duvar olacağını, duraklamadan sonra baskının nereden devam edeceğini ve parçanın üstündeki ilk katmanın ne kalınlıkta olacağını yazar; ardından varsa uyarılar gelir. Adımların altında iki katlanmış bölüm vardır: **Gelişmiş ayarlar** ve **Deneysel özellikler**; açmak için başlığa tıklayın.
 
-Duvar nasıl oluşur: parçanın kendi dış hattı, dilimlenmiş katmanlardan duvar yüksekliğine kadar okunur. Parça yukarıdan indirildiği için her yükseklikteki açıklık, altındaki bütün kesitlerin geçmesine izin verir. Varsayılan olarak 0,25 mm boşluk, 4 çizgi kalınlığında duvar, 5 mm brim ve ağızda küçük bir giriş pahı vardır. Hepsi **Gelişmiş ayarları göster** işaretlendiğinde (önizlemenin yanında) değiştirilebilir.
+Duvar nasıl oluşur: parçanın kendi dış hattı, dilimlenmiş katmanlardan duvar yüksekliğine kadar okunur. Parça yukarıdan indirildiği için her yükseklikteki açıklık, altındaki bütün kesitlerin geçmesine izin verir. Varsayılan olarak 0,25 mm boşluk, 4 çizgi kalınlığında duvar, 5 mm brim ve ağızda küçük bir giriş pahı vardır. Hepsi **Gelişmiş ayarlar** bölümünde (adımların altındaki başlığa tıklayın) değiştirilebilir.
 
 **Destekler.** Modelde parça yüksekliğinin üstüne uzanan destekler varsa (örneğin içi boş bir parçanın içindeki ya da yanındaki ağaç destekler), bunların alt kısmı, parça indirilirken çarpmayacağı her yerde duraklamadan önce yeniden basılır. Parçayı yerleştirmeden önce üzerindeki eski destekleri temizleyin. Yalnızca parçanın kendi çıkıntılarını taşıyan destekler basılmaz. Bunu gelişmiş ayarlardaki **Parça yüksekliğinin altındaki destekleri yeniden bas** ile kapatabilirsiniz (CLI `--no-reprint-supports`). [Test 4](docs/tests/04-broken-rocket-drone.tr.md) bunu içi boş bir roket gövdesinde gösteriyor.
 
@@ -204,11 +222,34 @@ Duvar nasıl oluşur: parçanın kendi dış hattı, dilimlenmiş katmanlardan d
 - **Yukarı doğru genişleyen parçalar** (tekne gövdesi gibi) duvara yalnızca eğimli yüzeylerden değer, bu yüzden nozzle onları sürükleyip yukarı kaldırabilir. Böyle bir parçayı birleşim çizgisine birkaç damla sıcak silikonla sabitleyin; silikonu parçaya değil duvara sıkın, sonrasında parçadan temiz çıkar. ([Test 3](docs/tests/03-detached-benchy.tr.md))
 - Parçayı her yerden düz oturtun. Bir tarafın sadece 0,2 mm yukarıda kalması bile diğer tarafta katman izi olarak görünür.
 
+İki deneysel seçenek, tutucu duvarsız yerleştirme ve yeniden ısıtma geçişi, [Deneysel özellikler](#deneysel-özellikler) bölümünde anlatılıyor.
+
 Sınırlar: plakada tek obje, prime tower kapalı, parça en az 3 mm yüksek ve 5 mm geniş. Üste basılan her şeyin Z'si, ölçülen yükseklik ile en yakın model katmanı arasındaki fark kadar kaydırılır; böylece ilk katman gerçek parçanın üstüne oturur. Üst yüzey kesilmiş bir yüzeyse (dolgu açıkta), Bambu Studio'da parça yüksekliğinden yaklaşık 0,6 mm yukarıya kadar %100 dolgulu bir height range modifier ekleyin, böylece ilk katmanlar dolu basılır.
+
+## Deneysel özellikler
+
+Bunlar yeni, varsayılan olarak kapalı ve hâlâ gerçek baskılarda test ediliyor. Pencerede her modun katlanmış **Deneysel özellikler** bölümündeler (başlık kaçının açık olduğunu gösterir); ekledikleri her uyarı "Deneysel:" ile başlar. Kullandığınızda ilk katmanları izleyin.
+
+<table>
+<tr>
+<td width="50%"><img src="images/readme/reheat.gif" alt="Yeniden ısıtma geçişi: sıcak nozzle eski yüzeyin üstünden filament akıtmadan geçer, sonra basar" width="100%"></td>
+<td width="50%"><img src="images/readme/no-wall.gif" alt="Tutucu duvar yok: parça elle konup bantlanır, sonra üstüne basılır" width="100%"></td>
+</tr>
+<tr>
+<td><b>Yeniden ısıtma geçişi</b> (bütün modlar)</td>
+<td><b>Tutucu duvar yok</b> (yerleştirme modu)</td>
+</tr>
+</table>
+
+**Yeniden ısıtma geçişi** (CLI `--reheat`). Devam dizisinden sonra, ilk yeni katmandan önce sıcak nozzle o katmanın yolunu eski yüzeyin hemen üstünden, filament akıtmadan bir kez tarar: devam ederken son düzgün katmanın, yerleştirme modunda parçanın üst yüzeyinin üstünden. Amaç eski yüzeyi ısıtıp dikişi güçlendirmek. Varsayılanlar: yüzeyin 0,2 mm üstü (`--reheat-gap`, 0,05–1 mm), 20 mm/s (`--reheat-speed`), bir geçiş (`--reheat-passes`); `--reheat-temp` verilmezse baskı sıcaklığında (yerleştirme modunda yapışma katmanlarının sıcaklığında). Geçiş sırasında filament geri çekilir ve parça fanı kapalıdır. Elektrik kesintisinden sonra Z hareketleri, işin geri kalanı gibi hizalanmış nozzle'a göredir. Layer Rescue çıktıyı kontrol eder: geçiş yalnızca istendiğinde vardır, hiç filament akıtmaz ve eski yüzey + 0,05 mm'nin altına inmez.
+
+**Tutucu duvar yok** (CLI `--no-wall`, yerleştirme modu). Yazıcı duvarı atlar, yalnızca (varsa) yeniden basılan destekleri basar ve boş plakada duraklar. Parçayı Bambu Studio'da göründüğü yere, aynı yöne bakacak şekilde elle koyup bantlarsınız; konumunu hiçbir şey yönlendirmez. Duvar plakaya sığmadığında ve elle yerleştirmeyi duvarla karşılaştırmak için işe yarar.
 
 ## Oluşturulan iş ne yapar?
 
 Orijinal başlık ve ayarları korur, başlangıç rutinini ve basılmış katmanları çıkarır, sıcaklıkları, fanları ve hareket limitlerini geri yükler. Nozzle'ı kaldırır, yalnızca X/Y eksenlerini home eder (`G28 X`), arkadaki atık kanalında purge yapar, katmanın ilk noktasının üstüne gider, aşağı iner ve orijinal G-code ile sona kadar devam eder.
+
+Yeniden ısıtma geçişini açtıysanız, bunun hemen ardından, ilk yeni katmandan önce çalışır.
 
 Z eksenini hiçbir zaman home etmez ve tabla seviyelemesi yapmaz. Manuel modda bütün Z hareketleri sizin hizaladığınız konuma göre görelidir; yazıcı yeniden başlatıldıktan sonra kendini hangi Z'de sanırsa sansın sonuç değişmez.
 
@@ -222,7 +263,8 @@ Layer Rescue baskıları kurtarıyor ama tamiri görünmez yapamıyor ve henüz 
 - **Katmanı siz seçiyorsunuz ve hatalar belli oluyor.** Baskının gerçekte nerede durduğunu otomatik bulan bir şey yok. [Katmanı seçmek](#katmanı-seçmek) bölümüne bakın.
 - **Yeniden başlatmadan sonra sonuç sizin elinize bağlı.** Nozzle parçanın üstüne gözle yerleştiriliyor.
 - **Yerleştirme modu hâlâ beta.** Parçanın duvara ne kadar iyi oturduğu büyük ölçüde şekline bağlı: bazıları içine girip sıkıca oturuyor, bazıları kayabiliyor, bazıları yapıştırma istiyor, bazıları hiç oturmayabiliyor. Yuvarlak parçaların yönünü duvar sabitleyemiyor, doğru yönde oturtmak size kalıyor. Plakada tek obje ve prime tower olmadan çalışıyor.
-- **Şimdilik tek yazıcıda basıldı.** Gerçek testler tek filamentli bir Bambu Lab P1S'te basıldı. Diğer Bambu Lab yazıcılarının dizileri kendi dilimlenmiş G-code'ları ve Bambu'nun şablonlarıyla kontrol edildi (bkz. [Test edilenler](#test-edilenler)), ama henüz basılmadı; başlangıcı yakından izleyin.
+- **Şimdilik iki yazıcıda basıldı.** Gerçek testler tek filamentli bir Bambu Lab P1S'te basıldı; [martinhanes](https://github.com/martinhanes) da bir X2D'de iki renkli bir iş bastı. Diğer Bambu Lab yazıcılarının dizileri kendi dilimlenmiş G-code'ları ve Bambu'nun şablonlarıyla kontrol edildi (bkz. [Test edilenler](#test-edilenler)), ama henüz basılmadı; başlangıcı yakından izleyin.
+- **Deneysel özellikler henüz gerçek baskılarda denenmedi.** Zaten bunun için varlar: yeniden ısıtma geçişini ya da duvarsız yerleştirmeyi denerseniz lütfen [sonuçlarınızı paylaşın](#sonuçlarınızı-paylaşın).
 - **H2 serisinde, P2S'te, X2D'de ve A2L'de elektrik kesintisi modu deneysel.** Elektrik kesintisinden sonra Z'ye home atılmamış olur; H2'nin ihtiyaç duyduğu purge, silme ve X home komutları (`G150.3`, `G150.2`, `G150.1`, `G28 X T300`) ise home atılmamış bir eksende Z'yi nasıl hareket ettirdiği belgelenmemiş firmware makroları. Layer Rescue, stok başlangıç G-code'u gibi bu komutlardan önce (bitiş G-code'undakilerden önce de) tablayı 30 mm indiriyor; ama bu henüz bir yazıcıda denenmedi: ilk hareketleri izleyin ve durdurmaya hazır olun. A2L'de ayrıca timelapse'i kapatın: timelapse her katmanda parçanın 0.4 mm üstündeyken `G150.3` ile purge kutusuna gidiyor.
 
 ### Yol haritası
@@ -231,9 +273,7 @@ Layer Rescue baskıları kurtarıyor ama tamiri görünmez yapamıyor ve henüz 
 
 - Gerçek baskılardan alınmış sabit test dosyaları. Böylece yeni bir özellik eski bir senaryoyu sessizce bozamaz.
 - Hata bildirimleri için sürümü, yazıcıyı, ayarları ve uyarıları tek metne koyan bir "Raporu kopyala" butonu.
-- Son düzgün katmanı bulmaya yardım, örneğin kumpasla ölçülen yüksekliği katman numarasına çevirmek.
 - Kalabalık bir plakada başarısız objeleri yeniden dilimlemeden çıkarmak.
-- Pencerede ne olduğunu sorup doğru modu seçen kısa bir yönlendirme.
 - Şimdiye kadar yalnızca dilimlenmiş dosyalarla kontrol edilen yazıcılarda (X1 Carbon, A1, H2D ve tablodaki diğerleri) gerçek baskılar ve bir SSS.
 
 **Orta vade: yerleştirme modunda daha çok şekil**
@@ -260,6 +300,7 @@ Layer Rescue gördüğü her gerçek baskıyla daha iyi hale geliyor. Bir şey �
 layer-rescue --analyze print.gcode
 layer-rescue --last-layer 461 --z-mode retained print.gcode
 layer-rescue --last-layer 461 --z-mode manual --confirm-manual-z-aligned print.gcode
+layer-rescue --last-layer 461 --z-mode retained --reheat print.gcode   # deneysel yeniden ısıtma geçişi
 ```
 
 Yerleştirme modu:
@@ -269,7 +310,7 @@ layer-rescue --part-height 23.4 --wall-height 10 --confirm-attended print.gcode
 layer-rescue --part-layer 117 --confirm-attended --preview-svg wall.svg print.gcode
 ```
 
-Yerleştirme seçenekleri: `--clearance`, `--wall-lines`, `--brim`, `--no-chamfer`, `--z-fine`, `--standby-temp`, `--adhesion-layers`, `--no-reprint-supports`.
+Yerleştirme seçenekleri: `--clearance`, `--wall-lines`, `--brim`, `--no-chamfer`, `--z-fine`, `--standby-temp`, `--adhesion-layers`, `--no-reprint-supports`. Deneysel: `--no-wall` (yalnızca yerleştirme modu), `--reheat` (devam ve yerleştirme modu; `--reheat-gap`, `--reheat-speed`, `--reheat-passes`, `--reheat-temp` ile).
 
 `--allow-untested`, test edilmemiş bir yazıcının ya da çok filamentli bir işin risklerini kabul eder. `--nozzle-temp` ve `--bed-temp` algılanan sıcaklıkları değiştirir. Bütün seçenekler için `layer-rescue --help`.
 
@@ -284,6 +325,8 @@ Testlerde kullandığım modellerin tasarımcılarına da teşekkürler:
 - Tekne: klasik [3DBenchy](https://www.3dbenchy.com/)
 - Roket drone: MakerWorld'de luisengineering'in [Sub-250g SpeedDrone](https://makerworld.com/tr/models/2637662-sub-250g-speeddrone-320km-h-fast#profileId-2913683) modeli
 - Örümcekler: MakerWorld'de formastampa'nın [The World's Smallest Spider](https://makerworld.com/tr/models/2864339-the-world-s-smallest-spider-nozzle-0-4#profileId-3196930) modeli
+
+İki nozulu da kullanan ilk X2D baskısı için [martinhanes](https://github.com/martinhanes)'e teşekkürler.
 
 Yol haritasında topluluktan gelen fikirler de var: elektrik kesintisinden sonra otomatik Z fikri için [u/robiebab](https://www.reddit.com/r/BambuLab/comments/1wvchb4/comment/pdcqgs8/)'e, yerleştirilen nesneyi destek olarak kullanma fikri için [u/Thing1_Tokyo](https://www.reddit.com/r/3Dprinting/comments/1wvcdxq/comment/pdayrw4/)'ya teşekkürler.
 
