@@ -6,21 +6,31 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-10-17
+
+A new window, the part's height as a way to say where the print stopped, and two experimental features. Thanks to [martinhanes](https://github.com/martinhanes) for the first print on an X2D, a two-colour job across both nozzles.
+
+![The new Layer Rescue window](https://raw.githubusercontent.com/EmirhanSyl/layer-rescue/main/images/readme/whats-new-1.2.gif)
+
 ### Added
 
-- Experimental insert-mode features, off by default and shown in a folded **Experimental features** section of the insert tab:
-  - **No holding wall** (`--no-wall`): the job prints only the reprinted supports (if any) and pauses on an empty plate; the part is placed by hand at its sliced position. The bed check for the wall is skipped, since no wall is printed.
-  - **Reheat pass** (`--reheat`, `--reheat-gap`, `--reheat-speed`, `--reheat-passes`, `--reheat-temp`): before the first layer on top, the nozzle traces that layer once without extruding, a small gap above the part, to warm the old surface. The output validator checks that the pass sits right after the resume block, never extrudes and never goes below the part top + 0.05 mm.
-  - Both were first used as study-only transformations in `benchmark/`; they now come from the library itself, with tests (`tests/test_experimental.py`) and Turkish messages.
-- Experimental **reheat pass for resumed prints**, in both Z modes (printer stayed on / restarted after a power cut): `--reheat` (and the same `--reheat-*` options) now also works with `--last-layer` / `--start-layer`, and the resume tab has its own folded **Experimental features** section. The nozzle traces the resumed layer once without extruding, `--reheat-gap` above the last printed layer, right after the resume block. In restarted mode its Z moves are relative, like the rest of the job. The resume validator checks that the pass is there only when asked for, never extrudes, never goes below the last printed layer + 0.05 mm and ends at the resumed layer's height. Checked on all printer profiles (P1/X1, A1, A1 mini, H2C, H2D, H2D Pro, H2S, P2S, X2D, A2L).
+- **New window.** A sidebar with a card for each situation (**It stopped**, **Power cut or restart**, **Part came off**) replaces the tabs and the "was the printer restarted?" step. Each card shows a small animation of what Layer Rescue will do: amber layers are the old print, green layers what it prints. The steps open one after another as you fill them in (the number turns into a check mark and the next step slides open); click any step's title to open or close it. Light and dark theme (Auto follows the system), sharp text with Windows display scaling, and the language and theme are remembered.
+- **Resume by the part's height.** Measure the part with calipers and enter its height instead of the last good layer; the nearest layer is used and shown.
+- **Insert mode previews by itself** once the part height is entered, and opens the safety check when the preview is fine.
+- **Experimental reheat pass** (`--reheat`, `--reheat-gap`, `--reheat-speed`, `--reheat-passes`, `--reheat-temp`), in every mode: printer stayed on, power cut and insert. Before the first new layer, the hot nozzle traces it once without extruding, just above the old surface, to warm it for a stronger seam. After a power cut its Z moves are relative, like the rest of the job. The output validator checks that the pass is only there when asked for, never extrudes and never goes below the old surface + 0.05 mm. Off by default.
+- **Experimental insert without the holding wall** (`--no-wall`): the job prints only the reprinted supports (if any) and pauses on an empty plate; you place the part by hand where Bambu Studio shows it. The bed check for the wall is skipped, since no wall is printed. Off by default.
+- In the window, both are in a folded **Experimental features** section of each mode; their warnings start with "Experimental:". Both have Turkish messages and tests (`tests/test_experimental.py`).
 
 ### Changed
 
-- New window, built with CustomTkinter: a sidebar with a card for each situation (**It stopped**, **Power cut or restart**, **Part came off**) instead of tabs and a "was the printer restarted?" step, numbered step cards, folded options, light and dark themes (Auto follows the system) and sharp text with Windows display scaling. Each mode shows a small side-view animation of what will happen (amber = already printed, green = what Layer Rescue prints), and so do the experimental reheat pass and the wall-less insert; they are drawn on Tk canvases, so the app needs no image files or Pillow. The language and theme switches are at the bottom left and are remembered. The window fits on small screens (the steps scroll, the sidebar and buttons stay) and can be resized. In insert mode the wall-only settings are greyed out when the holding wall is off.
-- Steps open one after another as they are completed: the number turns into a check mark with a short animation and the next step slides open (and scrolls into view). Any step can be opened or closed by clicking its title; a closed step shows a one-line summary. In insert mode a valid part height previews the job by itself.
-- Resume: the last good layer can also be given as the part's measured height; the nearest layer is used (like the part's last layer in insert mode).
-- The mode animations print every new layer in the direction the nozzle moves (the second green layer used to grow the wrong way).
-- New dependency: `customtkinter` (about 300 kB, with `darkdetect` and `packaging`); the PyInstaller builds collect its data files.
+- The window is built with CustomTkinter. New dependency: `customtkinter` (about 300 kB, with `darkdetect` and `packaging`); the PyInstaller builds collect its data files. The drawings are made on Tk canvases, so there are no image files and no Pillow.
+- The window fits on small screens (the steps scroll, the sidebar and the buttons stay) and can be resized.
+- In insert mode the wall-only settings are greyed out when the holding wall is off.
+- With the experimental features off, the generated G-code is the same as 1.1.0's apart from the version in its header comment (checked on every printer profile, in every mode).
+
+### Tested
+
+- First print on a Bambu Lab X2D, a two-colour job across both nozzles, reported by [martinhanes](https://github.com/martinhanes). The X2D sequence is still marked experimental until more prints are reported.
 
 ## [1.1.0] - 2026-10-08
 
@@ -143,7 +153,8 @@ First stable release. Every mode has been tested on a real P1S; the write-ups ar
 - Atomic in-place rewrite with a backup file.
 - CLI analysis and batch conversion.
 
-[Unreleased]: https://github.com/EmirhanSyl/layer-rescue/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/EmirhanSyl/layer-rescue/compare/v1.2.0...HEAD
+[1.2.0]: https://github.com/EmirhanSyl/layer-rescue/releases/tag/v1.2.0
 [1.1.0]: https://github.com/EmirhanSyl/layer-rescue/releases/tag/v1.1.0
 [1.0.1]: https://github.com/EmirhanSyl/layer-rescue/releases/tag/v1.0.1
 [1.0.0]: https://github.com/EmirhanSyl/layer-rescue/releases/tag/v1.0.0
