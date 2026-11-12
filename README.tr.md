@@ -65,10 +65,11 @@ Her özelliği kendi P1S'imde gerçek baskılarla denedim ve hepsini videoları,
 
 ## Test edilenler
 
-Layer Rescue ile basılanlar (yukarıdaki [gerçek testler](#gerçek-testler) ve bir kullanıcının bildirdiği baskı):
+Layer Rescue ile basılanlar (yukarıdaki [gerçek testler](#gerçek-testler) ve kullanıcıların bildirdiği baskılar):
 
 - Bambu Lab P1S, tek filament
-- Bambu Lab X2D, iki nozulu da kullanan iki renkli bir iş ([martinhanes](https://github.com/martinhanes) bastı)
+- Bambu Lab X2D, iki nozulu da kullanan iki renkli bir iş ve elektrik kesintisi modunda ikinci bir baskı: katmanı parçanın yüksekliğini ölçerek buldu, temiz nozulu da elle son katmanın üstüne koydu (ikisini de [martinhanes](https://github.com/martinhanes) bastı)
+- Bambu Lab A1, filament dolandıktan sonra 365 katmanın 124.'sünden devam edildi ([GapsExist](https://github.com/GapsExist) bastı)
 - Windows ve macOS (Linux kaynaktan kurulumla)
 - Bambu Studio G-code'u, katman bazlı baskı, göreli ekstrüzyon
 - Parça aynı plakada sağlam duruyor (devam modu) ya da plakadan ayrılmış / bitmiş ve etrafına basılan duvara geri oturabiliyor (yerleştirme modu, beta)
@@ -88,11 +89,11 @@ Bambu Studio 2.08'deki (02.08.02.61) 14 yazıcının her biri aynı şekilde kon
 | --- | --- | :---: | :---: |
 | P1S | P1/X1: arkadaki purge kanalı | ✓ | ✓ |
 | P1P, X1, X1 Carbon, X1E | P1/X1: arkadaki purge kanalı | ✓ | |
-| A1 | Tabla dışında, X-48.2'de purge | ✓ | |
+| A1 | Tabla dışında, X-48.2'de purge | ✓ | ✓ ([GapsExist](https://github.com/GapsExist)) |
 | A1 mini | Tabla dışında, X-13.5'te purge | ✓ | |
 | H2D, H2D Pro, H2S, H2C | Firmware makroları (`G150.x`), deneysel | ✓ | |
 | P2S | Firmware makroları, deneysel | ✓ | |
-| X2D | Firmware makroları, iki nozul, deneysel | ✓ | ✓ ([martinhanes](https://github.com/martinhanes)) |
+| X2D | Firmware makroları, iki nozul, deneysel | ✓ | ✓ ([martinhanes](https://github.com/martinhanes), elektrik kesintisi modunda da) |
 | A2L | Tabla kaydıran yazıcıda firmware makroları, deneysel | ✓ | |
 
 Kontrol edilmiş bir G-code, basılmış bir parça demek değil. P1S dışındaki her yazıcıda Layer Rescue önce riskleri kabul etmenizi istiyor (CLI: `--allow-untested`); deneysel olarak işaretlenen diziler ise Bambu'nun belgelemediği firmware komutlarına dayanıyor. İşin başlangıcını izleyin; bu yazıcılardan birinde Layer Rescue ile baskı yaparsanız lütfen [sonuçlarınızı paylaşın](#sonuçlarınızı-paylaşın): bir yazıcıyı ortadaki sütundan sağdakine taşıyan şey gerçek bir baskı.
@@ -263,9 +264,9 @@ Layer Rescue baskıları kurtarıyor ama tamiri görünmez yapamıyor ve henüz 
 - **Katmanı siz seçiyorsunuz ve hatalar belli oluyor.** Baskının gerçekte nerede durduğunu otomatik bulan bir şey yok. [Katmanı seçmek](#katmanı-seçmek) bölümüne bakın.
 - **Yeniden başlatmadan sonra sonuç sizin elinize bağlı.** Nozzle parçanın üstüne gözle yerleştiriliyor.
 - **Yerleştirme modu hâlâ beta.** Parçanın duvara ne kadar iyi oturduğu büyük ölçüde şekline bağlı: bazıları içine girip sıkıca oturuyor, bazıları kayabiliyor, bazıları yapıştırma istiyor, bazıları hiç oturmayabiliyor. Yuvarlak parçaların yönünü duvar sabitleyemiyor, doğru yönde oturtmak size kalıyor. Plakada tek obje ve prime tower olmadan çalışıyor.
-- **Şimdilik iki yazıcıda basıldı.** Gerçek testler tek filamentli bir Bambu Lab P1S'te basıldı; [martinhanes](https://github.com/martinhanes) da bir X2D'de iki renkli bir iş bastı. Diğer Bambu Lab yazıcılarının dizileri kendi dilimlenmiş G-code'ları ve Bambu'nun şablonlarıyla kontrol edildi (bkz. [Test edilenler](#test-edilenler)), ama henüz basılmadı; başlangıcı yakından izleyin.
+- **Şimdilik üç yazıcıda basıldı.** Gerçek testler tek filamentli bir Bambu Lab P1S'te basıldı; [martinhanes](https://github.com/martinhanes) bir X2D'de iki renkli bir iş bastı, [GapsExist](https://github.com/GapsExist) da bir A1'de bir baskıyı kurtardı. Diğer Bambu Lab yazıcılarının dizileri kendi dilimlenmiş G-code'ları ve Bambu'nun şablonlarıyla kontrol edildi (bkz. [Test edilenler](#test-edilenler)), ama henüz basılmadı; başlangıcı yakından izleyin.
 - **Deneysel özellikler henüz gerçek baskılarda denenmedi.** Zaten bunun için varlar: yeniden ısıtma geçişini ya da duvarsız yerleştirmeyi denerseniz lütfen [sonuçlarınızı paylaşın](#sonuçlarınızı-paylaşın).
-- **H2 serisinde, P2S'te, X2D'de ve A2L'de elektrik kesintisi modu deneysel.** Elektrik kesintisinden sonra Z'ye home atılmamış olur; H2'nin ihtiyaç duyduğu purge, silme ve X home komutları (`G150.3`, `G150.2`, `G150.1`, `G28 X T300`) ise home atılmamış bir eksende Z'yi nasıl hareket ettirdiği belgelenmemiş firmware makroları. Layer Rescue, stok başlangıç G-code'u gibi bu komutlardan önce (bitiş G-code'undakilerden önce de) tablayı 30 mm indiriyor; ama bu henüz bir yazıcıda denenmedi: ilk hareketleri izleyin ve durdurmaya hazır olun. A2L'de ayrıca timelapse'i kapatın: timelapse her katmanda parçanın 0.4 mm üstündeyken `G150.3` ile purge kutusuna gidiyor.
+- **H2 serisinde, P2S'te, X2D'de ve A2L'de elektrik kesintisi modu deneysel.** Elektrik kesintisinden sonra Z'ye home atılmamış olur; H2'nin ihtiyaç duyduğu purge, silme ve X home komutları (`G150.3`, `G150.2`, `G150.1`, `G28 X T300`) ise home atılmamış bir eksende Z'yi nasıl hareket ettirdiği belgelenmemiş firmware makroları. Layer Rescue, stok başlangıç G-code'u gibi bu komutlardan önce (bitiş G-code'undakilerden önce de) tablayı 30 mm indiriyor; şimdiye kadar bildirilen tek böyle baskı bir X2D'de ([martinhanes](https://github.com/martinhanes)): ilk hareketleri izleyin ve durdurmaya hazır olun. A2L'de ayrıca timelapse'i kapatın: timelapse her katmanda parçanın 0.4 mm üstündeyken `G150.3` ile purge kutusuna gidiyor.
 
 ### Yol haritası
 
@@ -274,7 +275,7 @@ Layer Rescue baskıları kurtarıyor ama tamiri görünmez yapamıyor ve henüz 
 - Gerçek baskılardan alınmış sabit test dosyaları. Böylece yeni bir özellik eski bir senaryoyu sessizce bozamaz.
 - Hata bildirimleri için sürümü, yazıcıyı, ayarları ve uyarıları tek metne koyan bir "Raporu kopyala" butonu.
 - Kalabalık bir plakada başarısız objeleri yeniden dilimlemeden çıkarmak.
-- Şimdiye kadar yalnızca dilimlenmiş dosyalarla kontrol edilen yazıcılarda (X1 Carbon, A1, H2D ve tablodaki diğerleri) gerçek baskılar ve bir SSS.
+- Şimdiye kadar yalnızca dilimlenmiş dosyalarla kontrol edilen yazıcılarda (X1 Carbon, A1 mini, H2D ve tablodaki diğerleri) gerçek baskılar ve bir SSS.
 
 **Orta vade: yerleştirme modunda daha çok şekil**
 
@@ -326,7 +327,7 @@ Testlerde kullandığım modellerin tasarımcılarına da teşekkürler:
 - Roket drone: MakerWorld'de luisengineering'in [Sub-250g SpeedDrone](https://makerworld.com/tr/models/2637662-sub-250g-speeddrone-320km-h-fast#profileId-2913683) modeli
 - Örümcekler: MakerWorld'de formastampa'nın [The World's Smallest Spider](https://makerworld.com/tr/models/2864339-the-world-s-smallest-spider-nozzle-0-4#profileId-3196930) modeli
 
-İki nozulu da kullanan ilk X2D baskısı için [martinhanes](https://github.com/martinhanes)'e teşekkürler.
+İki nozulu da kullanan ilk X2D baskısı için [martinhanes](https://github.com/martinhanes)'e, A1'deki ilk baskı için de [GapsExist](https://github.com/GapsExist)'e teşekkürler.
 
 Yol haritasında topluluktan gelen fikirler de var: elektrik kesintisinden sonra otomatik Z fikri için [u/robiebab](https://www.reddit.com/r/BambuLab/comments/1wvchb4/comment/pdcqgs8/)'e, yerleştirilen nesneyi destek olarak kullanma fikri için [u/Thing1_Tokyo](https://www.reddit.com/r/3Dprinting/comments/1wvcdxq/comment/pdayrw4/)'ya teşekkürler.
 

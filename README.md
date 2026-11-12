@@ -65,10 +65,11 @@ I tested every feature on my own P1S with real prints and wrote down each one st
 
 ## Tested on
 
-Printed with Layer Rescue (the [real-world tests](#real-world-tests) above, and a user's report):
+Printed with Layer Rescue (the [real-world tests](#real-world-tests) above, and users' reports):
 
 - Bambu Lab P1S, single filament
-- Bambu Lab X2D, a two-colour job across both nozzles (printed by [martinhanes](https://github.com/martinhanes))
+- Bambu Lab X2D, a two-colour job across both nozzles, and a second print in power-cut mode: he measured the part's height to find the layer and put the clean nozzle on the top layer by hand (both printed by [martinhanes](https://github.com/martinhanes))
+- Bambu Lab A1, continued from layer 124 of 365 after a filament tangle (printed by [GapsExist](https://github.com/GapsExist))
 - Windows and macOS (Linux from source)
 - Bambu Studio G-code, by-layer printing, relative extrusion
 - The part is still firmly attached to the same plate (resume mode), or it came off / is finished and fits back into a wall printed around it (insert mode, beta)
@@ -88,11 +89,11 @@ Each of the 14 printers in Bambu Studio 2.08 (02.08.02.61) was checked the same 
 | --- | --- | :---: | :---: |
 | P1S | P1/X1: rear purge chute | ✓ | ✓ |
 | P1P, X1, X1 Carbon, X1E | P1/X1: rear purge chute | ✓ | |
-| A1 | Off-bed purge at X-48.2 | ✓ | |
+| A1 | Off-bed purge at X-48.2 | ✓ | ✓ (by [GapsExist](https://github.com/GapsExist)) |
 | A1 mini | Off-bed purge at X-13.5 | ✓ | |
 | H2D, H2D Pro, H2S, H2C | Firmware macros (`G150.x`), experimental | ✓ | |
 | P2S | Firmware macros, experimental | ✓ | |
-| X2D | Firmware macros, two nozzles, experimental | ✓ | ✓ (by [martinhanes](https://github.com/martinhanes)) |
+| X2D | Firmware macros, two nozzles, experimental | ✓ | ✓ (by [martinhanes](https://github.com/martinhanes), also in power-cut mode) |
 | A2L | Firmware macros on a bed slinger, experimental | ✓ | |
 
 A checked G-code is not a printed part. On every printer except the P1S, Layer Rescue still asks you to accept the risks first (CLI: `--allow-untested`), and the sequences marked experimental rely on firmware commands that Bambu doesn't document. Watch the start of the job, and if you print with it on one of these printers, please [share your results](#share-your-results): a real print is what moves a printer from the middle column to the right one.
@@ -262,9 +263,9 @@ Layer Rescue saves prints, but it can't make the repair invisible or do everythi
 - **You pick the layer, and mistakes show.** There's no automatic detection of where the print really stopped. See [Picking the layer](#picking-the-layer).
 - **After a restart, the result depends on your hands.** The nozzle is placed on the part by eye.
 - **Insert mode is still beta.** How well a part fits the wall depends a lot on its shape: some drop in and sit snugly, some can shift, some need glue, and some may not fit at all. Round parts can't be oriented by the wall, so you have to seat them facing the right way. It handles one object on the plate and no prime tower.
-- **Printed on two printers so far.** The real-world tests were printed on a Bambu Lab P1S with a single filament, and [martinhanes](https://github.com/martinhanes) printed a two-colour job on an X2D. The sequences for the other Bambu Lab printers were checked against their own sliced G-code and Bambu's templates (see [Tested on](#tested-on)), but not printed yet, so watch the start closely.
+- **Printed on three printers so far.** The real-world tests were printed on a Bambu Lab P1S with a single filament, [martinhanes](https://github.com/martinhanes) printed a two-colour job on an X2D, and [GapsExist](https://github.com/GapsExist) rescued a print on an A1. The sequences for the other Bambu Lab printers were checked against their own sliced G-code and Bambu's templates (see [Tested on](#tested-on)), but not printed yet, so watch the start closely.
 - **The experimental features haven't been tried on real prints yet.** That is what they are there for: if you try the reheat pass or insert without the wall, please [share your results](#share-your-results).
-- **Power-cut mode on the H2 series, the P2S, the X2D and the A2L is experimental.** After a power cut Z is not homed, and the purge, wipe and X homing commands the H2 needs (`G150.3`, `G150.2`, `G150.1`, `G28 X T300`) are firmware macros whose Z behaviour on an unhomed axis isn't documented. Like the stock start G-code, Layer Rescue lowers the bed 30 mm before these commands (also before the end G-code's), but this hasn't been checked on a printer yet: watch the first moves and be ready to stop. On the A2L, also turn timelapse off: its timelapse moves to the purge bin with `G150.3` on every layer, 0.4 mm above the part.
+- **Power-cut mode on the H2 series, the P2S, the X2D and the A2L is experimental.** After a power cut Z is not homed, and the purge, wipe and X homing commands the H2 needs (`G150.3`, `G150.2`, `G150.1`, `G28 X T300`) are firmware macros whose Z behaviour on an unhomed axis isn't documented. Like the stock start G-code, Layer Rescue lowers the bed 30 mm before these commands (also before the end G-code's), and so far only one such print has been reported (on an X2D, by [martinhanes](https://github.com/martinhanes)): watch the first moves and be ready to stop. On the A2L, also turn timelapse off: its timelapse moves to the purge bin with `G150.3` on every layer, 0.4 mm above the part.
 
 ### Roadmap
 
@@ -273,7 +274,7 @@ Layer Rescue saves prints, but it can't make the repair invisible or do everythi
 - Fixed test files from the real prints, so a new feature can't quietly break an old case.
 - A "copy report" button that puts the version, printer, settings and warnings into one text for bug reports.
 - Dropping failed objects from a crowded plate without re-slicing.
-- Real prints on the printers that have only been checked against sliced files so far (X1 Carbon, A1, H2D and the rest of the table), plus an FAQ.
+- Real prints on the printers that have only been checked against sliced files so far (X1 Carbon, A1 mini, H2D and the rest of the table), plus an FAQ.
 
 **Mid term: insert mode for more shapes**
 
@@ -325,7 +326,7 @@ Thanks also to the designers of the models I used in the tests:
 - Rocket drone: [Sub-250g SpeedDrone](https://makerworld.com/tr/models/2637662-sub-250g-speeddrone-320km-h-fast#profileId-2913683) by luisengineering on MakerWorld
 - Spiders: [The World's Smallest Spider](https://makerworld.com/tr/models/2864339-the-world-s-smallest-spider-nozzle-0-4#profileId-3196930) by formastampa on MakerWorld
 
-Thanks to [martinhanes](https://github.com/martinhanes) for the first print on an X2D, across both nozzles.
+Thanks to [martinhanes](https://github.com/martinhanes) for the first print on an X2D, across both nozzles, and to [GapsExist](https://github.com/GapsExist) for the first print on an A1.
 
 The roadmap also has ideas from the community: thanks to [u/robiebab](https://www.reddit.com/r/BambuLab/comments/1wvchb4/comment/pdcqgs8/) for automatic Z after a power loss, and to [u/Thing1_Tokyo](https://www.reddit.com/r/3Dprinting/comments/1wvcdxq/comment/pdayrw4/) for placed-object supports.
 

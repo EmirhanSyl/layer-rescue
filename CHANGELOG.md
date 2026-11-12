@@ -6,6 +6,11 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+### Tested
+
+- First print on a Bambu Lab A1, reported by [GapsExist](https://github.com/GapsExist): continued from layer 124 of 365 after a filament tangle, and the print completed.
+- Second print on a Bambu Lab X2D by [martinhanes](https://github.com/martinhanes), this time in power-cut mode with the layer found from the measured part height and the clean nozzle placed on the top layer by hand.
+
 ## [1.2.0] - 2026-10-17
 
 A new window, the part's height as a way to say where the print stopped, and two experimental features. Thanks to [martinhanes](https://github.com/martinhanes) for the first print on an X2D, a two-colour job across both nozzles.
